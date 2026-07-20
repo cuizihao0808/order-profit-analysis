@@ -1,0 +1,20 @@
+[
+  {
+    "id": "shop-1",
+    "name": "CZH-主店一号",
+    "country": "美国",
+    "note": ""
+  },
+  {
+    "id": "shop-2",
+    "name": "TZH-主店二号",
+    "country": "美国",
+    "note": ""
+  },
+  {
+    "id": "shop-3",
+    "name": "LPH-主店三号-US",
+    "country": "美国",
+    "note": ""
+  }
+]
