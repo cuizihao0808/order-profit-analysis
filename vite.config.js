@@ -123,6 +123,13 @@ function parseDatesFromFilename(name) {
   return { startDate: m[1], endDate: m[2] }
 }
 
+function cmpWeekByDateDesc(a, b) {
+  const ad = a?.startDate || ''
+  const bd = b?.startDate || ''
+  if (ad === bd) return 0
+  return ad < bd ? 1 : -1
+}
+
 function readXlsx(xlsxPath) {
   const wb = XLSX.readFile(xlsxPath)
   const sh = wb.Sheets[wb.SheetNames[0]]
@@ -159,6 +166,27 @@ function importXlsx(filename) {
   const colIdx = {}
   columns.forEach((c, i) => (colIdx[c] = i))
 
+  // 先读取 weeks 索引并定位上一周，用于继承每个 ASIN 的备注
+  const weeks = readJson(`${DATA_DIR}/weeks.json`, [])
+  const filtered = weeks.filter((w) => w.id !== weekId)
+  const { startDate, endDate } = parseDatesFromFilename(filename)
+  const nextWeeks = filtered.slice()
+  nextWeeks.push({
+    id: weekId,
+    filename,
+    startDate,
+    endDate,
+    rowCount: 0,
+    importedAt: new Date().toISOString(),
+  })
+  nextWeeks.sort(cmpWeekByDateDesc)
+  const currentIdx = nextWeeks.findIndex((w) => w.id === weekId)
+  const previousWeek = currentIdx >= 0 ? nextWeeks[currentIdx + 1] : null
+  const prevSnapshot = previousWeek?.id
+    ? readJson(`${WEEKS_DIR}/${previousWeek.id}.json`, null)
+    : null
+  const prevNotes = prevSnapshot && typeof prevSnapshot.notes === 'object' ? prevSnapshot.notes : {}
+
   // 组装 rows 快照，附带 asin 主键便于后续 join
   const asinIdx = colIdx['ASIN']
   const snapshotRows = rows.map((values, i) => ({
@@ -167,18 +195,27 @@ function importXlsx(filename) {
     _rowIndex: i,
   }))
 
+  const nextNotes = {}
+  for (const row of snapshotRows) {
+    const asin = (row.asin || '').trim()
+    if (!asin) continue
+    const note = prevNotes[asin]
+    if (typeof note === 'string' && note.trim()) {
+      nextNotes[asin] = note
+    }
+  }
+
   writeJson(`${WEEKS_DIR}/${weekId}.json`, {
     id: weekId,
     filename,
     columns,
     rows: snapshotRows,
+    notes: nextNotes,
   })
 
   // 更新 weeks 索引
-  const weeks = readJson(`${DATA_DIR}/weeks.json`, [])
-  const filtered = weeks.filter((w) => w.id !== weekId)
-  const { startDate, endDate } = parseDatesFromFilename(filename)
-  filtered.push({
+  const finalWeeks = filtered.slice()
+  finalWeeks.push({
     id: weekId,
     filename,
     startDate,
@@ -186,8 +223,8 @@ function importXlsx(filename) {
     rowCount: snapshotRows.length,
     importedAt: new Date().toISOString(),
   })
-  filtered.sort((a, b) => (a.startDate < b.startDate ? 1 : -1))
-  writeJson(`${DATA_DIR}/weeks.json`, filtered)
+  finalWeeks.sort(cmpWeekByDateDesc)
+  writeJson(`${DATA_DIR}/weeks.json`, finalWeeks)
 
   // 同步 shops
   const shopIdx = colIdx['店铺']
@@ -399,6 +436,24 @@ function apiPlugin() {
           /* ---------- weeks ---------- */
           if (url === '/weeks' && req.method === 'GET') {
             return sendJson(res, 200, readJson(`${DATA_DIR}/weeks.json`, []))
+          }
+          if (url.startsWith('/weeks/') && url.includes('/notes/') && req.method === 'PUT') {
+            const m = url.match(/^\/weeks\/([^/]+)\/notes\/([^/]+)$/)
+            if (!m) return sendJson(res, 400, { error: 'bad request' })
+            const id = decodeURIComponent(m[1])
+            const asin = decodeURIComponent(m[2])
+            const body = (await readBody(req)) || {}
+            const note = typeof body.note === 'string' ? body.note : ''
+
+            const data = readJson(`${WEEKS_DIR}/${id}.json`, null)
+            if (!data) return sendJson(res, 404, { error: 'not found' })
+
+            const notes = data.notes && typeof data.notes === 'object' ? { ...data.notes } : {}
+            if (note.trim()) notes[asin] = note
+            else delete notes[asin]
+            data.notes = notes
+            writeJson(`${WEEKS_DIR}/${id}.json`, data)
+            return sendJson(res, 200, { ok: true, id, asin, note: notes[asin] || '' })
           }
           if (url.startsWith('/weeks/')) {
             const id = decodeURIComponent(url.slice('/weeks/'.length))

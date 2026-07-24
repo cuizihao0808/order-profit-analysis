@@ -896,3 +896,191 @@ code {
 .table-wrap::-webkit-scrollbar-thumb:hover {
   background: #b8bcc4;
 }
+
+/* ===== Responsive ===== */
+@media (max-width: 1024px) {
+  .topbar {
+    padding: 10px 14px;
+  }
+
+  .title {
+    max-width: 56vw;
+  }
+
+  .toolbar {
+    padding: 8px 10px;
+    gap: 6px;
+  }
+
+  .tool-label {
+    margin-left: 0;
+  }
+
+  .metabar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .status {
+    margin-left: 0;
+    max-width: 100%;
+    flex: 1 1 100%;
+  }
+
+  .drawer,
+  .drawer-wide {
+    width: min(92vw, 560px);
+  }
+}
+
+@media (max-width: 768px) {
+  body {
+    font-size: 12px;
+  }
+
+  .topbar {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+
+  .topbar-left {
+    width: 100%;
+    font-size: 12px;
+  }
+
+  .title {
+    max-width: 100%;
+    font-size: 13px;
+  }
+
+  .toolbar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    align-items: stretch;
+    padding: 8px 10px;
+  }
+
+  .tool-divider {
+    display: none;
+  }
+
+  .tool-label {
+    grid-column: 1 / -1;
+    margin: 0;
+  }
+
+  .tool-select,
+  .tool-btn {
+    width: 100%;
+  }
+
+  .tool-select {
+    max-width: none;
+  }
+
+  .metabar {
+    padding: 8px 10px;
+  }
+
+  .pill {
+    font-size: 11px;
+  }
+
+  thead th,
+  tbody td {
+    padding: 7px 10px;
+  }
+
+  .child-row .cell-name {
+    padding-left: 16px;
+  }
+
+  thead th.fix-left,
+  tbody td.fix-left {
+    position: static;
+    left: auto !important;
+    box-shadow: none;
+  }
+
+  thead th.fix-last,
+  tbody td.fix-last {
+    box-shadow: none;
+  }
+
+  .drawer,
+  .drawer-wide {
+    width: 100vw;
+    max-width: 100vw;
+    border-radius: 0;
+  }
+
+  .drawer-head,
+  .drawer-tip,
+  .drawer-actions,
+  .shop-form,
+  .shop-list-head {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .shop-list {
+    padding: 6px;
+  }
+
+  .shop-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .shop-actions {
+    width: 100%;
+  }
+
+  .shop-actions .tool-btn {
+    flex: 1;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-grid .form-row-wide {
+    grid-column: auto;
+  }
+
+  .form-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .form-row label {
+    width: auto;
+  }
+}
+
+@media (max-width: 520px) {
+  .toast {
+    top: 10px;
+    max-width: calc(100vw - 20px);
+  }
+
+  .toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .btn,
+  .tool-btn,
+  .tool-select,
+  .cell-input,
+  .cell-select {
+    font-size: 12px;
+  }
+
+  .col-expand {
+    width: 40px;
+    min-width: 40px;
+  }
+}

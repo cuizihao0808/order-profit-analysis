@@ -30,6 +30,7 @@ const CATEGORY_OPTIONS = ['正常', '观望', '断货', '放弃']
  * - type='calc'        公式计算，不可编辑
  */
 const EXTRA_COLS = [
+  { name: '备注', key: 'note', type: 'edit-week-text' },
   { name: '产品分类', key: 'category', type: 'edit-select', options: CATEGORY_OPTIONS },
   { name: '补货周期', key: 'restockCycle', type: 'edit-num' },
   { name: '库存数量', key: 'stock', type: 'edit-num' },
@@ -44,7 +45,7 @@ function editColKey(name) {
   if (name === '品名') return 'name'
   const c = EXTRA_COL_BY_NAME[name]
   if (!c) return ''
-  if (c.type === 'edit-select' || c.type === 'edit-num') return c.key
+  if (c.type === 'edit-select' || c.type === 'edit-num' || c.type === 'edit-week-text') return c.key
   return ''
 }
 function isEditableCol(name) {
@@ -56,6 +57,7 @@ function isCalcCol(name) {
 
 /** 默认可见列（不含固定列），遵守需求顺序 */
 const DEFAULT_VISIBLE_ORDER = [
+  '备注',
   '产品分类',
   '销量',
   '采购成本',
@@ -117,6 +119,44 @@ const filteredRows = computed(() => {
   return allRows.value.filter((r) => getCell(r, '店铺') === shopFilter.value)
 })
 
+function getWeekNote(asin) {
+  if (!asin) return ''
+  const notes = currentWeek.value?.notes
+  if (!notes || typeof notes !== 'object') return ''
+  const v = notes[asin]
+  return v == null ? '' : String(v)
+}
+
+async function patchWeekNote(asin, note) {
+  if (!currentWeekId.value || !asin) return
+  const text = (note || '').trim()
+  if (!currentWeek.value || typeof currentWeek.value !== 'object') return
+
+  const beforeNotes = { ...(currentWeek.value.notes || {}) }
+  const nextNotes = { ...beforeNotes }
+  if (text) nextNotes[asin] = text
+  else delete nextNotes[asin]
+  currentWeek.value = { ...currentWeek.value, notes: nextNotes }
+
+  try {
+    const r = await fetch(
+      `/api/weeks/${encodeURIComponent(currentWeekId.value)}/notes/${encodeURIComponent(asin)}`,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ note: text }),
+      },
+    )
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({}))
+      throw new Error(err.error || '保存失败')
+    }
+  } catch (e) {
+    currentWeek.value = { ...currentWeek.value, notes: beforeNotes }
+    showToast('备注保存失败：' + (e.message || e), 'error')
+  }
+}
+
 /** 单元格取值：
  *  1. 主字段（品名/ASIN/父ASIN）优先取 products.json，其次 xlsx
  *  2. 扩展字段（产品分类/补货周期/库存数量）取 products.json
@@ -138,6 +178,9 @@ function getCell(row, colName) {
 
   const extra = EXTRA_COL_BY_NAME[colName]
   if (extra) {
+    if (extra.type === 'edit-week-text') {
+      return getWeekNote(row.asin)
+    }
     if (extra.type === 'calc') {
       if (extra.key === 'roi') {
         const profit = toNum(row.values[colIndex.value['毛利润']])
@@ -315,6 +358,23 @@ function fixedLeft(displayIndex) {
   return left + 'px'
 }
 
+function fixedColStyle(displayIndex, colName) {
+  const width = FIXED_WIDTHS[colName] ?? 120
+  return {
+    left: fixedLeft(displayIndex),
+    width: width + 'px',
+    minWidth: width + 'px',
+    maxWidth: width + 'px',
+  }
+}
+
+const expandColStyle = {
+  left: '0px',
+  width: EXPAND_COL_WIDTH + 'px',
+  minWidth: EXPAND_COL_WIDTH + 'px',
+  maxWidth: EXPAND_COL_WIDTH + 'px',
+}
+
 /* ================= 加载 ================= */
 async function loadShops() {
   const r = await fetch('/api/shops', { cache: 'no-store' })
@@ -341,6 +401,9 @@ async function loadCurrentWeek() {
   })
   if (r.ok) {
     currentWeek.value = await r.json()
+    if (!currentWeek.value.notes || typeof currentWeek.value.notes !== 'object') {
+      currentWeek.value.notes = {}
+    }
     mergeCustomCols(currentWeek.value.columns)
   } else {
     currentWeek.value = null
@@ -843,12 +906,12 @@ onMounted(() => {
       <table v-else>
         <thead>
           <tr>
-            <th class="col-expand fix-left" :style="{ left: '0px' }"></th>
+            <th class="col-expand fix-left" :style="expandColStyle"></th>
             <th
               v-for="(col, i) in displayCols"
               :key="col.name"
               :class="{ 'fix-left': col.fixed, 'fix-last': col.fixed && col.name === 'ASIN' }"
-              :style="col.fixed ? { left: fixedLeft(i) } : null"
+              :style="col.fixed ? fixedColStyle(i, col.name) : null"
             >
               {{ col.name }}
             </th>
@@ -857,7 +920,7 @@ onMounted(() => {
         <tbody>
           <template v-for="g in groups" :key="g.key">
             <tr :class="['parent-row', { 'row-need-restock': hasRestockNeed(g.header) }]">
-              <td class="col-expand fix-left" :style="{ left: '0px' }">
+              <td class="col-expand fix-left" :style="expandColStyle">
                 <button
                   v-if="g.children.length"
                   class="expand-btn"
@@ -878,7 +941,7 @@ onMounted(() => {
                   'cell-name': col.name === '品名',
                   'cell-edit': isEditableCol(col.name),
                 }]"
-                :style="col.fixed ? { left: fixedLeft(i) } : null"
+                :style="col.fixed ? fixedColStyle(i, col.name) : null"
               >
                 <span
                   v-if="col.name === '品名' && g.children.length"
@@ -913,6 +976,15 @@ onMounted(() => {
                     @change="patchProduct(g.header.asin, { [editColKey(col.name)]: $event.target.value === '' ? '' : Number($event.target.value) })"
                   />
                 </template>
+                <template v-else-if="editColKey(col.name) === 'note'">
+                  <input
+                    class="cell-input"
+                    type="text"
+                    :value="getWeekNote(g.header.asin)"
+                    placeholder="本周备注"
+                    @change="patchWeekNote(g.header.asin, $event.target.value)"
+                  />
+                </template>
                 <template v-else>{{ getCell(g.header, col.name) }}</template>
               </td>
             </tr>
@@ -922,7 +994,7 @@ onMounted(() => {
                 :key="child.asin || child._rowIndex"
                 :class="['child-row', { 'row-need-restock': hasRestockNeed(child) }]"
               >
-                <td class="col-expand fix-left" :style="{ left: '0px' }"></td>
+                <td class="col-expand fix-left" :style="expandColStyle"></td>
                 <td
                   v-for="(col, i) in displayCols"
                   :key="col.name"
@@ -933,7 +1005,7 @@ onMounted(() => {
                     'cell-name': col.name === '品名',
                     'cell-edit': isEditableCol(col.name),
                   }]"
-                  :style="col.fixed ? { left: fixedLeft(i) } : null"
+                  :style="col.fixed ? fixedColStyle(i, col.name) : null"
                 >
                   <span v-if="col.name === '品名'" class="tree-line">└</span>
                   <template v-if="editColKey(col.name) === 'category'">
@@ -960,6 +1032,15 @@ onMounted(() => {
                       type="number"
                       :value="productMap.get(child.asin)?.[editColKey(col.name)] ?? ''"
                       @change="patchProduct(child.asin, { [editColKey(col.name)]: $event.target.value === '' ? '' : Number($event.target.value) })"
+                    />
+                  </template>
+                  <template v-else-if="editColKey(col.name) === 'note'">
+                    <input
+                      class="cell-input"
+                      type="text"
+                      :value="getWeekNote(child.asin)"
+                      placeholder="本周备注"
+                      @change="patchWeekNote(child.asin, $event.target.value)"
                     />
                   </template>
                   <template v-else>{{ getCell(child, col.name) }}</template>
