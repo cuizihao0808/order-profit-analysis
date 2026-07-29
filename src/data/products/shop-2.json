@@ -75,7 +75,7 @@
     "name": "Aroma 5L锅",
     "category": "正常",
     "restockCycle": 1,
-    "stock": 133,
+    "stock": 116,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
     "lastSeenWeek": "订单利润-ASIN-2026-07-19~2026-07-25-940276466746679296"
   },
@@ -145,7 +145,7 @@
     "name": "Aroma 2L锅",
     "category": "观望",
     "restockCycle": 1,
-    "stock": 109,
+    "stock": 44,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
     "lastSeenWeek": "订单利润-ASIN-2026-07-19~2026-07-25-940276466746679296"
   },
@@ -275,7 +275,7 @@
     "name": "Zo3L锅",
     "category": "正常",
     "restockCycle": 1,
-    "stock": 72,
+    "stock": 71,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
     "lastSeenWeek": "订单利润-ASIN-2026-07-19~2026-07-25-940276466746679296"
   },

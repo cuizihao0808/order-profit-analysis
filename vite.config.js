@@ -7,6 +7,26 @@ import { createRequire } from 'node:module'
 const require = createRequire(import.meta.url)
 const XLSX = require('xlsx')
 
+// 导入补货配置
+let restockConfigData = {
+  restockMonths: 12,
+  restockMultiplier: 4,
+  monthlyThreshold: 1,
+  doubleRestockMultiplier: 8,
+  quantityDiscount: 0.8,
+}
+try {
+  const configPath = fp(`${DATA_DIR}/restockConfig.js`)
+  if (existsSync(configPath)) {
+    const configModule = require(configPath)
+    if (configModule.restockConfig) {
+      restockConfigData = configModule.restockConfig
+    }
+  }
+} catch (e) {
+  // 使用默认值
+}
+
 const DATA_DIR = 'src/data'
 const WEEKS_DIR = 'src/data/weeks'
 const PRODUCTS_DIR = 'src/data/products'
@@ -470,6 +490,11 @@ function apiPlugin() {
               if (existsSync(snapshotPath)) unlinkSync(snapshotPath)
               return sendJson(res, 200, { ok: true })
             }
+          }
+
+          /* ---------- 补货配置 ---------- */
+          if (url === '/restock-config' && req.method === 'GET') {
+            return sendJson(res, 200, restockConfigData)
           }
 
           /* ---------- 导入 ---------- */

@@ -84,6 +84,7 @@ const products = ref([])
 const weeks = ref([]) // [{ id, filename, startDate, endDate, rowCount, importedAt }]
 const currentWeekId = ref('')
 const currentWeek = ref(null) // { columns, rows: [{ asin, values }] }
+const restockConfig = ref({}) // { monthlyMultiplier, quantityMultiplier, quantityDiscount }
 
 const customCols = ref([]) // [{ name, visible }]
 const shopFilter = ref('__all__')
@@ -194,9 +195,17 @@ function getCell(row, colName) {
         const cycle = toNum(product?.restockCycle)
         if (!Number.isFinite(stock) || !Number.isFinite(sales) || !Number.isFinite(cycle)) return ''
         if (sales <= 0) return '无需补货'
-        const threshold = sales * (12 + cycle)
+        const restockMonths = restockConfig.value.restockMonths || 12
+        const restockMultiplier = restockConfig.value.restockMultiplier || 4
+        const monthlyThreshold = restockConfig.value.monthlyThreshold || 1
+        const doubleRestockMultiplier = restockConfig.value.doubleRestockMultiplier || 8
+        const quantityDiscount = restockConfig.value.quantityDiscount || 0.8
+        const threshold = sales * (restockMonths + cycle)
         if (stock < threshold) {
-          return String(Math.round(sales * 4 * 0.8))
+          // 检查是否库存不足指定月份，如果是则使用双倍补货倍数
+          const monthlyStock = sales * 4
+          const multiplier = stock < monthlyStock * monthlyThreshold ? doubleRestockMultiplier : restockMultiplier
+          return String(Math.round(sales * multiplier * quantityDiscount))
         }
         return '无需补货'
       }
@@ -391,6 +400,12 @@ async function loadWeeks() {
   weeks.value = r.ok ? await r.json() : []
 }
 
+async function loadRestockConfig() {
+  const r = await fetch('/api/restock-config', { cache: 'no-store' })
+  restockConfig.value = r.ok ? await r.json() : {}
+}
+
+
 async function loadCurrentWeek() {
   if (!currentWeekId.value) {
     currentWeek.value = null
@@ -413,7 +428,7 @@ async function loadCurrentWeek() {
 async function bootstrap() {
   try {
     status.value = '正在加载...'
-    await Promise.all([loadShops(), loadProducts(), loadWeeks()])
+    await Promise.all([loadShops(), loadProducts(), loadWeeks(), loadRestockConfig()])
 
     // 选择当前周：localStorage > 最新
     const stored = localStorage.getItem(WEEK_KEY)
@@ -756,7 +771,7 @@ async function doImport(files) {
     })
     const data = await r.json()
     importResult.value = data.results
-    await Promise.all([loadShops(), loadProducts(), loadWeeks()])
+    await Promise.all([loadShops(), loadProducts(), loadWeeks(), loadRestockConfig()])
     // 自动切到最新导入的一周
     if (weeks.value.length) {
       currentWeekId.value = weeks.value[0].id
