@@ -497,6 +497,17 @@ thead th.col-expand {
   margin-right: 6px;
 }
 
+.asin-link {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px dotted rgba(51, 112, 255, 0.45);
+}
+
+.asin-link:hover {
+  color: var(--accent-hover);
+  border-bottom-color: rgba(36, 91, 219, 0.65);
+}
+
 .badge-count {
   display: inline-block;
   min-width: 20px;

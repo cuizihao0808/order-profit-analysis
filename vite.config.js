@@ -302,7 +302,7 @@ function importXlsx(filename) {
         const product = {
           ...master,
           category: '正常',
-          restockCycle: 1,
+          restockCycle: 2,
           stock: '',
           firstSeenWeek: weekId,
           lastSeenWeek: weekId,

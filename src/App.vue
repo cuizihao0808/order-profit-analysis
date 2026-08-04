@@ -32,7 +32,7 @@ const CATEGORY_OPTIONS = ['正常', '观望', '断货', '放弃']
 const EXTRA_COLS = [
   { name: '备注', key: 'note', type: 'edit-week-text' },
   { name: '产品分类', key: 'category', type: 'edit-select', options: CATEGORY_OPTIONS },
-  { name: '补货周期', key: 'restockCycle', type: 'edit-num' },
+  { name: '补货用时', key: 'restockCycle', type: 'edit-num' },
   { name: '库存数量', key: 'stock', type: 'edit-num' },
   { name: 'ROI', key: 'roi', type: 'calc' },
   { name: '补货数量', key: 'restockQty', type: 'calc' },
@@ -64,11 +64,39 @@ const DEFAULT_VISIBLE_ORDER = [
   '毛利润',
   '广告费率',
   'ROI',
+  '退货率',
+  '退款率',
+  '补货用时',
   '库存数量',
-  '补货周期',
   '补货数量',
 ]
 const DEFAULT_VISIBLE_SET = new Set(DEFAULT_VISIBLE_ORDER)
+
+function ensureColumnsOrder(cols) {
+  const arr = Array.isArray(cols) ? cols.slice() : []
+
+  const roiIdx = arr.findIndex((c) => c?.name === 'ROI')
+  if (roiIdx >= 0) {
+    const targetNames = ['退货率', '退款率']
+    const picked = []
+    for (const name of targetNames) {
+      const idx = arr.findIndex((c) => c?.name === name)
+      if (idx >= 0) picked.push(arr.splice(idx, 1)[0])
+    }
+    arr.splice(roiIdx + 1, 0, ...picked)
+  }
+
+  const restockName = '补货用时'
+  const stockName = '库存数量'
+  const restockIdx = arr.findIndex((c) => c?.name === restockName)
+  const stockIdx = arr.findIndex((c) => c?.name === stockName)
+  if (restockIdx >= 0 && stockIdx >= 0 && restockIdx > stockIdx) {
+    const [restockCol] = arr.splice(restockIdx, 1)
+    const nextStockIdx = arr.findIndex((c) => c?.name === stockName)
+    if (nextStockIdx >= 0) arr.splice(nextStockIdx, 0, restockCol)
+  }
+  return arr
+}
 
 /** 将字符串/数字安全转为数字（去除 $ 逗号 百分号） */
 function toNum(v) {
@@ -160,9 +188,9 @@ async function patchWeekNote(asin, note) {
 
 /** 单元格取值：
  *  1. 主字段（品名/ASIN/父ASIN）优先取 products.json，其次 xlsx
- *  2. 扩展字段（产品分类/补货周期/库存数量）取 products.json
+ *  2. 扩展字段（产品分类/补货用时/库存数量）取 products.json
  *  3. ROI = ROUND(毛利润 / 采购成本, 2)
- *  4. 补货数量 = IF(库存数量 < 销量*(12+补货周期), 销量*4*0.8, '无需补货')
+ *  4. 补货数量 = IF(库存数量 < 销量*(12+补货用时), 销量*4*0.8, '无需补货')
  *  5. 其余取 xlsx 快照
  */
 function getCell(row, colName) {
@@ -225,6 +253,15 @@ function getCell(row, colName) {
     if (Number.isFinite(n)) return String(Math.abs(n))
   }
   return raw
+}
+
+function asinValue(row) {
+  return String(getCell(row, 'ASIN') || '').trim()
+}
+
+function asinUrl(row) {
+  const asin = asinValue(row)
+  return asin ? `https://www.amazon.com/dp/${encodeURIComponent(asin)}` : ''
 }
 
 /** 判断某行是否被标记为「放弃」 */
@@ -509,7 +546,7 @@ function mergeCustomCols(xlsxCols) {
       merged.push({ name, visible: DEFAULT_VISIBLE_SET.has(name) })
     }
   }
-  customCols.value = merged
+  customCols.value = ensureColumnsOrder(merged)
 }
 
 /* ================= 交互 ================= */
@@ -562,7 +599,7 @@ function resetColConfig() {
   for (const name of available) {
     if (!seen.has(name)) list.push({ name, visible: false })
   }
-  customCols.value = list
+  customCols.value = ensureColumnsOrder(list)
 }
 
 /* ================= 店铺 CRUD ================= */
@@ -1000,6 +1037,17 @@ onMounted(() => {
                     @change="patchWeekNote(g.header.asin, $event.target.value)"
                   />
                 </template>
+                <template v-else-if="col.name === 'ASIN'">
+                  <a
+                    v-if="asinUrl(g.header)"
+                    class="asin-link"
+                    :href="asinUrl(g.header)"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {{ asinValue(g.header) }}
+                  </a>
+                </template>
                 <template v-else>{{ getCell(g.header, col.name) }}</template>
               </td>
             </tr>
@@ -1057,6 +1105,17 @@ onMounted(() => {
                       placeholder="本周备注"
                       @change="patchWeekNote(child.asin, $event.target.value)"
                     />
+                  </template>
+                  <template v-else-if="col.name === 'ASIN'">
+                    <a
+                      v-if="asinUrl(child)"
+                      class="asin-link"
+                      :href="asinUrl(child)"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {{ asinValue(child) }}
+                    </a>
                   </template>
                   <template v-else>{{ getCell(child, col.name) }}</template>
                 </td>
