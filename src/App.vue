@@ -1,12 +1,12 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 /* ================= 常量 ================= */
 const FIXED_COLS = ['品名', 'ASIN']
 const COL_CONFIG_KEY = 'opa:column-config:v4'
 const SHOP_FILTER_KEY = 'opa:shop-filter:v1'
 const WEEK_KEY = 'opa:current-week:v1'
-const FIXED_WIDTHS = { 品名: 260, ASIN: 140 }
+const FIXED_WIDTHS = { 品名: 260, ASIN: 188 }
 const EXPAND_COL_WIDTH = 40
 
 /**
@@ -129,7 +129,9 @@ const importLoading = ref(false)
 const importBusy = ref(false)
 const importMessage = ref('')
 const toast = ref({ show: false, text: '', type: 'success' })
+const copiedAsinMap = ref({})
 let toastTimer = null
+const copyResetTimers = new Map()
 
 /* ================= 派生数据 ================= */
 const productMap = computed(() => new Map(products.value.map((p) => [p.asin, p])))
@@ -262,6 +264,43 @@ function asinValue(row) {
 function asinUrl(row) {
   const asin = asinValue(row)
   return asin ? `https://www.amazon.com/dp/${encodeURIComponent(asin)}` : ''
+}
+
+async function copyAsin(row) {
+  const asin = asinValue(row)
+  if (!asin) return
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(asin)
+    } else {
+      const ta = document.createElement('textarea')
+      ta.value = asin
+      ta.setAttribute('readonly', '')
+      ta.style.position = 'absolute'
+      ta.style.left = '-9999px'
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand('copy')
+      document.body.removeChild(ta)
+    }
+    copiedAsinMap.value = { ...copiedAsinMap.value, [asin]: true }
+    if (copyResetTimers.has(asin)) clearTimeout(copyResetTimers.get(asin))
+    const timer = setTimeout(() => {
+      const next = { ...copiedAsinMap.value }
+      delete next[asin]
+      copiedAsinMap.value = next
+      copyResetTimers.delete(asin)
+    }, 1300)
+    copyResetTimers.set(asin, timer)
+    showToast(`已复制 ASIN: ${asin}`)
+  } catch {
+    showToast('复制失败，请手动复制', 'error')
+  }
+}
+
+function isAsinCopied(row) {
+  const asin = asinValue(row)
+  return !!(asin && copiedAsinMap.value[asin])
 }
 
 /** 判断某行是否被标记为「放弃」 */
@@ -883,6 +922,11 @@ onMounted(() => {
   }
   bootstrap()
 })
+
+onBeforeUnmount(() => {
+  for (const t of copyResetTimers.values()) clearTimeout(t)
+  copyResetTimers.clear()
+})
 </script>
 
 <template>
@@ -1038,15 +1082,25 @@ onMounted(() => {
                   />
                 </template>
                 <template v-else-if="col.name === 'ASIN'">
-                  <a
-                    v-if="asinUrl(g.header)"
-                    class="asin-link"
-                    :href="asinUrl(g.header)"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {{ asinValue(g.header) }}
-                  </a>
+                  <div v-if="asinValue(g.header)" class="asin-cell">
+                    <a
+                      v-if="asinUrl(g.header)"
+                      class="asin-link"
+                      :href="asinUrl(g.header)"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {{ asinValue(g.header) }}
+                    </a>
+                    <button
+                      class="asin-copy-btn"
+                      :class="{ copied: isAsinCopied(g.header) }"
+                      type="button"
+                      @click="copyAsin(g.header)"
+                    >
+                      {{ isAsinCopied(g.header) ? '已复制' : '复制' }}
+                    </button>
+                  </div>
                 </template>
                 <template v-else>{{ getCell(g.header, col.name) }}</template>
               </td>
@@ -1107,15 +1161,25 @@ onMounted(() => {
                     />
                   </template>
                   <template v-else-if="col.name === 'ASIN'">
-                    <a
-                      v-if="asinUrl(child)"
-                      class="asin-link"
-                      :href="asinUrl(child)"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {{ asinValue(child) }}
-                    </a>
+                    <div v-if="asinValue(child)" class="asin-cell">
+                      <a
+                        v-if="asinUrl(child)"
+                        class="asin-link"
+                        :href="asinUrl(child)"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {{ asinValue(child) }}
+                      </a>
+                      <button
+                        class="asin-copy-btn"
+                        :class="{ copied: isAsinCopied(child) }"
+                        type="button"
+                        @click="copyAsin(child)"
+                      >
+                        {{ isAsinCopied(child) ? '已复制' : '复制' }}
+                      </button>
+                    </div>
                   </template>
                   <template v-else>{{ getCell(child, col.name) }}</template>
                 </td>
