@@ -6,6 +6,7 @@ import { computeRestockQty } from './lib/restockRules.js'
 const FIXED_COLS = ['品名', 'ASIN']
 const COL_CONFIG_KEY = 'opa:column-config:v4'
 const SHOP_FILTER_KEY = 'opa:shop-filter:v1'
+const SUPPLY_FILTER_KEY = 'opa:supply-filter:v1'
 const WEEK_KEY = 'opa:current-week:v1'
 const DEV_SESSION_KEY = 'opa:dev-session:v1'
 const FIXED_WIDTHS = { 品名: 260, ASIN: 180 }
@@ -143,6 +144,7 @@ const restockConfig = ref({}) // { monthlyMultiplier, quantityMultiplier, quanti
 
 const customCols = ref([]) // [{ name, visible }]
 const shopFilter = ref('__all__')
+const supplyFilter = ref('__all__')
 const status = ref('正在加载...')
 
 const showFieldPanel = ref(false)
@@ -156,6 +158,7 @@ const importBusy = ref(false)
 const importMessage = ref('')
 const toast = ref({ show: false, text: '', type: 'success' })
 const copiedAsinMap = ref({})
+const noteOverflowMap = ref({})
 const expandedInventoryRows = ref(new Set())
 const compact13Mode = ref(false)
 let toastTimer = null
@@ -178,9 +181,36 @@ const colIndex = computed(() => {
 
 const allRows = computed(() => currentWeek.value?.rows ?? [])
 
+function rowMatchesSupplyFilter(row) {
+  const product = productMap.value.get(row?.asin)
+  const localWarehouse = toNum(product?.localWarehouse)
+  const orderedQty = toNum(product?.orderedQty)
+  const hasLocalWarehouse = Number.isFinite(localWarehouse) && localWarehouse > 0
+  const hasOrderedQty = Number.isFinite(orderedQty) && orderedQty > 0
+  const needRestock = hasRestockNeed(row)
+
+  switch (supplyFilter.value) {
+    case 'need-restock':
+      return needRestock
+    case 'no-restock':
+      return !needRestock
+    case 'ordered':
+      return hasOrderedQty
+    case 'local-warehouse':
+      return hasLocalWarehouse
+    case 'need-restock-no-local-no-ordered':
+      return needRestock && !hasLocalWarehouse && !hasOrderedQty
+    default:
+      return true
+  }
+}
+
 const filteredRows = computed(() => {
-  if (shopFilter.value === '__all__') return allRows.value
-  return allRows.value.filter((r) => getCell(r, '店铺') === shopFilter.value)
+  let rows = allRows.value
+  if (shopFilter.value !== '__all__') {
+    rows = rows.filter((r) => getCell(r, '店铺') === shopFilter.value)
+  }
+  return rows.filter(rowMatchesSupplyFilter)
 })
 
 function getWeekNote(asin) {
@@ -287,6 +317,12 @@ function asinUrl(row) {
   return asin ? `https://www.amazon.com/dp/${encodeURIComponent(asin)}` : ''
 }
 
+function productImageUrl(row) {
+  const fromProduct = productMap.value.get(row?.asin)?.productImage
+  const fromCell = getCell(row, '产品图片')
+  return String(fromProduct || fromCell || '').trim()
+}
+
 async function copyAsin(row) {
   const asin = asinValue(row)
   if (!asin) return
@@ -312,12 +348,29 @@ function isAsinCopied(row) {
   return !!(asin && copiedAsinMap.value[asin])
 }
 
+function updateNoteOverflow(asin, event) {
+  if (!asin) return
+  const input = event?.target
+  if (!(input instanceof HTMLInputElement)) return
+  const text = String(input.value || '').trim()
+  const overflow = !!text && input.scrollWidth > input.clientWidth + 1
+  noteOverflowMap.value = { ...noteOverflowMap.value, [asin]: overflow }
+}
+
+function shouldShowNoteTooltip(asin) {
+  if (!asin) return false
+  const note = getWeekNote(asin)
+  return !!note && !!noteOverflowMap.value[asin]
+}
+
 function toggleInventoryRow(asin) {
   if (!asin) return
-  const set = new Set(expandedInventoryRows.value)
-  if (set.has(asin)) set.delete(asin)
-  else set.add(asin)
-  expandedInventoryRows.value = set
+  const current = expandedInventoryRows.value
+  if (current.has(asin)) {
+    expandedInventoryRows.value = new Set()
+    return
+  }
+  expandedInventoryRows.value = new Set([asin])
 }
 
 function isInventoryRowExpanded(asin) {
@@ -466,26 +519,26 @@ const tableRows = computed(() => {
   return rows
 })
 
-const normalVisibleAsins = computed(() => {
+const nonAbandonedVisibleAsins = computed(() => {
   const set = new Set()
   for (const row of visibleRows.value) {
     const category = productMap.value.get(row.asin)?.category || '正常'
-    if (category !== '正常') continue
+    if (category === '放弃') continue
     const asin = asinValue(row)
     if (asin) set.add(asin)
   }
   return Array.from(set)
 })
 
-async function copyNormalAsins() {
-  const asins = normalVisibleAsins.value
+async function copyNonAbandonedAsins() {
+  const asins = nonAbandonedVisibleAsins.value
   if (!asins.length) {
-    showToast('当前没有可复制的正常 ASIN', 'warn')
+    showToast('当前没有可复制的 ASIN（放弃除外）', 'warn')
     return
   }
   try {
     await writeClipboard(asins.join('\n'))
-    showToast(`已复制 ${asins.length} 个正常 ASIN`)
+    showToast(`已复制 ${asins.length} 个 ASIN（放弃除外）`)
   } catch {
     showToast('批量复制失败，请手动复制', 'error')
   }
@@ -618,7 +671,15 @@ function updateStatus() {
   if (!weeks.value.length) {
     status.value = '尚未导入任何周数据，请点击「扫描并导入」'
   } else {
-    status.value = `订单 ${allRows.value.length} 行 · 店铺 ${shops.value.length} · ASIN ${products.value.length}`
+    const supplyFilterText = {
+      '__all__': '全部',
+      'need-restock': '需要补货',
+      'no-restock': '不需要补货',
+      ordered: '已经下单的',
+      'local-warehouse': '本地仓库有的',
+      'need-restock-no-local-no-ordered': '需要补货且本地没有和没有下单的',
+    }[supplyFilter.value]
+    status.value = `订单 ${allRows.value.length} 行 · 当前 ${filteredRows.value.length} 行 · 店铺 ${shops.value.length} · ASIN ${products.value.length} · 补货筛选 ${supplyFilterText}`
   }
 }
 
@@ -921,6 +982,30 @@ async function patchProduct(asin, patch) {
   }
 }
 
+async function markOrderedArrived(asin) {
+  if (!asin) return
+  const product = productMap.value.get(asin)
+  const localWarehouse = toNum(product?.localWarehouse)
+  const orderedQty = toNum(product?.orderedQty)
+  if (!Number.isFinite(orderedQty) || orderedQty <= 0) return
+
+  await patchProduct(asin, {
+    localWarehouse: (Number.isFinite(localWarehouse) ? localWarehouse : 0) + orderedQty,
+    orderedQty: 0,
+  })
+}
+
+async function markLocalShipped(asin) {
+  if (!asin) return
+  const product = productMap.value.get(asin)
+  const localWarehouse = toNum(product?.localWarehouse)
+  if (!Number.isFinite(localWarehouse) || localWarehouse <= 0) return
+
+  await patchProduct(asin, {
+    localWarehouse: 0,
+  })
+}
+
 /* ================= 导入 ================= */
 async function openImport() {
   showImportPanel.value = true
@@ -1022,6 +1107,15 @@ watch(shopFilter, (v) => {
   } catch {
     /* ignore */
   }
+  updateStatus()
+})
+watch(supplyFilter, (v) => {
+  try {
+    localStorage.setItem(SUPPLY_FILTER_KEY, v)
+  } catch {
+    /* ignore */
+  }
+  updateStatus()
 })
 watch(currentWeekId, async (v) => {
   if (!v) return
@@ -1041,6 +1135,8 @@ onMounted(async () => {
   try {
     const v = localStorage.getItem(SHOP_FILTER_KEY)
     if (v) shopFilter.value = v
+    const supply = localStorage.getItem(SUPPLY_FILTER_KEY)
+    if (supply) supplyFilter.value = supply
   } catch {
     /* ignore */
   }
@@ -1088,6 +1184,16 @@ onBeforeUnmount(() => {
         <option v-for="s in shopNames" :key="s" :value="s">{{ s }}</option>
       </select>
 
+      <span class="tool-label">补货筛选</span>
+      <select class="tool-select" v-model="supplyFilter">
+        <option value="__all__">全部</option>
+        <option value="need-restock">需要补货</option>
+        <option value="no-restock">不需要补货</option>
+        <option value="ordered">已经下单的</option>
+        <option value="local-warehouse">本地仓库有的</option>
+        <option value="need-restock-no-local-no-ordered">需要补货且本地没有和没有下单的</option>
+      </select>
+
       <span class="tool-divider"></span>
 
       <button class="tool-btn primary" type="button" :disabled="importLoading || importBusy" @click="openImport">
@@ -1096,8 +1202,8 @@ onBeforeUnmount(() => {
       </button>
       <button class="tool-btn" type="button" @click="showShopPanel = true">店铺</button>
       <button class="tool-btn" type="button" @click="showProductPanel = true">ASIN</button>
-      <button class="tool-btn" type="button" :disabled="!normalVisibleAsins.length" @click="copyNormalAsins">
-        复制正常ASIN（{{ normalVisibleAsins.length }}）
+      <button class="tool-btn" type="button" :disabled="!nonAbandonedVisibleAsins.length" @click="copyNonAbandonedAsins">
+        复制非放弃ASIN（{{ nonAbandonedVisibleAsins.length }}）
       </button>
 
       <span class="tool-divider"></span>
@@ -1137,7 +1243,14 @@ onBeforeUnmount(() => {
         </thead>
         <tbody>
           <template v-for="item in tableRows" :key="item.row.asin || item.row._rowIndex">
-            <tr :class="['asin-row', { 'row-need-restock': hasRestockNeed(item.row) }]">
+            <tr
+              :class="[
+                item.isGroupHead ? 'parent-row' : 'child-row',
+                isInventoryRowExpanded(item.row.asin) ? 'row-inventory-open' : '',
+                isAbandoned(item.row) ? 'row-abandoned' : '',
+                hasRestockNeed(item.row) ? 'row-need-restock' : '',
+              ]"
+            >
               <td
                 v-for="(col, i) in displayCols"
                 :key="col.name + '-' + (item.row.asin || item.row._rowIndex)"
@@ -1179,13 +1292,18 @@ onBeforeUnmount(() => {
                   />
                 </template>
                 <template v-else-if="editColKey(col.name) === 'note'">
-                  <input
-                    class="cell-input"
-                    type="text"
-                    :value="getWeekNote(item.row.asin)"
-                    placeholder="本周备注"
-                    @change="patchWeekNote(item.row.asin, $event.target.value)"
-                  />
+                  <div class="note-tooltip-wrap">
+                    <input
+                      class="cell-input"
+                      type="text"
+                      :value="getWeekNote(item.row.asin)"
+                      placeholder="本周备注"
+                      @mouseenter="updateNoteOverflow(item.row.asin, $event)"
+                      @focus="updateNoteOverflow(item.row.asin, $event)"
+                      @change="patchWeekNote(item.row.asin, $event.target.value)"
+                    />
+                    <span v-if="shouldShowNoteTooltip(item.row.asin)" class="note-tooltip-bubble">{{ getWeekNote(item.row.asin) }}</span>
+                  </div>
                 </template>
                 <template v-else-if="col.name === 'ASIN'">
                   <div v-if="asinValue(item.row)" class="asin-cell">
@@ -1208,13 +1326,28 @@ onBeforeUnmount(() => {
                     </button>
                     <button
                       class="asin-copy-btn"
-                      :class="{ copied: isInventoryRowExpanded(item.row.asin) }"
+                      :class="{
+                        copied: isInventoryRowExpanded(item.row.asin),
+                        'restock-alert': hasRestockNeed(item.row),
+                      }"
                       type="button"
                       @click="toggleInventoryRow(item.row.asin)"
                     >
                       {{ isInventoryRowExpanded(item.row.asin) ? '收起库存' : '库存详情' }}
                     </button>
                   </div>
+                </template>
+                <template v-else-if="col.name === '产品图片'">
+                  <a
+                    v-if="productImageUrl(item.row)"
+                    :href="productImageUrl(item.row)"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="product-image-link"
+                  >
+                    <img :src="productImageUrl(item.row)" :alt="`${asinValue(item.row)} 产品图片`" class="product-image-thumb" loading="lazy" />
+                  </a>
+                  <span v-else>—</span>
                 </template>
                 <template v-else>{{ getCell(item.row, col.name) }}</template>
               </td>
@@ -1258,16 +1391,38 @@ onBeforeUnmount(() => {
                     />
                   </label>
                   <div class="inventory-item"><span>补货数量</span><strong>{{ getCell(item.row, '补货数量') || '—' }}</strong></div>
-                  <div class="inventory-item inventory-item-image">
+                </div>
+                <div class="inventory-footer-bar">
+                  <div class="inventory-item inventory-item-image inventory-item-image-footer">
                     <span>产品图片</span>
                     <a
-                      v-if="productMap.get(item.row.asin)?.productImage"
-                      :href="productMap.get(item.row.asin)?.productImage"
+                      v-if="productImageUrl(item.row)"
+                      :href="productImageUrl(item.row)"
                       target="_blank"
                       rel="noopener noreferrer"
-                      class="asin-link"
-                    >查看图片</a>
+                      class="product-image-link"
+                    >
+                      <img :src="productImageUrl(item.row)" :alt="`${asinValue(item.row)} 产品图片`" class="product-image-thumb" loading="lazy" />
+                    </a>
                     <strong v-else>—</strong>
+                  </div>
+                  <div class="inventory-btn-group">
+                    <button
+                      class="inventory-arrived-btn"
+                      type="button"
+                      :disabled="!(Number(productMap.get(item.row.asin)?.orderedQty) > 0)"
+                      @click="markOrderedArrived(item.row.asin)"
+                    >
+                      已到库
+                    </button>
+                    <button
+                      class="inventory-shipped-btn"
+                      type="button"
+                      :disabled="!(Number(productMap.get(item.row.asin)?.localWarehouse) > 0)"
+                      @click="markLocalShipped(item.row.asin)"
+                    >
+                      已发出
+                    </button>
                   </div>
                 </div>
               </td>

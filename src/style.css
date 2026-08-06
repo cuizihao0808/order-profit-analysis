@@ -42,11 +42,13 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   width: 100%;
 }
 
 .app.compact-13 {
-  zoom: 0.86;
+  /* Avoid zoom: it breaks sticky headers on some browsers */
 }
 
 .app.compact-13 .topbar {
@@ -117,6 +119,13 @@ body {
 
 .toast-error {
   border-color: #f3c7c5;
+}
+thead,
+thead tr {
+  position: -webkit-sticky;
+  position: sticky;
+  top: 0;
+  z-index: 7;
 }
 
 .toast-icon {
@@ -403,8 +412,10 @@ body {
 /* ===== Table ===== */
 .table-wrap {
   flex: 1;
+  min-height: 0;
   overflow: auto;
   background: var(--panel);
+  position: relative;
 }
 
 table {
@@ -415,9 +426,10 @@ table {
 }
 
 thead th {
+  position: -webkit-sticky;
   position: sticky;
   top: 0;
-  z-index: 2;
+  z-index: 8;
   background: var(--header-bg);
   color: var(--text);
   font-weight: 500;
@@ -460,7 +472,7 @@ tbody tr:hover td {
 }
 
 thead th.row-index {
-  z-index: 3;
+  z-index: 9;
 }
 
 td.num {
@@ -478,7 +490,7 @@ tbody td.fix-left {
 
 thead th.fix-left {
   background: var(--header-bg);
-  z-index: 4;
+  z-index: 10;
 }
 
 /* 冻结列组的右侧边界更明显（在最后一个 fix 列上） */
@@ -596,6 +608,19 @@ thead th.col-expand {
   animation: copy-pop 0.45s ease-out;
 }
 
+.asin-copy-btn.restock-alert {
+  border-color: #d64545;
+  color: #d64545;
+  background: #fff1f1;
+}
+
+.asin-copy-btn.restock-alert:hover,
+.asin-copy-btn.restock-alert.copied {
+  border-color: #c73434;
+  color: #c73434;
+  background: #ffe6e6;
+}
+
 @keyframes copy-pop {
   0% {
     transform: scale(0.96);
@@ -675,6 +700,28 @@ thead th.col-expand {
   gap: 10px;
 }
 
+.inventory-item-image-footer {
+  min-width: 0;
+  margin-right: auto;
+}
+
+.product-image-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #dbe4f2;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.product-image-thumb {
+  display: block;
+  width: 52px;
+  height: 52px;
+  object-fit: cover;
+}
+
 .inventory-input-item {
   padding: 4px 8px;
 }
@@ -685,12 +732,118 @@ thead th.col-expand {
   height: 28px;
 }
 
+.inventory-footer-bar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.inventory-btn-group {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.inventory-arrived-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  flex: 0 0 auto;
+  min-width: 88px;
+  padding: 0 14px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(51, 112, 255, 0.18);
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+
+.inventory-arrived-btn:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  box-shadow: 0 6px 16px rgba(36, 91, 219, 0.24);
+  transform: translateY(-1px);
+}
+
+.inventory-arrived-btn:disabled {
+  cursor: not-allowed;
+  background: #d7dbe3;
+  border-color: #d7dbe3;
+  color: #fff;
+  box-shadow: none;
+  transform: none;
+}
+
+.inventory-shipped-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  flex: 0 0 auto;
+  min-width: 88px;
+  padding: 0 14px;
+  border: 1px solid #dc2626;
+  border-radius: 8px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+
+.inventory-shipped-btn:hover:not(:disabled) {
+  background: #b91c1c;
+  border-color: #b91c1c;
+  box-shadow: 0 6px 16px rgba(185, 28, 28, 0.25);
+  transform: translateY(-1px);
+}
+
+.inventory-shipped-btn:disabled {
+  cursor: not-allowed;
+  background: #d7dbe3;
+  border-color: #d7dbe3;
+  color: #fff;
+  box-shadow: none;
+  transform: none;
+}
+
 tbody tr.row-need-restock td {
   background: #fffbe6;
 }
 
 tbody tr.row-need-restock:hover td {
   background: #fff3bf;
+}
+
+tbody tr.row-inventory-open td {
+  background: #eaf2ff;
+  border-right-color: #c4d4f3;
+  border-bottom-color: #c4d4f3;
+  box-shadow: inset 0 1px 0 #c7d9ff, inset 0 -1px 0 #c7d9ff;
+}
+
+tbody tr.row-inventory-open td:last-child {
+  border-right-color: transparent;
+}
+
+tbody tr.row-inventory-open:hover td {
+  background: #dfeaff;
 }
 
 /* 保证 sticky 单元格的行 hover 背景生效 */
@@ -708,6 +861,13 @@ tbody tr.row-need-restock td.fix-left {
 }
 tbody tr.row-need-restock:hover td.fix-left {
   background: #fff3bf;
+}
+tbody tr.row-inventory-open td.fix-left {
+  background: #eaf2ff;
+  border-right-color: #aebfe6;
+}
+tbody tr.row-inventory-open:hover td.fix-left {
+  background: #dfeaff;
 }
 
 .empty {
@@ -1025,6 +1185,44 @@ tbody tr:hover td.alert-yellow {
 }
 .cell-input[type='number'] {
   text-align: right;
+}
+
+.note-tooltip-wrap {
+  position: relative;
+}
+
+.note-tooltip-bubble {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 6px);
+  z-index: 50;
+  display: none;
+  max-width: 320px;
+  min-width: 120px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(17, 20, 24, 0.94);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: normal;
+  word-break: break-word;
+  box-shadow: 0 8px 24px rgba(10, 12, 16, 0.3);
+  pointer-events: none;
+}
+
+.note-tooltip-bubble::after {
+  content: '';
+  position: absolute;
+  left: 16px;
+  top: 100%;
+  border: 5px solid transparent;
+  border-top-color: rgba(17, 20, 24, 0.94);
+}
+
+.note-tooltip-wrap:hover .note-tooltip-bubble,
+.note-tooltip-wrap:focus-within .note-tooltip-bubble {
+  display: block;
 }
 /* 产品分类的颜色标记 */
 .cell-select.cat-正常 {
