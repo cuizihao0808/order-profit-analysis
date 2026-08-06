@@ -530,6 +530,94 @@ const nonAbandonedVisibleAsins = computed(() => {
   return Array.from(set)
 })
 
+const canExportLocalWarehouseMd = computed(
+  () => shopFilter.value !== '__all__' && supplyFilter.value === 'local-warehouse' && visibleRows.value.length > 0,
+)
+
+function escapeMarkdownCell(value) {
+  return String(value ?? '')
+    .replace(/\|/g, '\\|')
+    .replace(/\r?\n/g, '<br />')
+    .trim()
+}
+
+function productField(row, key, fallback = '') {
+  const value = productMap.value.get(row?.asin)?.[key]
+  return value == null || value === '' ? fallback : value
+}
+
+function buildLocalWarehouseMarkdown() {
+  const PDF_ROWS_PER_PAGE = 18
+  const headers = ['产品图片', '品名', '本地仓库数量', '包装尺寸/cm', '包装类型', '单品重量/g']
+  const rows = visibleRows.value.slice()
+  const pageCount = Math.max(1, Math.ceil(rows.length / PDF_ROWS_PER_PAGE))
+  const exportShopName = shopMdNameByName.value.get(shopFilter.value) || shopFilter.value
+  const lines = [
+    `# ${exportShopName} 本地仓库清单`,
+    '',
+    `周次：${currentWeekId.value || '—'}`,
+    `总行数：${rows.length}`,
+    `建议分页：每页 ${PDF_ROWS_PER_PAGE} 行（共 ${pageCount} 页）`,
+    '',
+    '<!-- PDF分页辅助：多数 Markdown 转 PDF 工具会识别下方 page-break -->',
+    '<style>',
+    'table { width: 100%; border-collapse: collapse; }',
+    'tr { page-break-inside: avoid; }',
+    '.page-break { page-break-after: always; break-after: page; }',
+    '</style>',
+  ]
+
+  for (let page = 0; page < pageCount; page++) {
+    if (page > 0) {
+      lines.push('', '<div class="page-break"></div>', '')
+    }
+
+    lines.push(`## 第 ${page + 1} 页 / 共 ${pageCount} 页`, '')
+    lines.push(`| ${headers.join(' | ')} |`)
+    lines.push(`| ${headers.map(() => '---').join(' | ')} |`)
+
+    const start = page * PDF_ROWS_PER_PAGE
+    const pageRows = rows.slice(start, start + PDF_ROWS_PER_PAGE)
+    for (const row of pageRows) {
+      const imageUrl = productImageUrl(row)
+      const imageCell = imageUrl ? `<img src="${escapeMarkdownCell(imageUrl)}" alt="${escapeMarkdownCell(asinValue(row))}" width="72" />` : ''
+      const name = escapeMarkdownCell(getCell(row, '品名'))
+      const localWarehouse = escapeMarkdownCell(productField(row, 'localWarehouse', 0))
+      const packageSize = escapeMarkdownCell(productField(row, 'packageSize') || productField(row, 'packageSize1') || productField(row, 'packageSize2'))
+      const packageType = escapeMarkdownCell(productField(row, 'packageType') || productField(row, 'packageType1') || productField(row, 'packageType2'))
+      const itemWeight = escapeMarkdownCell(productField(row, 'itemWeight'))
+      lines.push(`| ${imageCell} | ${name} | ${localWarehouse} | ${packageSize} | ${packageType} | ${itemWeight} |`)
+    }
+  }
+
+  return { content: lines.join('\n'), pageCount }
+}
+
+function downloadTextFile(filename, content, mimeType) {
+  const blob = new Blob([content], { type: mimeType })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
+
+function exportLocalWarehouseMd() {
+  if (!canExportLocalWarehouseMd.value) {
+    showToast('请先选择单个店铺，并切换到“本地仓库有的”筛选', 'warn')
+    return
+  }
+  const { content, pageCount } = buildLocalWarehouseMarkdown()
+  const exportShopName = shopMdNameByName.value.get(shopFilter.value) || shopFilter.value
+  const safeShopName = exportShopName.replace(/[\\/:*?"<>|]/g, '-').trim() || '店铺'
+  const safeWeek = (currentWeekId.value || '周次').replace(/[\\/:*?"<>|]/g, '-')
+  downloadTextFile(`${safeWeek}-${safeShopName}-本地仓库.md`, content, 'text/markdown;charset=utf-8')
+  showToast(`已导出 ${visibleRows.value.length} 行本地仓库 MD（${pageCount} 页）`, 'success')
+}
+
 async function copyNonAbandonedAsins() {
   const asins = nonAbandonedVisibleAsins.value
   if (!asins.length) {
@@ -587,6 +675,14 @@ const numericColumns = computed(() => {
 const groupCount = computed(() => groups.value.length)
 const asinCount = computed(() => tableRows.value.length)
 const shopNames = computed(() => shops.value.map((s) => s.name))
+const shopMdNameByName = computed(() => {
+  const map = new Map()
+  for (const shop of shops.value) {
+    const mdName = String(shop?.mdExportName || '').trim()
+    map.set(shop.name, mdName || shop.name)
+  }
+  return map
+})
 
 function fixedLeft(displayIndex) {
   let left = 0
@@ -1205,6 +1301,9 @@ onBeforeUnmount(() => {
       <button class="tool-btn" type="button" :disabled="!nonAbandonedVisibleAsins.length" @click="copyNonAbandonedAsins">
         复制非放弃ASIN（{{ nonAbandonedVisibleAsins.length }}）
       </button>
+      <button class="tool-btn" type="button" :disabled="!canExportLocalWarehouseMd" @click="exportLocalWarehouseMd">
+        导出本地仓库MD
+      </button>
 
       <span class="tool-divider"></span>
 
@@ -1360,9 +1459,9 @@ onBeforeUnmount(() => {
                   <div class="inventory-item"><span>不可售</span><strong>{{ getCell(item.row, '不可售') || '—' }}</strong></div>
                   <div class="inventory-item"><span>预留</span><strong>{{ getCell(item.row, '预留') || '—' }}</strong></div>
                   <div class="inventory-item"><span>FBA总量</span><strong>{{ getCell(item.row, 'FBA总量') || '—' }}</strong></div>
-                  <div class="inventory-item"><span>包装尺寸</span><strong>{{ productMap.get(item.row.asin)?.packageSize || productMap.get(item.row.asin)?.packageSize1 || productMap.get(item.row.asin)?.packageSize2 || '—' }}</strong></div>
+                  <div class="inventory-item"><span>包装尺寸/cm</span><strong>{{ productMap.get(item.row.asin)?.packageSize || productMap.get(item.row.asin)?.packageSize1 || productMap.get(item.row.asin)?.packageSize2 || '—' }}</strong></div>
                   <div class="inventory-item"><span>包装类型</span><strong>{{ productMap.get(item.row.asin)?.packageType || productMap.get(item.row.asin)?.packageType1 || productMap.get(item.row.asin)?.packageType2 || '—' }}</strong></div>
-                  <div class="inventory-item"><span>单品重量(g)</span><strong>{{ productMap.get(item.row.asin)?.itemWeight || '—' }}</strong></div>
+                  <div class="inventory-item"><span>单品重量/g</span><strong>{{ productMap.get(item.row.asin)?.itemWeight || '—' }}</strong></div>
                   <label class="inventory-item inventory-input-item">
                     <span>本地仓库</span>
                     <input

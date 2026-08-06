@@ -2,18 +2,21 @@
   {
     "id": "shop-1",
     "name": "CZH-主店一号",
+    "mdExportName": "一号店",
     "country": "美国",
     "note": ""
   },
   {
     "id": "shop-2",
     "name": "TZH-主店二号",
+    "mdExportName": "二号店",
     "country": "美国",
     "note": ""
   },
   {
     "id": "shop-3",
     "name": "LPH-主店三号-US",
+    "mdExportName": "三号店",
     "country": "美国",
     "note": ""
   }
