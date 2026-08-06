@@ -1,18 +1,20 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computeRestockQty } from './lib/restockRules.js'
 
 /* ================= 常量 ================= */
 const FIXED_COLS = ['品名', 'ASIN']
 const COL_CONFIG_KEY = 'opa:column-config:v4'
 const SHOP_FILTER_KEY = 'opa:shop-filter:v1'
 const WEEK_KEY = 'opa:current-week:v1'
-const FIXED_WIDTHS = { 品名: 260, ASIN: 188 }
+const DEV_SESSION_KEY = 'opa:dev-session:v1'
+const FIXED_WIDTHS = { 品名: 260, ASIN: 180 }
 const EXPAND_COL_WIDTH = 40
 
 /**
  * ASIN 主数据字段（存于 src/data/products/{shopId}.json）
  * 仅保留下列主属性，其余属性从 xlsx 快照取：
- *   asin / parentAsin / name / category / restockCycle / stock
+ *   asin / parentAsin / name / category / restockCycle / inventory fields
  */
 const MASTER_COL_TO_KEY = {
   ASIN: 'asin',
@@ -32,8 +34,19 @@ const CATEGORY_OPTIONS = ['正常', '观望', '断货', '放弃']
 const EXTRA_COLS = [
   { name: '备注', key: 'note', type: 'edit-week-text' },
   { name: '产品分类', key: 'category', type: 'edit-select', options: CATEGORY_OPTIONS },
+  { name: '月销量', key: 'monthSales', type: 'display-num' },
+  { name: '月销售额', key: 'monthRevenue', type: 'display-num' },
+  { name: '月订单数', key: 'monthOrders', type: 'display-num' },
+  { name: '日均销量', key: 'dailySales', type: 'display-num' },
+  { name: 'Vine赠品销量', key: 'vineGiftSales', type: 'display-num' },
+  { name: '可售', key: 'sellable', type: 'display-num' },
+  { name: '入库中', key: 'inbound', type: 'display-num' },
+  { name: '不可售', key: 'unsellable', type: 'display-num' },
+  { name: '预留', key: 'reserved', type: 'display-num' },
+  { name: 'FBA总量', key: 'fbaTotal', type: 'display-num' },
+  { name: '本地仓库', key: 'localWarehouse', type: 'edit-num' },
+  { name: '已下单', key: 'orderedQty', type: 'edit-num' },
   { name: '补货用时', key: 'restockCycle', type: 'edit-num' },
-  { name: '库存数量', key: 'stock', type: 'edit-num' },
   { name: 'ROI', key: 'roi', type: 'calc' },
   { name: '补货数量', key: 'restockQty', type: 'calc' },
 ]
@@ -55,25 +68,42 @@ function isCalcCol(name) {
   return EXTRA_COL_BY_NAME[name]?.type === 'calc'
 }
 
+function displayColName(name) {
+  return name === '销量' ? '周销量' : name
+}
+
 /** 默认可见列（不含固定列），遵守需求顺序 */
 const DEFAULT_VISIBLE_ORDER = [
-  '备注',
   '产品分类',
   '销量',
+  '月销量',
+  '月销售额',
+  '月订单数',
+  '日均销量',
+  'Vine赠品销量',
   '采购成本',
   '毛利润',
   '广告费率',
   'ROI',
   '退货率',
   '退款率',
-  '补货用时',
-  '库存数量',
-  '补货数量',
+  '备注',
 ]
 const DEFAULT_VISIBLE_SET = new Set(DEFAULT_VISIBLE_ORDER)
 
 function ensureColumnsOrder(cols) {
   const arr = Array.isArray(cols) ? cols.slice() : []
+
+  const salesIdx = arr.findIndex((c) => c?.name === '销量')
+  if (salesIdx >= 0) {
+    const tailNames = ['月销量', '月销售额', '月订单数', '日均销量', 'Vine赠品销量']
+    const picked = []
+    for (const name of tailNames) {
+      const idx = arr.findIndex((c) => c?.name === name)
+      if (idx >= 0) picked.push(arr.splice(idx, 1)[0])
+    }
+    arr.splice(salesIdx + 1, 0, ...picked)
+  }
 
   const roiIdx = arr.findIndex((c) => c?.name === 'ROI')
   if (roiIdx >= 0) {
@@ -86,15 +116,12 @@ function ensureColumnsOrder(cols) {
     arr.splice(roiIdx + 1, 0, ...picked)
   }
 
-  const restockName = '补货用时'
-  const stockName = '库存数量'
-  const restockIdx = arr.findIndex((c) => c?.name === restockName)
-  const stockIdx = arr.findIndex((c) => c?.name === stockName)
-  if (restockIdx >= 0 && stockIdx >= 0 && restockIdx > stockIdx) {
-    const [restockCol] = arr.splice(restockIdx, 1)
-    const nextStockIdx = arr.findIndex((c) => c?.name === stockName)
-    if (nextStockIdx >= 0) arr.splice(nextStockIdx, 0, restockCol)
+  const noteIdx = arr.findIndex((c) => c?.name === '备注')
+  if (noteIdx >= 0) {
+    const [noteCol] = arr.splice(noteIdx, 1)
+    arr.push(noteCol)
   }
+
   return arr
 }
 
@@ -116,7 +143,6 @@ const restockConfig = ref({}) // { monthlyMultiplier, quantityMultiplier, quanti
 
 const customCols = ref([]) // [{ name, visible }]
 const shopFilter = ref('__all__')
-const expandedGroups = ref(new Set())
 const status = ref('正在加载...')
 
 const showFieldPanel = ref(false)
@@ -130,8 +156,15 @@ const importBusy = ref(false)
 const importMessage = ref('')
 const toast = ref({ show: false, text: '', type: 'success' })
 const copiedAsinMap = ref({})
+const expandedInventoryRows = ref(new Set())
+const compact13Mode = ref(false)
 let toastTimer = null
 const copyResetTimers = new Map()
+
+function updateCompact13Mode() {
+  if (typeof window === 'undefined') return
+  compact13Mode.value = window.innerWidth <= 1440 && window.innerHeight <= 900
+}
 
 /* ================= 派生数据 ================= */
 const productMap = computed(() => new Map(products.value.map((p) => [p.asin, p])))
@@ -190,9 +223,9 @@ async function patchWeekNote(asin, note) {
 
 /** 单元格取值：
  *  1. 主字段（品名/ASIN/父ASIN）优先取 products.json，其次 xlsx
- *  2. 扩展字段（产品分类/补货用时/库存数量）取 products.json
+ *  2. 扩展字段（产品分类/库存明细/补货用时）取 products.json
  *  3. ROI = ROUND(毛利润 / 采购成本, 2)
- *  4. 补货数量 = IF(库存数量 < 销量*(12+补货用时), 销量*4*0.8, '无需补货')
+ *  4. 补货数量 = IF(FBA总量 < 销量*(12+补货用时), 销量*4*0.8, '无需补货')
  *  5. 其余取 xlsx 快照
  */
 function getCell(row, colName) {
@@ -220,24 +253,12 @@ function getCell(row, colName) {
         return (Math.round((profit / cost) * 100) / 100).toFixed(2)
       }
       if (extra.key === 'restockQty') {
-        const stock = toNum(product?.stock)
-        const sales = toNum(row.values[colIndex.value['销量']])
-        const cycle = toNum(product?.restockCycle)
-        if (!Number.isFinite(stock) || !Number.isFinite(sales) || !Number.isFinite(cycle)) return ''
-        if (sales <= 0) return '无需补货'
-        const restockMonths = restockConfig.value.restockMonths || 12
-        const restockMultiplier = restockConfig.value.restockMultiplier || 4
-        const monthlyThreshold = restockConfig.value.monthlyThreshold || 1
-        const doubleRestockMultiplier = restockConfig.value.doubleRestockMultiplier || 8
-        const quantityDiscount = restockConfig.value.quantityDiscount || 0.8
-        const threshold = sales * (restockMonths + cycle)
-        if (stock < threshold) {
-          // 检查是否库存不足指定月份，如果是则使用双倍补货倍数
-          const monthlyStock = sales * 4
-          const multiplier = stock < monthlyStock * monthlyThreshold ? doubleRestockMultiplier : restockMultiplier
-          return String(Math.round(sales * multiplier * quantityDiscount))
-        }
-        return '无需补货'
+        return computeRestockQty({
+          fbaTotal: toNum(product?.fbaTotal),
+          sales: toNum(row.values[colIndex.value['销量']]),
+          cycle: toNum(product?.restockCycle),
+          config: restockConfig.value,
+        })
       }
       return ''
     }
@@ -270,19 +291,7 @@ async function copyAsin(row) {
   const asin = asinValue(row)
   if (!asin) return
   try {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(asin)
-    } else {
-      const ta = document.createElement('textarea')
-      ta.value = asin
-      ta.setAttribute('readonly', '')
-      ta.style.position = 'absolute'
-      ta.style.left = '-9999px'
-      document.body.appendChild(ta)
-      ta.select()
-      document.execCommand('copy')
-      document.body.removeChild(ta)
-    }
+    await writeClipboard(asin)
     copiedAsinMap.value = { ...copiedAsinMap.value, [asin]: true }
     if (copyResetTimers.has(asin)) clearTimeout(copyResetTimers.get(asin))
     const timer = setTimeout(() => {
@@ -301,6 +310,34 @@ async function copyAsin(row) {
 function isAsinCopied(row) {
   const asin = asinValue(row)
   return !!(asin && copiedAsinMap.value[asin])
+}
+
+function toggleInventoryRow(asin) {
+  if (!asin) return
+  const set = new Set(expandedInventoryRows.value)
+  if (set.has(asin)) set.delete(asin)
+  else set.add(asin)
+  expandedInventoryRows.value = set
+}
+
+function isInventoryRowExpanded(asin) {
+  return !!(asin && expandedInventoryRows.value.has(asin))
+}
+
+async function writeClipboard(text) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text)
+    return
+  }
+  const ta = document.createElement('textarea')
+  ta.value = text
+  ta.setAttribute('readonly', '')
+  ta.style.position = 'absolute'
+  ta.style.left = '-9999px'
+  document.body.appendChild(ta)
+  ta.select()
+  document.execCommand('copy')
+  document.body.removeChild(ta)
 }
 
 /** 判断某行是否被标记为「放弃」 */
@@ -356,37 +393,103 @@ function profitValue(row) {
   return Number.isFinite(n) ? n : Number.NEGATIVE_INFINITY
 }
 
+function normalizeAsinKey(v) {
+  return String(v || '')
+    .trim()
+    .toUpperCase()
+}
+
+function groupParentKey(row) {
+  if (!row) return ''
+  const rawParent = colIndex.value['父ASIN'] != null ? row.values[colIndex.value['父ASIN']] : ''
+  const parent = normalizeAsinKey(rawParent)
+  if (parent) return parent
+  const fromProduct = normalizeAsinKey(productMap.value.get(row.asin)?.parentAsin)
+  if (fromProduct) return fromProduct
+  return normalizeAsinKey(row.asin) || normalizeAsinKey(getCell(row, 'ASIN'))
+}
+
+function rowAsinKey(row) {
+  return normalizeAsinKey(row?.asin)
+}
+
 /**
  * 按 父ASIN 分组
- * - 父体（header）已放弃 → 整组隐藏
- * - 子体已放弃 → 该子体隐藏
+ * - 同父 ASIN 的记录强制聚合为同一组
+ * - 主表不展示「放弃」分类的 ASIN
  */
 const groups = computed(() => {
-  const list = filteredRows.value
+  const list = filteredRows.value.filter((row) => !isAbandoned(row))
   if (!list.length) return []
 
   const map = new Map()
   for (const row of list) {
-    const parent = getCell(row, '父ASIN') || row.asin || ''
+    const parent = groupParentKey(row)
+    if (!parent) continue
     if (!map.has(parent)) map.set(parent, [])
     map.get(parent).push(row)
   }
 
   const result = []
   for (const [key, rows] of map) {
-    let headerRow = rows.find((r) => r.asin === key)
+    const sorted = rows.slice().sort((a, b) => profitValue(b) - profitValue(a))
+    let headerRow = sorted.find((r) => rowAsinKey(r) === key)
+    if (!headerRow) headerRow = sorted[0]
     let children
-    if (headerRow) children = rows.filter((r) => r !== headerRow)
-    else {
-      headerRow = rows[0]
-      children = rows.slice(1)
-    }
-    if (isAbandoned(headerRow)) continue
-    children = children.filter((r) => !isAbandoned(r)).sort((a, b) => profitValue(b) - profitValue(a))
+    children = sorted.filter((r) => r !== headerRow)
     result.push({ key, header: headerRow, children })
   }
   return result.sort((a, b) => profitValue(b.header) - profitValue(a.header))
 })
+
+const visibleRows = computed(() => {
+  const rows = []
+  for (const g of groups.value) {
+    rows.push(g.header)
+    rows.push(...g.children)
+  }
+  return rows
+})
+
+const tableRows = computed(() => {
+  const rows = []
+  for (const g of groups.value) {
+    let members = [g.header, ...g.children]
+    if (members.length > 1) {
+      members = members.filter((r) => rowAsinKey(r) !== g.key)
+      if (!members.length) members = [g.header, ...g.children]
+    }
+    members.forEach((row, idx) => {
+      rows.push({ row, isGroupHead: idx === 0, groupSize: members.length })
+    })
+  }
+  return rows
+})
+
+const normalVisibleAsins = computed(() => {
+  const set = new Set()
+  for (const row of visibleRows.value) {
+    const category = productMap.value.get(row.asin)?.category || '正常'
+    if (category !== '正常') continue
+    const asin = asinValue(row)
+    if (asin) set.add(asin)
+  }
+  return Array.from(set)
+})
+
+async function copyNormalAsins() {
+  const asins = normalVisibleAsins.value
+  if (!asins.length) {
+    showToast('当前没有可复制的正常 ASIN', 'warn')
+    return
+  }
+  try {
+    await writeClipboard(asins.join('\n'))
+    showToast(`已复制 ${asins.length} 个正常 ASIN`)
+  } catch {
+    showToast('批量复制失败，请手动复制', 'error')
+  }
+}
 
 const displayCols = computed(() => {
   const cols = currentWeek.value?.columns ?? []
@@ -428,36 +531,29 @@ const numericColumns = computed(() => {
   return result
 })
 
-const rowCount = computed(() => groups.value.length)
-const childCount = computed(() =>
-  groups.value.reduce((s, g) => s + g.children.length, 0),
-)
+const groupCount = computed(() => groups.value.length)
+const asinCount = computed(() => tableRows.value.length)
 const shopNames = computed(() => shops.value.map((s) => s.name))
 
 function fixedLeft(displayIndex) {
-  let left = EXPAND_COL_WIDTH
+  let left = 0
+  const widthMap = compact13Mode.value ? { 品名: 220, ASIN: 150 } : FIXED_WIDTHS
   for (let i = 0; i < displayIndex; i++) {
     const name = FIXED_COLS[i]
-    left += FIXED_WIDTHS[name] ?? 120
+    left += widthMap[name] ?? 120
   }
   return left + 'px'
 }
 
 function fixedColStyle(displayIndex, colName) {
-  const width = FIXED_WIDTHS[colName] ?? 120
+  const widthMap = compact13Mode.value ? { 品名: 220, ASIN: 150 } : FIXED_WIDTHS
+  const width = widthMap[colName] ?? 120
   return {
     left: fixedLeft(displayIndex),
     width: width + 'px',
     minWidth: width + 'px',
     maxWidth: width + 'px',
   }
-}
-
-const expandColStyle = {
-  left: '0px',
-  width: EXPAND_COL_WIDTH + 'px',
-  minWidth: EXPAND_COL_WIDTH + 'px',
-  maxWidth: EXPAND_COL_WIDTH + 'px',
 }
 
 /* ================= 加载 ================= */
@@ -534,6 +630,29 @@ function showToast(text, type = 'success') {
   }, 2400)
 }
 
+async function clearCacheOnDevServerRestart() {
+  if (!import.meta.env.DEV) return
+  try {
+    const r = await fetch('/api/dev-session', { cache: 'no-store' })
+    if (!r.ok) return
+    const data = await r.json()
+    const sessionId = String(data?.sessionId || '')
+    if (!sessionId) return
+    const prev = localStorage.getItem(DEV_SESSION_KEY) || ''
+    if (prev === sessionId) return
+
+    const keys = []
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key && key.startsWith('opa:')) keys.push(key)
+    }
+    for (const key of keys) localStorage.removeItem(key)
+    localStorage.setItem(DEV_SESSION_KEY, sessionId)
+  } catch {
+    // ignore cache clear failures in dev
+  }
+}
+
 /* ================= 列配置持久化 ================= */
 function loadStoredConfig() {
   try {
@@ -589,20 +708,6 @@ function mergeCustomCols(xlsxCols) {
 }
 
 /* ================= 交互 ================= */
-function toggleGroup(key) {
-  const s = new Set(expandedGroups.value)
-  if (s.has(key)) s.delete(key)
-  else s.add(key)
-  expandedGroups.value = s
-}
-function expandAll() {
-  const s = new Set()
-  for (const g of groups.value) if (g.children.length) s.add(g.key)
-  expandedGroups.value = s
-}
-function collapseAll() {
-  expandedGroups.value = new Set()
-}
 
 function moveCol(idx, delta) {
   const next = idx + delta
@@ -820,11 +925,19 @@ async function patchProduct(asin, patch) {
 async function openImport() {
   showImportPanel.value = true
   importResult.value = null
-  importMessage.value = '正在扫描 xlsx...'
+  importMessage.value = '正在扫描周目录...'
   importLoading.value = true
   try {
     const r = await fetch('/api/scan', { cache: 'no-store' })
     importScan.value = r.ok ? await r.json() : { unimported: [], imported: [] }
+    if (!Array.isArray(importScan.value.imported) || !importScan.value.imported.length) {
+      const wk = await fetch('/api/weeks', { cache: 'no-store' })
+      const weekList = wk.ok ? await wk.json() : []
+      importScan.value = {
+        ...importScan.value,
+        imported: Array.isArray(weekList) ? weekList : [],
+      }
+    }
     importMessage.value = importScan.value.unimported.length
       ? `扫描完成，发现 ${importScan.value.unimported.length} 个待导入文件`
       : '扫描完成，没有待导入文件'
@@ -836,14 +949,14 @@ async function openImport() {
   }
 }
 
-async function doImport(files) {
+async function doImport(weekIds) {
   importBusy.value = true
-  importMessage.value = `正在导入 ${files.length} 个文件...`
+  importMessage.value = `正在导入 ${weekIds.length} 个周次...`
   try {
     const r = await fetch('/api/import', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ files }),
+      body: JSON.stringify({ weekIds }),
     })
     const data = await r.json()
     importResult.value = data.results
@@ -856,6 +969,14 @@ async function doImport(files) {
     // 刷新扫描列表
     const r2 = await fetch('/api/scan', { cache: 'no-store' })
     importScan.value = r2.ok ? await r2.json() : { unimported: [], imported: [] }
+    if (!Array.isArray(importScan.value.imported) || !importScan.value.imported.length) {
+      const wk = await fetch('/api/weeks', { cache: 'no-store' })
+      const weekList = wk.ok ? await wk.json() : []
+      importScan.value = {
+        ...importScan.value,
+        imported: Array.isArray(weekList) ? weekList : [],
+      }
+    }
     const okCount = (data.results || []).filter((x) => !x.error).length
     const failCount = (data.results || []).filter((x) => x.error).length
     importMessage.value = failCount
@@ -879,7 +1000,7 @@ async function doImport(files) {
 }
 
 async function deleteWeek(week) {
-  if (!confirm(`确定删除周次「${week.filename}」的快照？（xlsx 文件不受影响，可再次导入）`)) return
+  if (!confirm(`确定删除周次「${week.filename}」的快照？（public/data 周目录文件不受影响，可再次导入）`)) return
   const r = await fetch(`/api/weeks/${encodeURIComponent(week.id)}`, { method: 'DELETE' })
   if (r.ok) {
     await loadWeeks()
@@ -913,7 +1034,10 @@ watch(currentWeekId, async (v) => {
   updateStatus()
 })
 
-onMounted(() => {
+onMounted(async () => {
+  updateCompact13Mode()
+  window.addEventListener('resize', updateCompact13Mode)
+  await clearCacheOnDevServerRestart()
   try {
     const v = localStorage.getItem(SHOP_FILTER_KEY)
     if (v) shopFilter.value = v
@@ -924,13 +1048,14 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  window.removeEventListener('resize', updateCompact13Mode)
   for (const t of copyResetTimers.values()) clearTimeout(t)
   copyResetTimers.clear()
 })
 </script>
 
 <template>
-  <div class="app">
+  <div class="app" :class="{ 'compact-13': compact13Mode }">
     <div v-if="toast.show" class="toast" :class="`toast-${toast.type}`">
       <span class="loading-dot toast-icon">✓</span>
       <span>{{ toast.text }}</span>
@@ -951,7 +1076,7 @@ onBeforeUnmount(() => {
       <select class="tool-select" v-model="currentWeekId" :disabled="!weeks.length">
         <option v-if="!weeks.length" value="">暂无</option>
         <option v-for="w in weeks" :key="w.id" :value="w.id">
-          {{ w.startDate }} ~ {{ w.endDate }}（{{ w.rowCount }} 行）
+          {{ w.id }} · {{ w.startDate }} ~ {{ w.endDate }}（{{ w.rowCount }} 行）
         </option>
       </select>
 
@@ -971,11 +1096,9 @@ onBeforeUnmount(() => {
       </button>
       <button class="tool-btn" type="button" @click="showShopPanel = true">店铺</button>
       <button class="tool-btn" type="button" @click="showProductPanel = true">ASIN</button>
-
-      <span class="tool-divider"></span>
-
-      <button class="tool-btn" type="button" @click="expandAll">展开</button>
-      <button class="tool-btn" type="button" @click="collapseAll">收起</button>
+      <button class="tool-btn" type="button" :disabled="!normalVisibleAsins.length" @click="copyNormalAsins">
+        复制正常ASIN（{{ normalVisibleAsins.length }}）
+      </button>
 
       <span class="tool-divider"></span>
 
@@ -985,14 +1108,14 @@ onBeforeUnmount(() => {
     </div>
 
     <div class="metabar">
-      <div class="pill">父 ASIN {{ rowCount }}</div>
-      <div class="pill">子 ASIN {{ childCount }}</div>
+      <div class="pill">父ASIN组 {{ groupCount }}</div>
+      <div class="pill">ASIN {{ asinCount }}</div>
       <div class="pill" v-if="shopFilter !== '__all__'">当前店铺：{{ shopFilter }}</div>
       <div class="status">{{ status }}</div>
     </div>
 
     <div class="table-wrap">
-      <div v-if="!currentWeek || !groups.length" class="empty">
+      <div v-if="!currentWeek || !tableRows.length" class="empty">
         {{
           !weeks.length
             ? '尚未导入任何周数据，点击右上「扫描并导入」开始'
@@ -1002,35 +1125,23 @@ onBeforeUnmount(() => {
       <table v-else>
         <thead>
           <tr>
-            <th class="col-expand fix-left" :style="expandColStyle"></th>
             <th
               v-for="(col, i) in displayCols"
               :key="col.name"
               :class="{ 'fix-left': col.fixed, 'fix-last': col.fixed && col.name === 'ASIN' }"
               :style="col.fixed ? fixedColStyle(i, col.name) : null"
             >
-              {{ col.name }}
+              {{ displayColName(col.name) }}
             </th>
           </tr>
         </thead>
         <tbody>
-          <template v-for="g in groups" :key="g.key">
-            <tr :class="['parent-row', { 'row-need-restock': hasRestockNeed(g.header) }]">
-              <td class="col-expand fix-left" :style="expandColStyle">
-                <button
-                  v-if="g.children.length"
-                  class="expand-btn"
-                  :class="{ open: expandedGroups.has(g.key) }"
-                  type="button"
-                  @click="toggleGroup(g.key)"
-                >
-                  ▶
-                </button>
-              </td>
+          <template v-for="item in tableRows" :key="item.row.asin || item.row._rowIndex">
+            <tr :class="['asin-row', { 'row-need-restock': hasRestockNeed(item.row) }]">
               <td
                 v-for="(col, i) in displayCols"
-                :key="col.name"
-                :class="[cellAlertClass(g.header, col.name), {
+                :key="col.name + '-' + (item.row.asin || item.row._rowIndex)"
+                :class="[cellAlertClass(item.row, col.name), {
                   'fix-left': col.fixed,
                   'fix-last': col.fixed && col.name === 'ASIN',
                   num: numericColumns[col.name],
@@ -1039,19 +1150,12 @@ onBeforeUnmount(() => {
                 }]"
                 :style="col.fixed ? fixedColStyle(i, col.name) : null"
               >
-                <span
-                  v-if="col.name === '品名' && g.children.length"
-                  class="badge-count"
-                  :title="`共 ${g.children.length + 1} 个 ASIN`"
-                >
-                  {{ g.children.length + 1 }}
-                </span>
                 <template v-if="editColKey(col.name) === 'category'">
                   <select
                     class="cell-select"
-                    :class="'cat-' + (productMap.get(g.header.asin)?.category || '正常')"
-                    :value="productMap.get(g.header.asin)?.category || '正常'"
-                    @change="patchProduct(g.header.asin, { category: $event.target.value })"
+                    :class="'cat-' + (productMap.get(item.row.asin)?.category || '正常')"
+                    :value="productMap.get(item.row.asin)?.category || '正常'"
+                    @change="patchProduct(item.row.asin, { category: $event.target.value })"
                   >
                     <option v-for="opt in CATEGORY_OPTIONS" :key="opt" :value="opt">{{ opt }}</option>
                   </select>
@@ -1060,131 +1164,114 @@ onBeforeUnmount(() => {
                   <input
                     class="cell-input"
                     type="text"
-                    :value="productMap.get(g.header.asin)?.name ?? ''"
-                    @change="patchProduct(g.header.asin, { name: $event.target.value.trim() })"
+                    :value="productMap.get(item.row.asin)?.name ?? ''"
+                    @change="patchProduct(item.row.asin, { name: $event.target.value.trim() })"
                   />
                 </template>
-                <template v-else-if="editColKey(col.name) === 'restockCycle' || editColKey(col.name) === 'stock'">
+                <template
+                  v-else-if="editColKey(col.name) === 'restockCycle' || editColKey(col.name) === 'localWarehouse' || editColKey(col.name) === 'orderedQty'"
+                >
                   <input
                     class="cell-input"
                     type="number"
-                    :value="productMap.get(g.header.asin)?.[editColKey(col.name)] ?? ''"
-                    @change="patchProduct(g.header.asin, { [editColKey(col.name)]: $event.target.value === '' ? '' : Number($event.target.value) })"
+                    :value="productMap.get(item.row.asin)?.[editColKey(col.name)] ?? ''"
+                    @change="patchProduct(item.row.asin, { [editColKey(col.name)]: $event.target.value === '' ? '' : Number($event.target.value) })"
                   />
                 </template>
                 <template v-else-if="editColKey(col.name) === 'note'">
                   <input
                     class="cell-input"
                     type="text"
-                    :value="getWeekNote(g.header.asin)"
+                    :value="getWeekNote(item.row.asin)"
                     placeholder="本周备注"
-                    @change="patchWeekNote(g.header.asin, $event.target.value)"
+                    @change="patchWeekNote(item.row.asin, $event.target.value)"
                   />
                 </template>
                 <template v-else-if="col.name === 'ASIN'">
-                  <div v-if="asinValue(g.header)" class="asin-cell">
+                  <div v-if="asinValue(item.row)" class="asin-cell">
                     <a
-                      v-if="asinUrl(g.header)"
+                      v-if="asinUrl(item.row)"
                       class="asin-link"
-                      :href="asinUrl(g.header)"
+                      :href="asinUrl(item.row)"
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      {{ asinValue(g.header) }}
+                      {{ asinValue(item.row) }}
                     </a>
                     <button
                       class="asin-copy-btn"
-                      :class="{ copied: isAsinCopied(g.header) }"
+                      :class="{ copied: isAsinCopied(item.row) }"
                       type="button"
-                      @click="copyAsin(g.header)"
+                      @click="copyAsin(item.row)"
                     >
-                      {{ isAsinCopied(g.header) ? '已复制' : '复制' }}
+                      {{ isAsinCopied(item.row) ? '已复制' : '复制' }}
+                    </button>
+                    <button
+                      class="asin-copy-btn"
+                      :class="{ copied: isInventoryRowExpanded(item.row.asin) }"
+                      type="button"
+                      @click="toggleInventoryRow(item.row.asin)"
+                    >
+                      {{ isInventoryRowExpanded(item.row.asin) ? '收起库存' : '库存详情' }}
                     </button>
                   </div>
                 </template>
-                <template v-else>{{ getCell(g.header, col.name) }}</template>
+                <template v-else>{{ getCell(item.row, col.name) }}</template>
               </td>
             </tr>
-            <template v-if="expandedGroups.has(g.key)">
-              <tr
-                v-for="child in g.children"
-                :key="child.asin || child._rowIndex"
-                :class="['child-row', { 'row-need-restock': hasRestockNeed(child) }]"
-              >
-                <td class="col-expand fix-left" :style="expandColStyle"></td>
-                <td
-                  v-for="(col, i) in displayCols"
-                  :key="col.name"
-                  :class="[cellAlertClass(child, col.name), {
-                    'fix-left': col.fixed,
-                    'fix-last': col.fixed && col.name === 'ASIN',
-                    num: numericColumns[col.name],
-                    'cell-name': col.name === '品名',
-                    'cell-edit': isEditableCol(col.name),
-                  }]"
-                  :style="col.fixed ? fixedColStyle(i, col.name) : null"
-                >
-                  <span v-if="col.name === '品名'" class="tree-line">└</span>
-                  <template v-if="editColKey(col.name) === 'category'">
-                    <select
-                      class="cell-select"
-                      :class="'cat-' + (productMap.get(child.asin)?.category || '正常')"
-                      :value="productMap.get(child.asin)?.category || '正常'"
-                      @change="patchProduct(child.asin, { category: $event.target.value })"
-                    >
-                      <option v-for="opt in CATEGORY_OPTIONS" :key="opt" :value="opt">{{ opt }}</option>
-                    </select>
-                  </template>
-                  <template v-else-if="editColKey(col.name) === 'name'">
-                    <input
-                      class="cell-input"
-                      type="text"
-                      :value="productMap.get(child.asin)?.name ?? ''"
-                      @change="patchProduct(child.asin, { name: $event.target.value.trim() })"
-                    />
-                  </template>
-                  <template v-else-if="editColKey(col.name) === 'restockCycle' || editColKey(col.name) === 'stock'">
+            <tr v-if="isInventoryRowExpanded(item.row.asin)" class="inventory-row">
+              <td :colspan="displayCols.length" class="inventory-detail-cell">
+                <div class="inventory-detail-grid">
+                  <div class="inventory-item"><span>可售</span><strong>{{ getCell(item.row, '可售') || '—' }}</strong></div>
+                  <div class="inventory-item"><span>入库中</span><strong>{{ getCell(item.row, '入库中') || '—' }}</strong></div>
+                  <div class="inventory-item"><span>不可售</span><strong>{{ getCell(item.row, '不可售') || '—' }}</strong></div>
+                  <div class="inventory-item"><span>预留</span><strong>{{ getCell(item.row, '预留') || '—' }}</strong></div>
+                  <div class="inventory-item"><span>FBA总量</span><strong>{{ getCell(item.row, 'FBA总量') || '—' }}</strong></div>
+                  <div class="inventory-item"><span>包装尺寸</span><strong>{{ productMap.get(item.row.asin)?.packageSize || productMap.get(item.row.asin)?.packageSize1 || productMap.get(item.row.asin)?.packageSize2 || '—' }}</strong></div>
+                  <div class="inventory-item"><span>包装类型</span><strong>{{ productMap.get(item.row.asin)?.packageType || productMap.get(item.row.asin)?.packageType1 || productMap.get(item.row.asin)?.packageType2 || '—' }}</strong></div>
+                  <div class="inventory-item"><span>单品重量(g)</span><strong>{{ productMap.get(item.row.asin)?.itemWeight || '—' }}</strong></div>
+                  <label class="inventory-item inventory-input-item">
+                    <span>本地仓库</span>
                     <input
                       class="cell-input"
                       type="number"
-                      :value="productMap.get(child.asin)?.[editColKey(col.name)] ?? ''"
-                      @change="patchProduct(child.asin, { [editColKey(col.name)]: $event.target.value === '' ? '' : Number($event.target.value) })"
+                      :value="productMap.get(item.row.asin)?.localWarehouse ?? 0"
+                      @change="patchProduct(item.row.asin, { localWarehouse: $event.target.value === '' ? 0 : Number($event.target.value) })"
                     />
-                  </template>
-                  <template v-else-if="editColKey(col.name) === 'note'">
+                  </label>
+                  <label class="inventory-item inventory-input-item">
+                    <span>已下单</span>
                     <input
                       class="cell-input"
-                      type="text"
-                      :value="getWeekNote(child.asin)"
-                      placeholder="本周备注"
-                      @change="patchWeekNote(child.asin, $event.target.value)"
+                      type="number"
+                      :value="productMap.get(item.row.asin)?.orderedQty ?? 0"
+                      @change="patchProduct(item.row.asin, { orderedQty: $event.target.value === '' ? 0 : Number($event.target.value) })"
                     />
-                  </template>
-                  <template v-else-if="col.name === 'ASIN'">
-                    <div v-if="asinValue(child)" class="asin-cell">
-                      <a
-                        v-if="asinUrl(child)"
-                        class="asin-link"
-                        :href="asinUrl(child)"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {{ asinValue(child) }}
-                      </a>
-                      <button
-                        class="asin-copy-btn"
-                        :class="{ copied: isAsinCopied(child) }"
-                        type="button"
-                        @click="copyAsin(child)"
-                      >
-                        {{ isAsinCopied(child) ? '已复制' : '复制' }}
-                      </button>
-                    </div>
-                  </template>
-                  <template v-else>{{ getCell(child, col.name) }}</template>
-                </td>
-              </tr>
-            </template>
+                  </label>
+                  <label class="inventory-item inventory-input-item">
+                    <span>补货用时</span>
+                    <input
+                      class="cell-input"
+                      type="number"
+                      :value="productMap.get(item.row.asin)?.restockCycle ?? ''"
+                      @change="patchProduct(item.row.asin, { restockCycle: $event.target.value === '' ? '' : Number($event.target.value) })"
+                    />
+                  </label>
+                  <div class="inventory-item"><span>补货数量</span><strong>{{ getCell(item.row, '补货数量') || '—' }}</strong></div>
+                  <div class="inventory-item inventory-item-image">
+                    <span>产品图片</span>
+                    <a
+                      v-if="productMap.get(item.row.asin)?.productImage"
+                      :href="productMap.get(item.row.asin)?.productImage"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="asin-link"
+                    >查看图片</a>
+                    <strong v-else>—</strong>
+                  </div>
+                </div>
+              </td>
+            </tr>
           </template>
         </tbody>
       </table>
@@ -1210,7 +1297,7 @@ onBeforeUnmount(() => {
             <label class="col-check">
               <input type="checkbox" :checked="col.visible" @change="toggleColVisible(i)" />
               <span>
-                {{ col.name }}
+                {{ displayColName(col.name) }}
                 <em v-if="isCalcCol(col.name)" class="col-badge col-badge-calc">公式</em>
                 <em v-else-if="EXTRA_COL_NAMES.includes(col.name)" class="col-badge">可编辑</em>
               </span>
@@ -1232,7 +1319,7 @@ onBeforeUnmount(() => {
           <button class="tool-btn" type="button" @click="showShopPanel = false">✕</button>
         </header>
         <div class="drawer-tip">
-          数据存于 <code>src/data/shops.json</code>。导入 xlsx 时新店铺会自动追加。
+          数据存于 <code>src/data/shops.json</code>。导入周数据时新店铺会自动追加。
         </div>
         <section class="shop-form">
           <div class="form-row">
@@ -1284,7 +1371,7 @@ onBeforeUnmount(() => {
           <button class="tool-btn" type="button" @click="showProductPanel = false">✕</button>
         </header>
         <div class="drawer-tip">
-          数据存于 <code>src/data/products/{shopId}.json</code>（每个店铺一个文件）。导入 xlsx 时新 ASIN 会根据店铺自动归属。
+          数据存于 <code>src/data/products/{shopId}.json</code>（每个店铺一个文件）。导入周数据时新 ASIN 会根据店铺自动归属。
         </div>
 
         <section class="shop-form">
@@ -1340,7 +1427,7 @@ onBeforeUnmount(() => {
             </div>
           </li>
           <li v-if="!filteredProducts.length" class="shop-empty">
-            {{ products.length ? '没有匹配结果' : '还没有 ASIN，请先导入 xlsx' }}
+            {{ products.length ? '没有匹配结果' : '还没有 ASIN，请先导入周数据' }}
           </li>
         </ul>
       </aside>
@@ -1350,11 +1437,11 @@ onBeforeUnmount(() => {
     <div v-if="showImportPanel" class="drawer-mask" @click.self="showImportPanel = false">
       <aside class="drawer drawer-wide">
         <header class="drawer-head">
-          <h3>扫描并导入 xlsx</h3>
+          <h3>扫描并导入周数据</h3>
           <button class="tool-btn" type="button" @click="showImportPanel = false">✕</button>
         </header>
         <div class="drawer-tip">
-          xlsx 文件放在 <code>public/data/</code>。导入后每周数据会永久保存到 <code>src/data/weeks/</code>。
+          周数据目录放在 <code>public/data/第x周/</code>，目录内需包含订单利润表和 Listing销售库存表。导入后每周数据会永久保存到 <code>src/data/weeks/</code>。
         </div>
         <div v-if="importMessage" class="drawer-tip" :class="{ 'is-loading': importLoading || importBusy }">
           <span v-if="importLoading || importBusy" class="loading-dot loading-spin"></span>
@@ -1366,15 +1453,31 @@ onBeforeUnmount(() => {
             待导入（{{ importScan.unimported.length }}）
           </div>
           <ul class="shop-list">
-            <li v-for="f in importScan.unimported" :key="f.filename" class="shop-item">
+            <li v-for="f in importScan.unimported" :key="f.weekId" class="shop-item">
               <div class="shop-info">
-                <div class="shop-name">{{ f.filename }}</div>
+                <div class="shop-name">
+                  {{ f.weekId }} · {{ f.folderName }}
+                  <span class="col-badge">订单: {{ f.orderFile }}</span>
+                  <span class="col-badge" :style="{ color: (f.listingFiles && f.listingFiles.length) ? '' : '#f54a45' }">
+                    {{ (f.listingFiles && f.listingFiles.length)
+                      ? `库存: ${f.listingFiles.length} 个文件`
+                      : '缺少 Listing销售库存' }}
+                  </span>
+                </div>
+                <div class="shop-meta" v-if="f.listingFiles && f.listingFiles.length">
+                  <span>Listing文件：{{ f.listingFiles.join('、') }}</span>
+                </div>
                 <div class="shop-meta">
                   <span>{{ f.startDate || '—' }} ~ {{ f.endDate || '—' }}</span>
                 </div>
               </div>
               <div class="shop-actions">
-                <button class="tool-btn primary" type="button" :disabled="importBusy || importLoading" @click="doImport([f.filename])">
+                <button
+                  class="tool-btn primary"
+                  type="button"
+                  :disabled="importBusy || importLoading || !(f.listingFiles && f.listingFiles.length)"
+                  @click="doImport([f.weekId])"
+                >
                   <span v-if="importBusy" class="loading-dot loading-spin"></span>
                   {{ importBusy ? '导入中...' : '导入' }}
                 </button>
@@ -1385,8 +1488,8 @@ onBeforeUnmount(() => {
             <button
               class="tool-btn primary"
               type="button"
-              :disabled="importBusy || importLoading"
-              @click="doImport(importScan.unimported.map((f) => f.filename))"
+              :disabled="importBusy || importLoading || !importScan.unimported.some((f) => f.listingFiles && f.listingFiles.length)"
+              @click="doImport(importScan.unimported.filter((f) => f.listingFiles && f.listingFiles.length).map((f) => f.weekId))"
             >
               <span v-if="importBusy" class="loading-dot loading-spin"></span>
               {{ importBusy ? '导入中...' : '全部导入' }}
@@ -1394,7 +1497,7 @@ onBeforeUnmount(() => {
           </div>
         </section>
         <div v-else class="drawer-tip" style="padding: 20px 16px">
-          没有待导入的 xlsx。请把新一周的 xlsx 放到 <code>public/data/</code> 后再次扫描。
+          没有待导入的周目录。请把新一周文件放到 <code>public/data/第x周/</code> 后再次扫描。
         </div>
 
         <section v-if="importResult && importResult.length" class="shop-form">
@@ -1404,10 +1507,10 @@ onBeforeUnmount(() => {
               <div class="shop-info" style="width: 100%">
                 <div class="shop-name">
                   <template v-if="r.error">
-                    <span style="color: #f54a45">✗ {{ r.filename }}</span>
+                    <span style="color: #f54a45">✗ {{ r.weekId || '未知周次' }}</span>
                   </template>
                   <template v-else>
-                    ✓ {{ r.filename }}
+                    ✓ {{ r.weekId }} · {{ r.folderName }}
                     <span class="col-badge">{{ r.rowCount }} 行</span>
                   </template>
                 </div>
@@ -1418,8 +1521,17 @@ onBeforeUnmount(() => {
                   <span v-if="r.newAsins && r.newAsins.length">
                     · 新增 ASIN {{ r.newAsins.length }}
                   </span>
+                  <span v-if="r.unmatchedTotal">
+                    · 未命中 ASIN {{ r.unmatchedTotal }}
+                  </span>
                   <span v-if="!(r.newShops || []).length && !(r.newAsins || []).length">
                     无新增主数据
+                  </span>
+                </div>
+                <div class="shop-meta" v-if="!r.error && r.unmatchedByShop && r.unmatchedByShop.length">
+                  <span>
+                    未命中清单：
+                    {{ r.unmatchedByShop.map((x) => `${x.shopName}(${x.count})：${(x.asins || []).join('、')}`).join(' ｜ ') }}
                   </span>
                 </div>
                 <div class="shop-meta" v-else>{{ r.error }}</div>
