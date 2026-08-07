@@ -23,6 +23,7 @@ import {
 
 const require = createRequire(import.meta.url)
 const XLSX = require('xlsx')
+const PDFDocument = require('pdfkit')
 
 const DATA_DIR = 'src/data'
 const WEEKS_DIR = 'src/data/weeks'
@@ -140,6 +141,286 @@ function readBody(req) {
     })
     req.on('error', rejectP)
   })
+}
+
+function sanitizeFilename(name, fallback = 'export') {
+  const cleaned = String(name || '')
+    .replace(/[\\/:*?"<>|]/g, '-')
+    .trim()
+  return cleaned || fallback
+}
+
+function choosePdfFontPath() {
+  const candidates = [
+    '/System/Library/Fonts/Supplemental/Arial Unicode.ttf',
+    '/System/Library/Fonts/STHeiti Medium.ttc',
+    '/System/Library/Fonts/PingFang.ttc',
+  ]
+  return candidates.find((p) => existsSync(p)) || ''
+}
+
+async function generateLocalWarehousePdfBuffer(payload) {
+  const weekId = String(payload?.weekId || '').trim() || '周次'
+  const shopName = String(payload?.shopName || '').trim() || '店铺'
+  const rows = Array.isArray(payload?.rows) ? payload.rows : []
+
+  const doc = new PDFDocument({ size: 'A4', margin: 18, bufferPages: true })
+  const chunks = []
+  doc.on('data', (c) => chunks.push(c))
+  const done = new Promise((resolveP, rejectP) => {
+    doc.on('end', resolveP)
+    doc.on('error', rejectP)
+  })
+
+  const fontPath = choosePdfFontPath()
+  if (fontPath) doc.font(fontPath)
+
+  const pageWidth = doc.page.width
+  const pageHeight = doc.page.height
+  const marginLeft = 18
+  const marginRight = 18
+  const marginTop = 18
+  const marginBottom = 24
+  const contentWidth = pageWidth - marginLeft - marginRight
+  const tableTopGap = 4
+  const cellPadding = 5
+  const maxImageCount = rows.reduce((m, r) => {
+    const c = Array.isArray(r?.images) ? r.images.filter((x) => String(x || '').trim()).length : 0
+    return Math.max(m, c)
+  }, 0)
+  const imageCols = 1
+  const baseImageSize = rows.length <= 6 ? 52 : rows.length <= 10 ? 46 : rows.length <= 16 ? 40 : 36
+  const imageSize = baseImageSize
+  const imageGap = 3
+  const imageCache = new Map()
+
+  const colWidths = [0.27, 0.17, 0.15, 0.08, 0.11, 0.11, 0.11].map((r) => contentWidth * r)
+  const headers = ['产品图片（多图）', '品名', 'FNSKU', '本地仓库', '包装尺寸/cm', '单品重量/g', '包装类型']
+
+  const colX = [marginLeft]
+  for (let i = 1; i < colWidths.length; i++) colX[i] = colX[i - 1] + colWidths[i - 1]
+
+  let cursorY = marginTop
+  let pageNo = 1
+
+  const drawPageTitle = () => {
+    const bandHeight = 30
+    doc.save()
+    doc.rect(marginLeft, cursorY, contentWidth, bandHeight).fill('#edf3ff')
+    doc.restore()
+    doc.rect(marginLeft, cursorY, contentWidth, bandHeight).stroke('#d3def5')
+
+    doc.fontSize(13).fillColor('#0f172a').text(`${shopName} 本地仓库清单`, marginLeft + 8, cursorY + 7, {
+      width: contentWidth * 0.62,
+    })
+    doc.fontSize(8.4).fillColor('#334155')
+    doc.text(`周次：${weekId}`, marginLeft + contentWidth * 0.62, cursorY + 7, {
+      width: contentWidth * 0.38 - 8,
+      align: 'right',
+    })
+    doc.text(`总行数：${rows.length}    第 ${pageNo} 页`, marginLeft + contentWidth * 0.62, cursorY + 17, {
+      width: contentWidth * 0.38 - 8,
+      align: 'right',
+    })
+    cursorY += bandHeight
+  }
+
+  const drawTableHeader = () => {
+    const headerHeight = 18
+    for (let i = 0; i < headers.length; i++) {
+      const x = colX[i]
+      doc.save()
+      doc.rect(x, cursorY, colWidths[i], headerHeight).fill('#e2e8f0')
+      doc.restore()
+      doc.rect(x, cursorY, colWidths[i], headerHeight).stroke('#c3cfde')
+      const label = headers[i]
+      const headerFontSize = i === 5 ? 7.8 : 8.2
+      doc.fontSize(headerFontSize).fillColor('#0f172a')
+      const h = doc.heightOfString(label, { width: colWidths[i] - cellPadding * 2 })
+      const textY = cursorY + Math.max(1, (headerHeight - h) / 2)
+      doc.text(label, x + cellPadding, textY, {
+        width: colWidths[i] - cellPadding * 2,
+        align: 'left',
+        lineBreak: i === 5 ? false : true,
+      })
+    }
+    cursorY += headerHeight
+  }
+
+  const addPageIfNeeded = (requiredHeight) => {
+    if (cursorY + requiredHeight <= pageHeight - marginBottom) return
+    doc.addPage({ size: 'A4', margin: 18 })
+    if (fontPath) doc.font(fontPath)
+    pageNo += 1
+    cursorY = marginTop
+    drawPageTitle()
+    cursorY += tableTopGap
+    drawTableHeader()
+  }
+
+  const getImageBuffer = async (url) => {
+    const key = String(url || '').trim()
+    if (!key) return null
+    if (imageCache.has(key)) return imageCache.get(key)
+    try {
+      const resp = await fetch(key)
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+      const arr = await resp.arrayBuffer()
+      const buf = Buffer.from(arr)
+      imageCache.set(key, buf)
+      return buf
+    } catch {
+      imageCache.set(key, null)
+      return null
+    }
+  }
+
+  drawPageTitle()
+  cursorY += tableTopGap
+  drawTableHeader()
+
+  for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+    const row = rows[rowIndex]
+    const fnsku = String(row?.fnsku || '').trim() || '—'
+    const name = String(row?.name || '').trim() || '—'
+    const localWarehouse =
+      row?.localWarehouse == null || row?.localWarehouse === ''
+        ? '0'
+        : String(row.localWarehouse)
+    const packageSize = String(row?.packageSize || '').trim() || '—'
+    const packageType = String(row?.packageType || '').trim() || '—'
+    const itemWeight = String(row?.itemWeight || '').trim() || '—'
+    const images = Array.isArray(row?.images)
+      ? row.images.map((x) => String(x || '').trim()).filter(Boolean)
+      : []
+
+    const imageRows = Math.max(1, Math.ceil(images.length / imageCols))
+    const imageBlockHeight = images.length
+      ? imageRows * imageSize + (imageRows - 1) * imageGap
+      : 16
+
+    const displayName = name
+    doc.fontSize(8.2)
+    const oneLineHeight = Math.max(12, Math.ceil(doc.currentLineHeight()))
+    const textHeightName = Math.max(16, doc.heightOfString(displayName, { width: colWidths[1] - cellPadding * 2 }))
+    const textHeightFnsku = oneLineHeight
+    const textHeightQty = oneLineHeight
+    const textHeightSize = Math.max(14, doc.heightOfString(packageSize, { width: colWidths[4] - cellPadding * 2 }))
+    const textHeightWeight = oneLineHeight
+    const textHeightType = Math.max(14, doc.heightOfString(packageType, { width: colWidths[6] - cellPadding * 2 }))
+
+    const rowHeight = Math.max(
+      imageBlockHeight + cellPadding * 2,
+      textHeightName + cellPadding * 2,
+      textHeightFnsku + cellPadding * 2,
+      textHeightQty + cellPadding * 2,
+      textHeightSize + cellPadding * 2,
+      textHeightWeight + cellPadding * 2,
+      textHeightType + cellPadding * 2,
+      24,
+    )
+
+    addPageIfNeeded(rowHeight + 0.5)
+
+    if (rowIndex % 2 === 1) {
+      doc.save()
+      doc.rect(marginLeft, cursorY, contentWidth, rowHeight).fill('#fafcff')
+      doc.restore()
+    }
+
+    for (let i = 0; i < colWidths.length; i++) {
+      doc.rect(colX[i], cursorY, colWidths[i], rowHeight).stroke('#d0d9e6')
+    }
+
+    doc.fontSize(8.2).fillColor('#0f172a')
+    const nameY = cursorY + Math.max(cellPadding, (rowHeight - textHeightName) / 2)
+    const fnskuY = cursorY + Math.max(cellPadding, (rowHeight - textHeightFnsku) / 2)
+    const qtyY = cursorY + Math.max(cellPadding, (rowHeight - textHeightQty) / 2)
+    const sizeY = cursorY + Math.max(cellPadding, (rowHeight - textHeightSize) / 2)
+    const weightY = cursorY + Math.max(cellPadding, (rowHeight - textHeightWeight) / 2)
+    const typeY = cursorY + Math.max(cellPadding, (rowHeight - textHeightType) / 2)
+
+    doc.text(displayName, colX[1] + cellPadding, nameY, {
+      width: colWidths[1] - cellPadding * 2,
+      align: 'left',
+    })
+    doc.text(fnsku, colX[2] + cellPadding, fnskuY, {
+      width: colWidths[2] - cellPadding * 2,
+      lineBreak: false,
+      align: 'left',
+    })
+    doc.text(localWarehouse, colX[3] + cellPadding, qtyY, {
+      width: colWidths[3] - cellPadding * 2,
+      lineBreak: false,
+      align: 'left',
+    })
+    doc.text(packageSize, colX[4] + cellPadding, sizeY, {
+      width: colWidths[4] - cellPadding * 2,
+      align: 'left',
+    })
+    doc.text(itemWeight, colX[5] + cellPadding, weightY, {
+      width: colWidths[5] - cellPadding * 2,
+      lineBreak: false,
+      align: 'left',
+    })
+    doc.text(packageType, colX[6] + cellPadding, typeY, {
+      width: colWidths[6] - cellPadding * 2,
+      align: 'left',
+    })
+
+    const imageOffsetY = cursorY + (rowHeight - imageBlockHeight) / 2
+    if (!images.length) {
+      doc.fillColor('#64748b').text('—', colX[0] + cellPadding, imageOffsetY, { align: 'left' })
+      doc.fillColor('#0f172a')
+    } else {
+      for (let idx = 0; idx < images.length; idx++) {
+        const imgX = colX[0] + cellPadding + (idx % imageCols) * (imageSize + imageGap)
+        const imgY = imageOffsetY + Math.floor(idx / imageCols) * (imageSize + imageGap)
+        const buf = await getImageBuffer(images[idx])
+        if (!buf) {
+          doc.save()
+          doc.rect(imgX, imgY, imageSize, imageSize).fill('#f1f5f9')
+          doc.restore()
+          doc.rect(imgX, imgY, imageSize, imageSize).stroke('#d0d9e6')
+          doc.fillColor('#64748b').fontSize(7.2).text('加载失败', imgX + 5, imgY + imageSize / 2 - 4)
+          doc.fillColor('#0f172a').fontSize(8.2)
+          continue
+        }
+        try {
+          doc.image(buf, imgX, imgY, {
+            fit: [imageSize, imageSize],
+            align: 'center',
+            valign: 'center',
+          })
+          doc.rect(imgX, imgY, imageSize, imageSize).stroke('#d0d9e6')
+        } catch {
+          doc.save()
+          doc.rect(imgX, imgY, imageSize, imageSize).fill('#f1f5f9')
+          doc.restore()
+          doc.rect(imgX, imgY, imageSize, imageSize).stroke('#d0d9e6')
+          doc.fillColor('#64748b').fontSize(7).text('格式不支持', imgX + 2, imgY + imageSize / 2 - 4)
+          doc.fillColor('#0f172a').fontSize(8.2)
+        }
+      }
+    }
+
+    cursorY += rowHeight
+  }
+
+  const range = doc.bufferedPageRange()
+  for (let i = 0; i < range.count; i++) {
+    doc.switchToPage(range.start + i)
+    doc.fontSize(8).fillColor('#64748b')
+    doc.text(`页码 ${i + 1}/${range.count}`, marginLeft, pageHeight - marginBottom - 10, {
+      width: contentWidth,
+      align: 'right',
+      lineBreak: false,
+    })
+  }
+
+  doc.end()
+  await done
+  return Buffer.concat(chunks)
 }
 
 function genShopId(existing) {
@@ -472,6 +753,7 @@ function importWeekBundle(bundle) {
   const applyListingRow = (product, listingRow) => {
     if (!listingRow) return false
     const before = JSON.stringify({
+      fnsku: product.fnsku,
       name: product.name,
       monthSales: product.monthSales,
       monthRevenue: product.monthRevenue,
@@ -487,10 +769,12 @@ function importWeekBundle(bundle) {
       packageType: product.packageType,
       itemWeight: product.itemWeight,
       productImage: product.productImage,
+      productImages: product.productImages,
       localWarehouse: product.localWarehouse,
       orderedQty: product.orderedQty,
     })
 
+    product.fnsku = listingRow.fnsku
     if (listingRow.name) product.name = listingRow.name
     product.monthSales = listingRow.monthSales
     product.monthRevenue = listingRow.monthRevenue
@@ -506,10 +790,12 @@ function importWeekBundle(bundle) {
     product.packageType = listingRow.packageType
     product.itemWeight = listingRow.itemWeight
     product.productImage = listingRow.productImage
+    product.productImages = Array.isArray(listingRow.productImages) ? listingRow.productImages : []
     if (product.localWarehouse == null || product.localWarehouse === '') product.localWarehouse = 0
     if (product.orderedQty == null || product.orderedQty === '') product.orderedQty = 0
 
     const after = JSON.stringify({
+      fnsku: product.fnsku,
       name: product.name,
       monthSales: product.monthSales,
       monthRevenue: product.monthRevenue,
@@ -525,6 +811,7 @@ function importWeekBundle(bundle) {
       packageType: product.packageType,
       itemWeight: product.itemWeight,
       productImage: product.productImage,
+      productImages: product.productImages,
       localWarehouse: product.localWarehouse,
       orderedQty: product.orderedQty,
     })
@@ -546,6 +833,7 @@ function importWeekBundle(bundle) {
     const shop = shopsAfter.find((s) => s.id === shopId) || null
     const values = Array(columns.length).fill('')
     if (colIdx['ASIN'] != null) values[colIdx['ASIN']] = key
+    if (colIdx['FNSKU'] != null) values[colIdx['FNSKU']] = listingRow?.fnsku || ''
     if (colIdx['父ASIN'] != null) values[colIdx['父ASIN']] = key
     if (colIdx['店铺'] != null) values[colIdx['店铺']] = shop?.name || ''
     if (colIdx['国家'] != null) values[colIdx['国家']] = shop?.country || ''
@@ -588,6 +876,7 @@ function importWeekBundle(bundle) {
         }
         const product = {
           ...master,
+          fnsku: '',
           category: '正常',
           restockCycle: 2,
           sellable: '',
@@ -606,6 +895,7 @@ function importWeekBundle(bundle) {
           packageType: '',
           itemWeight: '',
           productImage: '',
+          productImages: [],
           firstSeenWeek: weekId,
           lastSeenWeek: weekId,
         }
@@ -731,6 +1021,7 @@ function importWeekBundle(bundle) {
         const product = {
           asin,
           parentAsin: asin,
+          fnsku: listingRow?.fnsku ?? '',
           name: listingRow?.name || '',
           category: '新品',
           restockCycle: 2,
@@ -750,6 +1041,7 @@ function importWeekBundle(bundle) {
           packageType: listingRow?.packageType ?? '',
           itemWeight: listingRow?.itemWeight ?? '',
           productImage: listingRow?.productImage ?? '',
+          productImages: Array.isArray(listingRow?.productImages) ? listingRow.productImages : [],
           firstSeenWeek: weekId,
           lastSeenWeek: weekId,
         }
@@ -1044,6 +1336,30 @@ function apiPlugin() {
           }
 
           /* ---------- 导入 ---------- */
+          if (url === '/export/local-warehouse-pdf' && req.method === 'POST') {
+            const body = (await readBody(req)) || {}
+            const rows = Array.isArray(body.rows) ? body.rows : []
+            if (!rows.length) return sendJson(res, 400, { error: 'rows required' })
+
+            const weekId = String(body.weekId || '').trim() || '周次'
+            const shopName = String(body.shopName || '').trim() || '店铺'
+            const safeWeek = sanitizeFilename(weekId, '周次')
+            const safeShop = sanitizeFilename(shopName, '店铺')
+            const filename = `${safeWeek}-${safeShop}-本地仓库.pdf`
+
+            const pdfBuffer = await generateLocalWarehousePdfBuffer({
+              weekId,
+              shopName,
+              rows,
+            })
+
+            res.statusCode = 200
+            res.setHeader('Content-Type', 'application/pdf')
+            res.setHeader('Cache-Control', 'no-store')
+            res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`)
+            return res.end(pdfBuffer)
+          }
+
           if (url === '/scan' && req.method === 'GET') {
             const bundles = scanWeekBundles()
             const weeks = readImportedWeeksFallback()
@@ -1177,6 +1493,7 @@ function apiPlugin() {
             const applyListingRow = (product, listingRow) => {
               if (!listingRow) return false
               const before = JSON.stringify({
+                fnsku: product.fnsku,
                 name: product.name,
                 monthSales: product.monthSales,
                 monthRevenue: product.monthRevenue,
@@ -1192,10 +1509,12 @@ function apiPlugin() {
                 packageType: product.packageType,
                 itemWeight: product.itemWeight,
                 productImage: product.productImage,
+                productImages: product.productImages,
                 localWarehouse: product.localWarehouse,
                 orderedQty: product.orderedQty,
               })
 
+              product.fnsku = listingRow.fnsku
               if (listingRow.name) product.name = listingRow.name
               product.monthSales = listingRow.monthSales
               product.monthRevenue = listingRow.monthRevenue
@@ -1211,10 +1530,14 @@ function apiPlugin() {
               product.packageType = listingRow.packageType
               product.itemWeight = listingRow.itemWeight
               product.productImage = listingRow.productImage
+              product.productImages = Array.isArray(listingRow.productImages)
+                ? listingRow.productImages
+                : []
               if (product.localWarehouse == null || product.localWarehouse === '') product.localWarehouse = 0
               if (product.orderedQty == null || product.orderedQty === '') product.orderedQty = 0
 
               const after = JSON.stringify({
+                fnsku: product.fnsku,
                 name: product.name,
                 monthSales: product.monthSales,
                 monthRevenue: product.monthRevenue,
@@ -1230,6 +1553,7 @@ function apiPlugin() {
                 packageType: product.packageType,
                 itemWeight: product.itemWeight,
                 productImage: product.productImage,
+                productImages: product.productImages,
                 localWarehouse: product.localWarehouse,
                 orderedQty: product.orderedQty,
               })
@@ -1297,6 +1621,7 @@ function apiPlugin() {
               const product = {
                 asin,
                 parentAsin: asin,
+                fnsku: listingRow.fnsku,
                 name: listingRow.name || '',
                 category: '新品',
                 restockCycle: 2,
@@ -1316,6 +1641,9 @@ function apiPlugin() {
                 packageType: listingRow.packageType,
                 itemWeight: listingRow.itemWeight,
                 productImage: listingRow.productImage,
+                productImages: Array.isArray(listingRow.productImages)
+                  ? listingRow.productImages
+                  : [],
                 firstSeenWeek: weekId,
                 lastSeenWeek: weekId,
               }
@@ -1361,6 +1689,7 @@ function apiPlugin() {
                 const values = Array(weekSnapshot.columns.length).fill('')
 
                 if (colIdx['ASIN'] != null) values[colIdx['ASIN']] = asin
+                if (colIdx['FNSKU'] != null) values[colIdx['FNSKU']] = listingRow.fnsku || ''
                 if (colIdx['父ASIN'] != null) values[colIdx['父ASIN']] = asin
                 if (colIdx['店铺'] != null) values[colIdx['店铺']] = shop.name || item.shopName || ''
                 if (colIdx['国家'] != null) values[colIdx['国家']] = shop.country || ''

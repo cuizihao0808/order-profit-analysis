@@ -6,6 +6,7 @@ export function normalizeNumber(value, fallback = '') {
 
 export function normalizeInventoryProduct(product) {
   const next = { ...product }
+  next.fnsku = next.fnsku == null ? '' : String(next.fnsku).trim()
   if (next.fbaTotal == null || next.fbaTotal === '') {
     next.fbaTotal = normalizeNumber(next.stock, '')
   } else {
@@ -33,8 +34,36 @@ export function normalizeInventoryProduct(product) {
   next.packageSize = next.packageSize == null ? legacyPackageSize : String(next.packageSize)
   next.packageType = next.packageType == null ? legacyPackageType : String(next.packageType)
   next.itemWeight = normalizeNumber(next.itemWeight, '')
-  next.productImage = next.productImage == null ? '' : String(next.productImage)
+  const normalizedImages = Array.isArray(next.productImages)
+    ? next.productImages
+        .map((x) => String(x == null ? '' : x).trim())
+        .filter(Boolean)
+    : []
+  const normalizedProductImage = String(next.productImage == null ? '' : next.productImage).trim()
+  if (normalizedProductImage && !normalizedImages.includes(normalizedProductImage)) {
+    normalizedImages.unshift(normalizedProductImage)
+  }
+  next.productImages = normalizedImages
+  next.productImage = normalizedProductImage || normalizedImages[0] || ''
   return next
+}
+
+function collectListingImageUrls(values, listingColIdx) {
+  const cols = Object.entries(listingColIdx)
+    .filter(([name]) => /^产品图片(?:\d+)?$/.test(name))
+    .sort(([a], [b]) => {
+      const ma = a.match(/^产品图片(\d+)?$/)
+      const mb = b.match(/^产品图片(\d+)?$/)
+      const na = ma?.[1] ? Number(ma[1]) : 0
+      const nb = mb?.[1] ? Number(mb[1]) : 0
+      return na - nb
+    })
+
+  const urls = cols
+    .map(([, idx]) => String(values[idx] ?? '').trim())
+    .filter(Boolean)
+
+  return Array.from(new Set(urls))
 }
 
 export function parseWeekIdFromFolder(folderName) {
@@ -70,7 +99,9 @@ export function isListingStockFile(name) {
 }
 
 export function buildListingRowRecord(values, listingColIdx) {
+  const productImages = collectListingImageUrls(values, listingColIdx)
   return {
+    fnsku: String(values[listingColIdx['FNSKU']] ?? '').trim(),
     name: String(values[listingColIdx['产品中文名']] ?? '').trim(),
     monthSales: normalizeNumber(values[listingColIdx['销量']], ''),
     monthRevenue: normalizeNumber(values[listingColIdx['销售额']], ''),
@@ -91,6 +122,7 @@ export function buildListingRowRecord(values, listingColIdx) {
       String(values[listingColIdx['包装类型1']] ?? '').trim() ||
       String(values[listingColIdx['包装类型2']] ?? '').trim(),
     itemWeight: normalizeNumber(values[listingColIdx['单品重量(g)']], ''),
-    productImage: String(values[listingColIdx['产品图片']] ?? '').trim(),
+    productImage: productImages[0] || '',
+    productImages,
   }
 }

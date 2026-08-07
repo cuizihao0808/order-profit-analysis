@@ -54,7 +54,7 @@ describe('dataPipeline: product normalization', () => {
     expect(next.fbaTotal).toBe(123)
     expect(next.packageSize).toBe('A')
     expect(next.packageType).toBe('B')
-    expect(next.productImage).toBe(' https://img ')
+    expect(next.productImage).toBe('https://img')
   })
 })
 
@@ -100,6 +100,7 @@ describe('dataPipeline: listing row mapping', () => {
   it('maps single-column package fields and monthly metrics', () => {
     const cols = [
       'ASIN',
+      'FNSKU',
       '产品中文名',
       '销量',
       '销售额',
@@ -119,6 +120,7 @@ describe('dataPipeline: listing row mapping', () => {
     const idx = Object.fromEntries(cols.map((c, i) => [c, i]))
     const row = [
       'B0TEST',
+      'X00TEST',
       '中文名',
       '300',
       '12345.6',
@@ -137,6 +139,7 @@ describe('dataPipeline: listing row mapping', () => {
     ]
 
     const mapped = buildListingRowRecord(row, idx)
+    expect(mapped.fnsku).toBe('X00TEST')
     expect(mapped.name).toBe('中文名')
     expect(mapped.monthSales).toBe(300)
     expect(mapped.monthRevenue).toBe(12345.6)
@@ -164,6 +167,14 @@ describe('dataPipeline: listing row mapping', () => {
     expect(mapped.packageSize).toBe('10×10×10')
     expect(mapped.packageType).toBe('袋装')
     expect(mapped.productImage).toBe('')
+  })
+
+  it('falls back to 产品图片1/产品图片2 when 产品图片 is empty', () => {
+    const cols = ['ASIN', '产品图片', '产品图片1', '产品图片2']
+    const idx = Object.fromEntries(cols.map((c, i) => [c, i]))
+    const row = ['B0IMG', '', 'https://example.com/1.jpg', 'https://example.com/2.jpg']
+    const mapped = buildListingRowRecord(row, idx)
+    expect(mapped.productImage).toBe('https://example.com/1.jpg')
   })
 
   it('falls back to second legacy package size/type when first is empty', () => {

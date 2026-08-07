@@ -156,6 +156,7 @@ const importScan = ref({ unimported: [], imported: [] })
 const importResult = ref(null) // 导入完成后的汇总
 const importLoading = ref(false)
 const importBusy = ref(false)
+const exportPdfBusy = ref(false)
 const importMessage = ref('')
 const resolvePanel = ref({
   show: false,
@@ -165,7 +166,7 @@ const resolvePanel = ref({
   busy: false,
   message: '',
 })
-const imagePreview = ref({ show: false, url: '', title: '' })
+const imagePreview = ref({ show: false, urls: [], index: 0, title: '' })
 const toast = ref({ show: false, text: '', type: 'success' })
 const copiedAsinMap = ref({})
 const noteOverflowMap = ref({})
@@ -280,6 +281,13 @@ function getCell(row, colName) {
   if (!row) return ''
   const product = productMap.value.get(row.asin)
 
+  if (colName === 'FNSKU') {
+    const fromProduct = String(product?.fnsku || '').trim()
+    if (fromProduct) return fromProduct
+    const i = colIndex.value[colName]
+    return i != null ? row.values[i] ?? '' : ''
+  }
+
   const masterKey = MASTER_COL_TO_KEY[colName]
   if (masterKey) {
     const v = product?.[masterKey]
@@ -336,23 +344,67 @@ function asinUrl(row) {
 }
 
 function productImageUrl(row) {
-  const fromProduct = productMap.value.get(row?.asin)?.productImage
-  const fromCell = getCell(row, '产品图片')
-  return String(fromProduct || fromCell || '').trim()
+  const first = productImageUrls(row)[0] || ''
+  return String(first).trim()
 }
 
-function openImagePreview(row) {
-  const url = productImageUrl(row)
-  if (!url) return
+function productImageUrls(row) {
+  const product = productMap.value.get(row?.asin) || {}
+  const urls = []
+
+  if (Array.isArray(product.productImages)) {
+    for (const u of product.productImages) {
+      const s = String(u || '').trim()
+      if (s) urls.push(s)
+    }
+  }
+
+  const fromProduct = String(product.productImage || '').trim()
+  if (fromProduct) urls.push(fromProduct)
+
+  const fromCell = String(getCell(row, '产品图片') || '').trim()
+  if (fromCell) urls.push(fromCell)
+
+  return Array.from(new Set(urls))
+}
+
+function openImagePreview(row, index = 0) {
+  const urls = productImageUrls(row)
+  if (!urls.length) return
+  const safeIndex = Math.min(Math.max(Number(index) || 0, 0), urls.length - 1)
   imagePreview.value = {
     show: true,
-    url,
+    urls,
+    index: safeIndex,
     title: `${asinValue(row)} 产品图片`,
   }
 }
 
 function closeImagePreview() {
-  imagePreview.value = { show: false, url: '', title: '' }
+  imagePreview.value = { show: false, urls: [], index: 0, title: '' }
+}
+
+const currentPreviewImageUrl = computed(() => {
+  if (!imagePreview.value.urls.length) return ''
+  return imagePreview.value.urls[imagePreview.value.index] || ''
+})
+
+function prevPreviewImage() {
+  if (imagePreview.value.urls.length <= 1) return
+  imagePreview.value = {
+    ...imagePreview.value,
+    index:
+      (imagePreview.value.index - 1 + imagePreview.value.urls.length) %
+      imagePreview.value.urls.length,
+  }
+}
+
+function nextPreviewImage() {
+  if (imagePreview.value.urls.length <= 1) return
+  imagePreview.value = {
+    ...imagePreview.value,
+    index: (imagePreview.value.index + 1) % imagePreview.value.urls.length,
+  }
 }
 
 async function copyAsin(row) {
@@ -562,71 +614,44 @@ const nonAbandonedVisibleAsins = computed(() => {
   return Array.from(set)
 })
 
-const canExportLocalWarehouseMd = computed(
+const canExportLocalWarehousePdf = computed(
   () => shopFilter.value !== '__all__' && supplyFilter.value === 'local-warehouse' && visibleRows.value.length > 0,
 )
 
-function escapeMarkdownCell(value) {
-  return String(value ?? '')
-    .replace(/\|/g, '\\|')
-    .replace(/\r?\n/g, '<br />')
-    .trim()
-}
+const exportLocalWarehouseDisabledReason = computed(() => {
+  if (canExportLocalWarehousePdf.value) return ''
+  if (shopFilter.value === '__all__') return '请先选择单个店铺'
+  if (supplyFilter.value !== 'local-warehouse') return '请切换到“本地仓库有的”筛选'
+  if (!visibleRows.value.length) return '当前筛选结果为空，无法导出'
+  return '当前条件不满足导出'
+})
 
 function productField(row, key, fallback = '') {
   const value = productMap.value.get(row?.asin)?.[key]
   return value == null || value === '' ? fallback : value
 }
 
-function buildLocalWarehouseMarkdown() {
-  const PDF_ROWS_PER_PAGE = 18
-  const headers = ['产品图片', '品名', '本地仓库数量', '包装尺寸/cm', '包装类型', '单品重量/g']
+function buildLocalWarehousePdfPayload() {
   const rows = visibleRows.value.slice()
-  const pageCount = Math.max(1, Math.ceil(rows.length / PDF_ROWS_PER_PAGE))
   const exportShopName = shopMdNameByName.value.get(shopFilter.value) || shopFilter.value
-  const lines = [
-    `# ${exportShopName} 本地仓库清单`,
-    '',
-    `周次：${currentWeekId.value || '—'}`,
-    `总行数：${rows.length}`,
-    `建议分页：每页 ${PDF_ROWS_PER_PAGE} 行（共 ${pageCount} 页）`,
-    '',
-    '<!-- PDF分页辅助：多数 Markdown 转 PDF 工具会识别下方 page-break -->',
-    '<style>',
-    'table { width: 100%; border-collapse: collapse; }',
-    'tr { page-break-inside: avoid; }',
-    '.page-break { page-break-after: always; break-after: page; }',
-    '</style>',
-  ]
-
-  for (let page = 0; page < pageCount; page++) {
-    if (page > 0) {
-      lines.push('', '<div class="page-break"></div>', '')
-    }
-
-    lines.push(`## 第 ${page + 1} 页 / 共 ${pageCount} 页`, '')
-    lines.push(`| ${headers.join(' | ')} |`)
-    lines.push(`| ${headers.map(() => '---').join(' | ')} |`)
-
-    const start = page * PDF_ROWS_PER_PAGE
-    const pageRows = rows.slice(start, start + PDF_ROWS_PER_PAGE)
-    for (const row of pageRows) {
-      const imageUrl = productImageUrl(row)
-      const imageCell = imageUrl ? `<img src="${escapeMarkdownCell(imageUrl)}" alt="${escapeMarkdownCell(asinValue(row))}" width="72" />` : ''
-      const name = escapeMarkdownCell(getCell(row, '品名'))
-      const localWarehouse = escapeMarkdownCell(productField(row, 'localWarehouse', 0))
-      const packageSize = escapeMarkdownCell(productField(row, 'packageSize') || productField(row, 'packageSize1') || productField(row, 'packageSize2'))
-      const packageType = escapeMarkdownCell(productField(row, 'packageType') || productField(row, 'packageType1') || productField(row, 'packageType2'))
-      const itemWeight = escapeMarkdownCell(productField(row, 'itemWeight'))
-      lines.push(`| ${imageCell} | ${name} | ${localWarehouse} | ${packageSize} | ${packageType} | ${itemWeight} |`)
-    }
+  const payloadRows = rows.map((row) => ({
+    asin: asinValue(row),
+    fnsku: String(getCell(row, 'FNSKU') || '').trim(),
+    name: String(getCell(row, '品名') || '').trim(),
+    localWarehouse: Number(productField(row, 'localWarehouse', 0) || 0),
+    packageSize: String(productField(row, 'packageSize') || productField(row, 'packageSize1') || productField(row, 'packageSize2') || '').trim(),
+    packageType: String(productField(row, 'packageType') || productField(row, 'packageType1') || productField(row, 'packageType2') || '').trim(),
+    itemWeight: String(productField(row, 'itemWeight') || '').trim(),
+    images: productImageUrls(row),
+  }))
+  return {
+    weekId: String(currentWeekId.value || '').trim(),
+    shopName: exportShopName,
+    rows: payloadRows,
   }
-
-  return { content: lines.join('\n'), pageCount }
 }
 
-function downloadTextFile(filename, content, mimeType) {
-  const blob = new Blob([content], { type: mimeType })
+function downloadBlobFile(filename, blob) {
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
@@ -637,17 +662,37 @@ function downloadTextFile(filename, content, mimeType) {
   URL.revokeObjectURL(url)
 }
 
-function exportLocalWarehouseMd() {
-  if (!canExportLocalWarehouseMd.value) {
+async function exportLocalWarehousePdf() {
+  if (!canExportLocalWarehousePdf.value) {
     showToast('请先选择单个店铺，并切换到“本地仓库有的”筛选', 'warn')
     return
   }
-  const { content, pageCount } = buildLocalWarehouseMarkdown()
+  if (exportPdfBusy.value) return
+
+  exportPdfBusy.value = true
   const exportShopName = shopMdNameByName.value.get(shopFilter.value) || shopFilter.value
   const safeShopName = exportShopName.replace(/[\\/:*?"<>|]/g, '-').trim() || '店铺'
   const safeWeek = (currentWeekId.value || '周次').replace(/[\\/:*?"<>|]/g, '-')
-  downloadTextFile(`${safeWeek}-${safeShopName}-本地仓库.md`, content, 'text/markdown;charset=utf-8')
-  showToast(`已导出 ${visibleRows.value.length} 行本地仓库 MD（${pageCount} 页）`, 'success')
+  const filename = `${safeWeek}-${safeShopName}-本地仓库.pdf`
+
+  try {
+    const response = await fetch('/api/export/local-warehouse-pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(buildLocalWarehousePdfPayload()),
+    })
+    if (!response.ok) {
+      const text = await response.text().catch(() => '')
+      throw new Error(text || '导出失败')
+    }
+    const blob = await response.blob()
+    downloadBlobFile(filename, blob)
+    showToast(`已导出 ${visibleRows.value.length} 行本地仓库 PDF`, 'success')
+  } catch (e) {
+    showToast(`导出 PDF 失败：${String(e?.message || e)}`, 'error')
+  } finally {
+    exportPdfBusy.value = false
+  }
 }
 
 async function copyNonAbandonedAsins() {
@@ -1467,9 +1512,12 @@ onBeforeUnmount(() => {
       <button class="tool-btn" type="button" :disabled="!nonAbandonedVisibleAsins.length" @click="copyNonAbandonedAsins">
         复制非放弃ASIN（{{ nonAbandonedVisibleAsins.length }}）
       </button>
-      <button class="tool-btn" type="button" :disabled="!canExportLocalWarehouseMd" @click="exportLocalWarehouseMd">
-        导出本地仓库MD
-      </button>
+      <div class="export-tip-wrap">
+        <button class="tool-btn" type="button" :disabled="!canExportLocalWarehousePdf || exportPdfBusy" @click="exportLocalWarehousePdf">
+          {{ exportPdfBusy ? '导出PDF中...' : '导出本地仓库PDF' }}
+        </button>
+        <span v-if="!canExportLocalWarehousePdf" class="export-tip-bubble">{{ exportLocalWarehouseDisabledReason }}</span>
+      </div>
 
       <span class="tool-divider"></span>
 
@@ -1603,14 +1651,17 @@ onBeforeUnmount(() => {
                   </div>
                 </template>
                 <template v-else-if="col.name === '产品图片'">
-                  <button
-                    v-if="productImageUrl(item.row)"
-                    class="product-image-link"
-                    type="button"
-                    @click="openImagePreview(item.row)"
-                  >
-                    <img :src="productImageUrl(item.row)" :alt="`${asinValue(item.row)} 产品图片`" class="product-image-thumb" loading="lazy" />
-                  </button>
+                  <div v-if="productImageUrls(item.row).length" class="product-image-list">
+                    <button
+                      v-for="(imgUrl, imgIndex) in productImageUrls(item.row)"
+                      :key="`${item.row.asin}-${imgIndex}-${imgUrl}`"
+                      class="product-image-link"
+                      type="button"
+                      @click="openImagePreview(item.row, imgIndex)"
+                    >
+                      <img :src="imgUrl" :alt="`${asinValue(item.row)} 产品图片 ${imgIndex + 1}`" class="product-image-thumb" loading="lazy" />
+                    </button>
+                  </div>
                   <span v-else>—</span>
                 </template>
                 <template v-else>{{ getCell(item.row, col.name) }}</template>
@@ -1660,14 +1711,17 @@ onBeforeUnmount(() => {
                 <div class="inventory-footer-bar">
                   <div class="inventory-item inventory-item-image inventory-item-image-footer">
                     <span>产品图片</span>
-                    <button
-                      v-if="productImageUrl(item.row)"
-                      class="product-image-link"
-                      type="button"
-                      @click="openImagePreview(item.row)"
-                    >
-                      <img :src="productImageUrl(item.row)" :alt="`${asinValue(item.row)} 产品图片`" class="product-image-thumb" loading="lazy" />
-                    </button>
+                    <div v-if="productImageUrls(item.row).length" class="product-image-list">
+                      <button
+                        v-for="(imgUrl, imgIndex) in productImageUrls(item.row)"
+                        :key="`${item.row.asin}-detail-${imgIndex}-${imgUrl}`"
+                        class="product-image-link"
+                        type="button"
+                        @click="openImagePreview(item.row, imgIndex)"
+                      >
+                        <img :src="imgUrl" :alt="`${asinValue(item.row)} 产品图片 ${imgIndex + 1}`" class="product-image-thumb" loading="lazy" />
+                      </button>
+                    </div>
                     <strong v-else>—</strong>
                   </div>
                   <div class="inventory-btn-group">
@@ -1699,7 +1753,26 @@ onBeforeUnmount(() => {
     <div v-if="imagePreview.show" class="image-preview-mask" @click.self="closeImagePreview">
       <div class="image-preview-dialog">
         <button class="image-preview-close" type="button" @click="closeImagePreview">✕</button>
-        <img :src="imagePreview.url" :alt="imagePreview.title" class="image-preview-large" />
+        <button
+          v-if="imagePreview.urls.length > 1"
+          class="image-preview-nav image-preview-nav-prev"
+          type="button"
+          @click="prevPreviewImage"
+        >
+          ‹
+        </button>
+        <img :src="currentPreviewImageUrl" :alt="imagePreview.title" class="image-preview-large" />
+        <button
+          v-if="imagePreview.urls.length > 1"
+          class="image-preview-nav image-preview-nav-next"
+          type="button"
+          @click="nextPreviewImage"
+        >
+          ›
+        </button>
+        <div v-if="imagePreview.urls.length > 1" class="image-preview-indicator">
+          {{ imagePreview.index + 1 }} / {{ imagePreview.urls.length }}
+        </div>
       </div>
     </div>
 
