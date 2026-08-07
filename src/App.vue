@@ -24,7 +24,7 @@ const MASTER_COL_TO_KEY = {
 }
 
 /** 产品分类选项 */
-const CATEGORY_OPTIONS = ['正常', '观望', '断货', '放弃']
+const CATEGORY_OPTIONS = ['正常', '新品', '观望', '断货', '放弃']
 
 /**
  * 扩展列定义：
@@ -145,6 +145,7 @@ const restockConfig = ref({}) // { monthlyMultiplier, quantityMultiplier, quanti
 const customCols = ref([]) // [{ name, visible }]
 const shopFilter = ref('__all__')
 const supplyFilter = ref('__all__')
+const asinSearch = ref('')
 const status = ref('正在加载...')
 
 const showFieldPanel = ref(false)
@@ -156,6 +157,15 @@ const importResult = ref(null) // 导入完成后的汇总
 const importLoading = ref(false)
 const importBusy = ref(false)
 const importMessage = ref('')
+const resolvePanel = ref({
+  show: false,
+  weekId: '',
+  resultIndex: -1,
+  items: [],
+  busy: false,
+  message: '',
+})
+const imagePreview = ref({ show: false, url: '', title: '' })
 const toast = ref({ show: false, text: '', type: 'success' })
 const copiedAsinMap = ref({})
 const noteOverflowMap = ref({})
@@ -210,7 +220,15 @@ const filteredRows = computed(() => {
   if (shopFilter.value !== '__all__') {
     rows = rows.filter((r) => getCell(r, '店铺') === shopFilter.value)
   }
-  return rows.filter(rowMatchesSupplyFilter)
+  rows = rows.filter(rowMatchesSupplyFilter)
+
+  const q = asinSearch.value.trim().toLowerCase()
+  if (!q) return rows
+  return rows.filter((r) => {
+    const asin = String(getCell(r, 'ASIN') || '').toLowerCase()
+    const fnsku = String(getCell(r, 'FNSKU') || '').toLowerCase()
+    return asin.includes(q) || fnsku.includes(q)
+  })
 })
 
 function getWeekNote(asin) {
@@ -321,6 +339,20 @@ function productImageUrl(row) {
   const fromProduct = productMap.value.get(row?.asin)?.productImage
   const fromCell = getCell(row, '产品图片')
   return String(fromProduct || fromCell || '').trim()
+}
+
+function openImagePreview(row) {
+  const url = productImageUrl(row)
+  if (!url) return
+  imagePreview.value = {
+    show: true,
+    url,
+    title: `${asinValue(row)} 产品图片`,
+  }
+}
+
+function closeImagePreview() {
+  imagePreview.value = { show: false, url: '', title: '' }
 }
 
 async function copyAsin(row) {
@@ -1130,6 +1162,10 @@ async function openImport() {
   }
 }
 
+function closeImportPanel() {
+  showImportPanel.value = false
+}
+
 async function doImport(weekIds) {
   importBusy.value = true
   importMessage.value = `正在导入 ${weekIds.length} 个周次...`
@@ -1171,12 +1207,127 @@ async function doImport(weekIds) {
         failCount ? 'warn' : 'success',
       )
     }
+    const firstNeedResolveIndex = (importResult.value || []).findIndex(
+      (x) => !x?.error && x?.listingOnlyUnresolvedTotal > 0,
+    )
+    if (firstNeedResolveIndex >= 0) {
+      openResolvePanel(importResult.value[firstNeedResolveIndex], firstNeedResolveIndex)
+    }
     updateStatus()
   } catch (e) {
     importMessage.value = e.message || '导入失败'
     showToast(importMessage.value, 'error')
   } finally {
     importBusy.value = false
+  }
+}
+
+function openResolvePanel(result, resultIndex) {
+  if (!result || result.error) return
+  const groups = Array.isArray(result.listingOnlyUnresolvedByFile)
+    ? result.listingOnlyUnresolvedByFile
+    : []
+  const items = []
+  for (const g of groups) {
+    const listingFile = String(g?.listingFile || '')
+    const asins = Array.isArray(g?.asins) ? g.asins : []
+    for (const asin of asins) {
+      items.push({ asin: String(asin), listingFile, shopId: '' })
+    }
+  }
+  if (!items.length) return
+  resolvePanel.value = {
+    show: true,
+    weekId: String(result.weekId || ''),
+    resultIndex,
+    items,
+    busy: false,
+    message: `请为 ${items.length} 个 ASIN 选择店铺，然后写入主数据。`,
+  }
+}
+
+function closeResolvePanel() {
+  resolvePanel.value = {
+    show: false,
+    weekId: '',
+    resultIndex: -1,
+    items: [],
+    busy: false,
+    message: '',
+  }
+}
+
+const resolveReady = computed(() =>
+  resolvePanel.value.items.length > 0 &&
+  resolvePanel.value.items.every((x) => String(x.shopId || '').trim()),
+)
+
+async function submitResolvePanel() {
+  if (!resolveReady.value || resolvePanel.value.busy) return
+  resolvePanel.value = {
+    ...resolvePanel.value,
+    busy: true,
+    message: `正在写入 ${resolvePanel.value.items.length} 个 ASIN...`,
+  }
+  try {
+    const payload = {
+      weekId: resolvePanel.value.weekId,
+      assignments: resolvePanel.value.items.map((x) => ({
+        asin: x.asin,
+        shopId: x.shopId,
+      })),
+    }
+    const r = await fetch('/api/import/resolve-listing-only', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    const data = await r.json().catch(() => ({}))
+    if (!r.ok) throw new Error(data.error || '写入失败')
+
+    await loadProducts()
+
+    const idx = resolvePanel.value.resultIndex
+    if (idx >= 0 && Array.isArray(importResult.value) && importResult.value[idx]) {
+      const target = { ...importResult.value[idx] }
+      target.listingOnlyUnresolvedByFile = []
+      target.listingOnlyUnresolvedTotal = 0
+      const existing = Array.isArray(target.listingOnlyAddedByShop) ? target.listingOnlyAddedByShop : []
+      const mergedByShop = new Map(existing.map((x) => [x.shopName, { ...x, asins: [...(x.asins || [])] }]))
+      for (const x of data.addedByShop || []) {
+        const curr = mergedByShop.get(x.shopName)
+        if (!curr) {
+          mergedByShop.set(x.shopName, {
+            shopName: x.shopName,
+            count: x.count,
+            asins: [...(x.asins || [])],
+          })
+        } else {
+          const nextSet = new Set([...(curr.asins || []), ...(x.asins || [])])
+          curr.asins = Array.from(nextSet).sort((a, b) => a.localeCompare(b))
+          curr.count = curr.asins.length
+          mergedByShop.set(x.shopName, curr)
+        }
+      }
+      target.listingOnlyAddedByShop = Array.from(mergedByShop.values()).sort(
+        (a, b) => b.count - a.count || a.shopName.localeCompare(b.shopName),
+      )
+      target.listingOnlyAddedTotal = (target.listingOnlyAddedByShop || []).reduce(
+        (sum, x) => sum + Number(x.count || 0),
+        0,
+      )
+      importResult.value.splice(idx, 1, target)
+    }
+
+    showToast(`已写入 ${data.addedCount || 0} 个 ASIN`, 'success')
+    closeResolvePanel()
+  } catch (e) {
+    resolvePanel.value = {
+      ...resolvePanel.value,
+      busy: false,
+      message: e.message || '写入失败',
+    }
+    showToast(resolvePanel.value.message, 'error')
   }
 }
 
@@ -1289,6 +1440,21 @@ onBeforeUnmount(() => {
         <option value="local-warehouse">本地仓库有的</option>
         <option value="need-restock-no-local-no-ordered">需要补货且本地没有和没有下单的</option>
       </select>
+
+      <span class="tool-label">ASIN/FNSKU搜索</span>
+      <div class="search-input-wrap" style="width: 210px">
+        <input class="tool-select search-input" v-model="asinSearch" placeholder="ASIN / FNSKU" />
+        <button
+          v-if="asinSearch"
+          class="search-clear-btn"
+          type="button"
+          title="清空搜索"
+          aria-label="清空搜索"
+          @click="asinSearch = ''"
+        >
+          ×
+        </button>
+      </div>
 
       <span class="tool-divider"></span>
 
@@ -1437,15 +1603,14 @@ onBeforeUnmount(() => {
                   </div>
                 </template>
                 <template v-else-if="col.name === '产品图片'">
-                  <a
+                  <button
                     v-if="productImageUrl(item.row)"
-                    :href="productImageUrl(item.row)"
-                    target="_blank"
-                    rel="noopener noreferrer"
                     class="product-image-link"
+                    type="button"
+                    @click="openImagePreview(item.row)"
                   >
                     <img :src="productImageUrl(item.row)" :alt="`${asinValue(item.row)} 产品图片`" class="product-image-thumb" loading="lazy" />
-                  </a>
+                  </button>
                   <span v-else>—</span>
                 </template>
                 <template v-else>{{ getCell(item.row, col.name) }}</template>
@@ -1454,6 +1619,7 @@ onBeforeUnmount(() => {
             <tr v-if="isInventoryRowExpanded(item.row.asin)" class="inventory-row">
               <td :colspan="displayCols.length" class="inventory-detail-cell">
                 <div class="inventory-detail-grid">
+                  <div class="inventory-item"><span>FNSKU</span><strong>{{ getCell(item.row, 'FNSKU') || '—' }}</strong></div>
                   <div class="inventory-item"><span>可售</span><strong>{{ getCell(item.row, '可售') || '—' }}</strong></div>
                   <div class="inventory-item"><span>入库中</span><strong>{{ getCell(item.row, '入库中') || '—' }}</strong></div>
                   <div class="inventory-item"><span>不可售</span><strong>{{ getCell(item.row, '不可售') || '—' }}</strong></div>
@@ -1494,15 +1660,14 @@ onBeforeUnmount(() => {
                 <div class="inventory-footer-bar">
                   <div class="inventory-item inventory-item-image inventory-item-image-footer">
                     <span>产品图片</span>
-                    <a
+                    <button
                       v-if="productImageUrl(item.row)"
-                      :href="productImageUrl(item.row)"
-                      target="_blank"
-                      rel="noopener noreferrer"
                       class="product-image-link"
+                      type="button"
+                      @click="openImagePreview(item.row)"
                     >
                       <img :src="productImageUrl(item.row)" :alt="`${asinValue(item.row)} 产品图片`" class="product-image-thumb" loading="lazy" />
-                    </a>
+                    </button>
                     <strong v-else>—</strong>
                   </div>
                   <div class="inventory-btn-group">
@@ -1529,6 +1694,13 @@ onBeforeUnmount(() => {
           </template>
         </tbody>
       </table>
+    </div>
+
+    <div v-if="imagePreview.show" class="image-preview-mask" @click.self="closeImagePreview">
+      <div class="image-preview-dialog">
+        <button class="image-preview-close" type="button" @click="closeImagePreview">✕</button>
+        <img :src="imagePreview.url" :alt="imagePreview.title" class="image-preview-large" />
+      </div>
     </div>
 
     <!-- 字段配置抽屉 -->
@@ -1688,14 +1860,19 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- 导入抽屉 -->
-    <div v-if="showImportPanel" class="drawer-mask" @click.self="showImportPanel = false">
+    <div v-if="showImportPanel" class="drawer-mask" @click.self="closeImportPanel">
       <aside class="drawer drawer-wide">
         <header class="drawer-head">
           <h3>扫描并导入周数据</h3>
-          <button class="tool-btn" type="button" @click="showImportPanel = false">✕</button>
+          <button class="tool-btn" type="button" @click="closeImportPanel">✕</button>
         </header>
         <div class="drawer-tip">
           周数据目录放在 <code>public/data/第x周/</code>，目录内需包含订单利润表和 Listing销售库存表。导入后每周数据会永久保存到 <code>src/data/weeks/</code>。
+        </div>
+        <div class="drawer-actions" style="margin-top: 8px">
+          <button class="tool-btn" type="button" :disabled="importLoading || importBusy" @click="openImport">
+            {{ importLoading ? '扫描中...' : '重新扫描' }}
+          </button>
         </div>
         <div v-if="importMessage" class="drawer-tip" :class="{ 'is-loading': importLoading || importBusy }">
           <span v-if="importLoading || importBusy" class="loading-dot loading-spin"></span>
@@ -1711,12 +1888,17 @@ onBeforeUnmount(() => {
               <div class="shop-info">
                 <div class="shop-name">
                   {{ f.weekId }} · {{ f.folderName }}
+                  <span v-if="f.importMode === 'reimport'" class="col-badge" style="color: #f5b32f">重新导入</span>
+                  <span v-else-if="f.importMode === 'new'" class="col-badge">新导入</span>
                   <span class="col-badge">订单: {{ f.orderFile }}</span>
                   <span class="col-badge" :style="{ color: (f.listingFiles && f.listingFiles.length) ? '' : '#f54a45' }">
                     {{ (f.listingFiles && f.listingFiles.length)
                       ? `库存: ${f.listingFiles.length} 个文件`
                       : '缺少 Listing销售库存' }}
                   </span>
+                </div>
+                <div class="shop-meta" v-if="f.importHint">
+                  <span>扫描提示：{{ f.importHint }}</span>
                 </div>
                 <div class="shop-meta" v-if="f.listingFiles && f.listingFiles.length">
                   <span>Listing文件：{{ f.listingFiles.join('、') }}</span>
@@ -1757,7 +1939,7 @@ onBeforeUnmount(() => {
         <section v-if="importResult && importResult.length" class="shop-form">
           <div class="shop-list-head">导入结果</div>
           <ul class="shop-list">
-            <li v-for="r in importResult" :key="r.filename || r.weekId" class="shop-item">
+            <li v-for="(r, i) in importResult" :key="r.filename || r.weekId" class="shop-item">
               <div class="shop-info" style="width: 100%">
                 <div class="shop-name">
                   <template v-if="r.error">
@@ -1778,6 +1960,9 @@ onBeforeUnmount(() => {
                   <span v-if="r.unmatchedTotal">
                     · 未命中 ASIN {{ r.unmatchedTotal }}
                   </span>
+                  <span v-if="r.listingOnlyAddedTotal">
+                    · Listing 新增新品 {{ r.listingOnlyAddedTotal }}
+                  </span>
                   <span v-if="!(r.newShops || []).length && !(r.newAsins || []).length">
                     无新增主数据
                   </span>
@@ -1788,10 +1973,61 @@ onBeforeUnmount(() => {
                     {{ r.unmatchedByShop.map((x) => `${x.shopName}(${x.count})：${(x.asins || []).join('、')}`).join(' ｜ ') }}
                   </span>
                 </div>
-                <div class="shop-meta" v-else>{{ r.error }}</div>
+                <div class="shop-meta" v-if="!r.error && r.listingOnlyAddedByShop && r.listingOnlyAddedByShop.length">
+                  <span>
+                    Listing 新品清单：
+                    {{ r.listingOnlyAddedByShop.map((x) => `${x.shopName}(${x.count})：${(x.asins || []).join('、')}`).join(' ｜ ') }}
+                  </span>
+                </div>
+                <div class="shop-meta" v-if="!r.error && r.listingOnlyUnresolvedByFile && r.listingOnlyUnresolvedByFile.length" style="color: #f5b32f">
+                  <span>
+                    Listing 待确认店铺：
+                    {{ r.listingOnlyUnresolvedByFile.map((x) => `${x.listingFile}(${x.count})：${(x.asins || []).join('、')}`).join(' ｜ ') }}
+                  </span>
+                  <button
+                    class="tool-btn"
+                    type="button"
+                    style="margin-left: 10px"
+                    :disabled="resolvePanel.busy"
+                    @click="openResolvePanel(r, i)"
+                  >
+                    选择店铺并写入
+                  </button>
+                </div>
+                <div class="shop-meta" v-if="r.error">{{ r.error }}</div>
               </div>
             </li>
           </ul>
+        </section>
+
+        <section v-if="resolvePanel.show" class="shop-form" style="border-color: #f5b32f">
+          <div class="shop-list-head">无法推断店铺，手动分配</div>
+          <div class="drawer-tip" style="margin-top: 8px">
+            {{ resolvePanel.message }}
+          </div>
+          <ul class="shop-list">
+            <li v-for="(x, idx) in resolvePanel.items" :key="x.asin + '-' + idx" class="shop-item">
+              <div class="shop-info">
+                <div class="shop-name">
+                  <span class="col-badge">{{ x.asin }}</span>
+                  <span v-if="x.listingFile">{{ x.listingFile }}</span>
+                </div>
+              </div>
+              <div class="shop-actions">
+                <select class="tool-select" v-model="x.shopId" :disabled="resolvePanel.busy" style="min-width: 180px">
+                  <option value="" disabled>请选择店铺</option>
+                  <option v-for="s in shops" :key="s.id" :value="s.id">{{ s.name }}</option>
+                </select>
+              </div>
+            </li>
+          </ul>
+          <div class="form-actions">
+            <button class="tool-btn primary" type="button" :disabled="!resolveReady || resolvePanel.busy" @click="submitResolvePanel">
+              <span v-if="resolvePanel.busy" class="loading-dot loading-spin"></span>
+              {{ resolvePanel.busy ? '写入中...' : '确认写入' }}
+            </button>
+            <button class="tool-btn" type="button" :disabled="resolvePanel.busy" @click="closeResolvePanel">取消</button>
+          </div>
         </section>
 
         <div class="shop-list-head">已导入（{{ importScan.imported.length }}）</div>

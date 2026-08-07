@@ -1,6 +1,14 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import { readdirSync, readFileSync, writeFileSync, existsSync, mkdirSync, unlinkSync } from 'node:fs'
+import {
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+  existsSync,
+  mkdirSync,
+  unlinkSync,
+  statSync,
+} from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { createRequire } from 'node:module'
 import {
@@ -169,6 +177,64 @@ function readTableFile(filePath) {
   return { columns, rows: dataRows }
 }
 
+function readListingDataForBundle(folderName, listingFiles) {
+  const validListingFiles = (Array.isArray(listingFiles) ? listingFiles : []).filter((f) =>
+    existsSync(fp(XLSX_DIR, folderName, f)),
+  )
+
+  const listingMap = new Map()
+  const listingAsinsByFile = new Map()
+  const listingRowsByFile = new Map()
+
+  for (const listingFile of validListingFiles) {
+    const listingPath = fp(XLSX_DIR, folderName, listingFile)
+    const listing = readTableFile(listingPath)
+    const listingColIdx = {}
+    listing.columns.forEach((c, i) => (listingColIdx[c] = i))
+    const listingAsinIdx = listingColIdx['ASIN']
+    if (listingAsinIdx == null) continue
+
+    const fileAsins = new Set()
+    const fileRows = new Map()
+
+    for (const values of listing.rows) {
+      const asin = String(values[listingAsinIdx] ?? '').trim()
+      if (!asin) continue
+      fileAsins.add(asin)
+      const incoming = buildListingRowRecord(values, listingColIdx)
+
+      const prevFromFile = fileRows.get(asin)
+      if (!prevFromFile) {
+        fileRows.set(asin, incoming)
+      } else {
+        const mergedFromFile = { ...prevFromFile }
+        for (const [k, v] of Object.entries(incoming)) {
+          if (v === '' || v == null) continue
+          mergedFromFile[k] = v
+        }
+        fileRows.set(asin, mergedFromFile)
+      }
+
+      const prev = listingMap.get(asin)
+      if (!prev) {
+        listingMap.set(asin, incoming)
+      } else {
+        const merged = { ...prev }
+        for (const [k, v] of Object.entries(incoming)) {
+          if (v === '' || v == null) continue
+          merged[k] = v
+        }
+        listingMap.set(asin, merged)
+      }
+    }
+
+    listingAsinsByFile.set(listingFile, fileAsins)
+    listingRowsByFile.set(listingFile, fileRows)
+  }
+
+  return { validListingFiles, listingMap, listingAsinsByFile, listingRowsByFile }
+}
+
 function scanWeekBundles() {
   const baseDir = fp(XLSX_DIR)
   if (!existsSync(baseDir)) return []
@@ -205,6 +271,39 @@ function scanWeekBundles() {
   })
 }
 
+function buildDataScanSignature() {
+  const baseDir = fp(XLSX_DIR)
+  if (!existsSync(baseDir)) return 'missing'
+
+  const chunks = []
+  const folders = readdirSync(baseDir, { withFileTypes: true })
+    .filter((d) => d.isDirectory() && !d.name.startsWith('.'))
+    .map((d) => d.name)
+    .sort((a, b) => a.localeCompare(b))
+
+  for (const folderName of folders) {
+    const dir = fp(XLSX_DIR, folderName)
+    const files = readdirSync(dir)
+      .map((f) => String(f).trim())
+      .filter(Boolean)
+      .filter((f) => !f.startsWith('.'))
+      .filter((f) => /\.(xlsx|csv)$/i.test(f))
+      .sort((a, b) => a.localeCompare(b))
+
+    for (const file of files) {
+      const full = fp(XLSX_DIR, folderName, file)
+      try {
+        const st = statSync(full)
+        chunks.push(`${folderName}/${file}:${st.size}:${Math.floor(st.mtimeMs)}`)
+      } catch {
+        chunks.push(`${folderName}/${file}:missing`)
+      }
+    }
+  }
+
+  return chunks.join('|') || 'empty'
+}
+
 function readImportedWeeksFallback() {
   const fromIndex = readJson(`${DATA_DIR}/weeks.json`, [])
   if (Array.isArray(fromIndex) && fromIndex.length) return fromIndex
@@ -223,12 +322,16 @@ function readImportedWeeksFallback() {
     const filename = String(snap.filename || file)
     const { startDate, endDate } = parseDatesFromFilename(filename)
     const rowCount = Array.isArray(snap.rows) ? snap.rows.length : 0
+    const listingFiles = Array.isArray(snap.listingFiles)
+      ? snap.listingFiles.filter((x) => typeof x === 'string')
+      : []
     rebuilt.push({
       id: snap.id,
       filename,
       startDate,
       endDate,
       rowCount,
+      listingFiles,
       importedAt: '',
     })
   }
@@ -256,33 +359,10 @@ function importWeekBundle(bundle) {
   const colIdx = {}
   columns.forEach((c, i) => (colIdx[c] = i))
 
-  const listingMap = new Map()
-
-  for (const listingFile of validListingFiles) {
-    const listingPath = fp(XLSX_DIR, folderName, listingFile)
-    const listing = readTableFile(listingPath)
-    const listingColIdx = {}
-    listing.columns.forEach((c, i) => (listingColIdx[c] = i))
-    const listingAsinIdx = listingColIdx['ASIN']
-    if (listingAsinIdx == null) continue
-
-    for (const values of listing.rows) {
-      const asin = String(values[listingAsinIdx] ?? '').trim()
-      if (!asin) continue
-      const incoming = buildListingRowRecord(values, listingColIdx)
-      const prev = listingMap.get(asin)
-      if (!prev) {
-        listingMap.set(asin, incoming)
-        continue
-      }
-      const merged = { ...prev }
-      for (const [k, v] of Object.entries(incoming)) {
-        if (v === '' || v == null) continue
-        merged[k] = v
-      }
-      listingMap.set(asin, merged)
-    }
-  }
+  const listingData = readListingDataForBundle(folderName, validListingFiles)
+  const listingMap = listingData.listingMap
+  const listingAsinsByFile = listingData.listingAsinsByFile
+  const listingRowsByFile = listingData.listingRowsByFile
 
   // 先读取 weeks 索引并定位上一周，用于继承每个 ASIN 的备注
   const weeks = readJson(`${DATA_DIR}/weeks.json`, [])
@@ -313,6 +393,9 @@ function importWeekBundle(bundle) {
     values,
     _rowIndex: i,
   }))
+  const snapshotAsinSet = new Set(
+    snapshotRows.map((r) => String(r?.asin || '').trim()).filter(Boolean),
+  )
 
   const nextNotes = {}
   for (const row of snapshotRows) {
@@ -327,23 +410,11 @@ function importWeekBundle(bundle) {
   writeJson(`${WEEKS_DIR}/${weekId}.json`, {
     id: weekId,
     filename: `${folderName}/${orderFile}`,
+    listingFiles: validListingFiles,
     columns,
     rows: snapshotRows,
     notes: nextNotes,
   })
-
-  // 更新 weeks 索引
-  const finalWeeks = filtered.slice()
-  finalWeeks.push({
-    id: weekId,
-    filename: `${folderName}/${orderFile}`,
-    startDate,
-    endDate,
-    rowCount: snapshotRows.length,
-    importedAt: new Date().toISOString(),
-  })
-  finalWeeks.sort(cmpWeekByDateDesc)
-  writeJson(`${DATA_DIR}/weeks.json`, finalWeeks)
 
   // 同步 shops
   const shopIdx = colIdx['店铺']
@@ -368,6 +439,7 @@ function importWeekBundle(bundle) {
   // 重新读取一次 shops，包含刚新增的
   const shopsAfter = readJson(`${DATA_DIR}/shops.json`, [])
   const shopNameToId = new Map(shopsAfter.map((s) => [s.name, s.id]))
+  const shopNameById = new Map(shopsAfter.map((s) => [s.id, s.name]))
 
   // 每个 shop 一份 map，避免每行都读文件
   const shopBuckets = new Map()
@@ -384,6 +456,10 @@ function importWeekBundle(bundle) {
 
   const newAsins = []
   const unmatchedByShopMap = new Map()
+  let listingOnlyAddedByShop = []
+  let listingOnlyAddedTotal = 0
+  let listingOnlyUnresolvedByFile = []
+  let listingOnlyUnresolvedTotal = 0
 
   const addUnmatchedAsin = (shopName, asin) => {
     if (!shopName || !asin) return
@@ -391,6 +467,68 @@ function importWeekBundle(bundle) {
       unmatchedByShopMap.set(shopName, new Set())
     }
     unmatchedByShopMap.get(shopName).add(asin)
+  }
+
+  const applyListingRow = (product, listingRow) => {
+    if (!listingRow) return false
+    const before = JSON.stringify({
+      name: product.name,
+      monthSales: product.monthSales,
+      monthRevenue: product.monthRevenue,
+      monthOrders: product.monthOrders,
+      dailySales: product.dailySales,
+      vineGiftSales: product.vineGiftSales,
+      sellable: product.sellable,
+      inbound: product.inbound,
+      unsellable: product.unsellable,
+      reserved: product.reserved,
+      fbaTotal: product.fbaTotal,
+      packageSize: product.packageSize,
+      packageType: product.packageType,
+      itemWeight: product.itemWeight,
+      productImage: product.productImage,
+      localWarehouse: product.localWarehouse,
+      orderedQty: product.orderedQty,
+    })
+
+    if (listingRow.name) product.name = listingRow.name
+    product.monthSales = listingRow.monthSales
+    product.monthRevenue = listingRow.monthRevenue
+    product.monthOrders = listingRow.monthOrders
+    product.dailySales = listingRow.dailySales
+    product.vineGiftSales = listingRow.vineGiftSales
+    product.sellable = listingRow.sellable
+    product.inbound = listingRow.inbound
+    product.unsellable = listingRow.unsellable
+    product.reserved = listingRow.reserved
+    product.fbaTotal = listingRow.fbaTotal
+    product.packageSize = listingRow.packageSize
+    product.packageType = listingRow.packageType
+    product.itemWeight = listingRow.itemWeight
+    product.productImage = listingRow.productImage
+    if (product.localWarehouse == null || product.localWarehouse === '') product.localWarehouse = 0
+    if (product.orderedQty == null || product.orderedQty === '') product.orderedQty = 0
+
+    const after = JSON.stringify({
+      name: product.name,
+      monthSales: product.monthSales,
+      monthRevenue: product.monthRevenue,
+      monthOrders: product.monthOrders,
+      dailySales: product.dailySales,
+      vineGiftSales: product.vineGiftSales,
+      sellable: product.sellable,
+      inbound: product.inbound,
+      unsellable: product.unsellable,
+      reserved: product.reserved,
+      fbaTotal: product.fbaTotal,
+      packageSize: product.packageSize,
+      packageType: product.packageType,
+      itemWeight: product.itemWeight,
+      productImage: product.productImage,
+      localWarehouse: product.localWarehouse,
+      orderedQty: product.orderedQty,
+    })
+    return before !== after
   }
 
   const applyUnmatchedInventoryFallback = (product) => {
@@ -401,13 +539,40 @@ function importWeekBundle(bundle) {
     if (product.reserved === '' || product.reserved == null) product.reserved = 0
   }
 
+  const appendSnapshotRowIfMissing = (asin, shopId, listingRow, category = '新品') => {
+    const key = String(asin || '').trim()
+    if (!key || snapshotAsinSet.has(key)) return
+
+    const shop = shopsAfter.find((s) => s.id === shopId) || null
+    const values = Array(columns.length).fill('')
+    if (colIdx['ASIN'] != null) values[colIdx['ASIN']] = key
+    if (colIdx['父ASIN'] != null) values[colIdx['父ASIN']] = key
+    if (colIdx['店铺'] != null) values[colIdx['店铺']] = shop?.name || ''
+    if (colIdx['国家'] != null) values[colIdx['国家']] = shop?.country || ''
+    if (colIdx['品名'] != null) values[colIdx['品名']] = listingRow?.name || ''
+    if (colIdx['分类'] != null) values[colIdx['分类']] = category
+
+    snapshotRows.push({ asin: key, values, _rowIndex: snapshotRows.length })
+    snapshotAsinSet.add(key)
+  }
+
+  const orderAsinSet = new Set()
+  const orderAsinsByShop = new Map()
+  const addOrderAsinByShop = (shopId, asin) => {
+    if (!shopId || !asin) return
+    if (!orderAsinsByShop.has(shopId)) orderAsinsByShop.set(shopId, new Set())
+    orderAsinsByShop.get(shopId).add(asin)
+  }
+
   if (asinIdx != null && shopIdx != null) {
     for (const values of rows) {
       const asin = (values[asinIdx] ?? '').trim()
       if (!asin) continue
+      orderAsinSet.add(asin)
       const shopName = (values[shopIdx] ?? '').trim()
       const shopId = shopNameToId.get(shopName)
       if (!shopId) continue // 理论上不会：上一步已经补齐 shops
+      addOrderAsinByShop(shopId, asin)
 
       const bucket = ensureBucket(shopId)
       const listingRow = listingMap.get(asin)
@@ -445,21 +610,7 @@ function importWeekBundle(bundle) {
           lastSeenWeek: weekId,
         }
         if (listingRow) {
-          if (listingRow.name) product.name = listingRow.name
-          product.monthSales = listingRow.monthSales
-          product.monthRevenue = listingRow.monthRevenue
-          product.monthOrders = listingRow.monthOrders
-          product.dailySales = listingRow.dailySales
-          product.vineGiftSales = listingRow.vineGiftSales
-          product.sellable = listingRow.sellable
-          product.inbound = listingRow.inbound
-          product.unsellable = listingRow.unsellable
-          product.reserved = listingRow.reserved
-          product.fbaTotal = listingRow.fbaTotal
-          product.packageSize = listingRow.packageSize
-          product.packageType = listingRow.packageType
-          product.itemWeight = listingRow.itemWeight
-          product.productImage = listingRow.productImage
+          applyListingRow(product, listingRow)
         } else {
           applyUnmatchedInventoryFallback(product)
         }
@@ -469,24 +620,7 @@ function importWeekBundle(bundle) {
       } else {
         const p = bucket.map.get(asin)
         if (listingRow) {
-          if (listingRow.name) p.name = listingRow.name
-          p.monthSales = listingRow.monthSales
-          p.monthRevenue = listingRow.monthRevenue
-          p.monthOrders = listingRow.monthOrders
-          p.dailySales = listingRow.dailySales
-          p.vineGiftSales = listingRow.vineGiftSales
-          p.sellable = listingRow.sellable
-          p.inbound = listingRow.inbound
-          p.unsellable = listingRow.unsellable
-          p.reserved = listingRow.reserved
-          p.fbaTotal = listingRow.fbaTotal
-          p.packageSize = listingRow.packageSize
-          p.packageType = listingRow.packageType
-          p.itemWeight = listingRow.itemWeight
-          p.productImage = listingRow.productImage
-          if (p.localWarehouse == null || p.localWarehouse === '') p.localWarehouse = 0
-          if (p.orderedQty == null || p.orderedQty === '') p.orderedQty = 0
-          bucket.changed = true
+          if (applyListingRow(p, listingRow)) bucket.changed = true
         } else {
           const before = JSON.stringify({
             sellable: p.sellable,
@@ -509,11 +643,164 @@ function importWeekBundle(bundle) {
         }
       }
     }
+
+    const findAsinBucket = (asin) => {
+      for (const [shopId, bucket] of shopBuckets) {
+        if (bucket.map.has(asin)) return { shopId, bucket, product: bucket.map.get(asin) }
+      }
+      return null
+    }
+
+    const pickShopFromCounts = (counts) => {
+      let bestShopId = ''
+      let bestCount = 0
+      let tied = false
+      for (const [shopId, count] of counts) {
+        if (count > bestCount) {
+          bestShopId = shopId
+          bestCount = count
+          tied = false
+        } else if (count === bestCount && count > 0) {
+          tied = true
+        }
+      }
+      if (bestCount <= 0 || tied) return ''
+      return bestShopId
+    }
+
+    const inferShopIdForListingFile = (fileAsins) => {
+      const overlapWithOrder = new Map()
+      for (const [shopId, asinSet] of orderAsinsByShop) {
+        let hit = 0
+        for (const asin of fileAsins) {
+          if (asinSet.has(asin)) hit += 1
+        }
+        if (hit > 0) overlapWithOrder.set(shopId, hit)
+      }
+      const fromOrder = pickShopFromCounts(overlapWithOrder)
+      if (fromOrder) return fromOrder
+
+      const overlapWithMaster = new Map()
+      for (const [shopId, bucket] of shopBuckets) {
+        let hit = 0
+        for (const asin of fileAsins) {
+          if (bucket.map.has(asin)) hit += 1
+        }
+        if (hit > 0) overlapWithMaster.set(shopId, hit)
+      }
+      const fromMaster = pickShopFromCounts(overlapWithMaster)
+      if (fromMaster) return fromMaster
+
+      // 兜底：当目录只有一个店铺时可直接归属。
+      if (shopsAfter.length === 1) return shopsAfter[0].id
+      return ''
+    }
+
+    const listingOnlyAdded = []
+    const listingOnlyUnresolved = []
+    const processedListingOnly = new Set()
+
+    for (const listingFile of validListingFiles) {
+      const fileAsins = listingAsinsByFile.get(listingFile) || new Set()
+      if (!fileAsins.size) continue
+      const fileRows = listingRowsByFile.get(listingFile) || new Map()
+      const inferredShopId = inferShopIdForListingFile(fileAsins)
+
+      for (const asin of fileAsins) {
+        if (orderAsinSet.has(asin) || processedListingOnly.has(asin)) continue
+        processedListingOnly.add(asin)
+
+        const listingRow = fileRows.get(asin) || listingMap.get(asin)
+        const located = findAsinBucket(asin)
+        if (located) {
+          if (applyListingRow(located.product, listingRow)) located.bucket.changed = true
+          if (located.product.lastSeenWeek !== weekId) {
+            located.product.lastSeenWeek = weekId
+            located.bucket.changed = true
+          }
+          appendSnapshotRowIfMissing(asin, located.shopId, listingRow, located.product.category || '新品')
+          continue
+        }
+
+        if (!inferredShopId) {
+          listingOnlyUnresolved.push({ listingFile, asin })
+          continue
+        }
+
+        const targetBucket = ensureBucket(inferredShopId)
+        const product = {
+          asin,
+          parentAsin: asin,
+          name: listingRow?.name || '',
+          category: '新品',
+          restockCycle: 2,
+          sellable: listingRow?.sellable ?? '',
+          inbound: listingRow?.inbound ?? '',
+          unsellable: listingRow?.unsellable ?? '',
+          reserved: listingRow?.reserved ?? '',
+          fbaTotal: listingRow?.fbaTotal ?? '',
+          localWarehouse: 0,
+          orderedQty: 0,
+          monthSales: listingRow?.monthSales ?? '',
+          monthRevenue: listingRow?.monthRevenue ?? '',
+          monthOrders: listingRow?.monthOrders ?? '',
+          dailySales: listingRow?.dailySales ?? '',
+          vineGiftSales: listingRow?.vineGiftSales ?? '',
+          packageSize: listingRow?.packageSize ?? '',
+          packageType: listingRow?.packageType ?? '',
+          itemWeight: listingRow?.itemWeight ?? '',
+          productImage: listingRow?.productImage ?? '',
+          firstSeenWeek: weekId,
+          lastSeenWeek: weekId,
+        }
+        targetBucket.map.set(asin, product)
+        targetBucket.changed = true
+        newAsins.push({ ...product, shopId: inferredShopId })
+        appendSnapshotRowIfMissing(asin, inferredShopId, listingRow, '新品')
+        listingOnlyAdded.push({
+          asin,
+          shopId: inferredShopId,
+          shopName: shopNameById.get(inferredShopId) || inferredShopId,
+        })
+      }
+    }
+
     for (const [shopId, bucket] of shopBuckets) {
       if (bucket.changed) {
         writeProductsByShop(shopId, Array.from(bucket.map.values()))
       }
     }
+
+    listingOnlyUnresolvedByFile = Array.from(
+      listingOnlyUnresolved.reduce((acc, item) => {
+        if (!acc.has(item.listingFile)) acc.set(item.listingFile, [])
+        acc.get(item.listingFile).push(item.asin)
+        return acc
+      }, new Map()),
+    )
+      .map(([listingFile, asins]) => ({
+        listingFile,
+        count: asins.length,
+        asins: asins.slice().sort((a, b) => a.localeCompare(b)),
+      }))
+      .sort((a, b) => b.count - a.count || a.listingFile.localeCompare(b.listingFile))
+
+    listingOnlyAddedByShop = Array.from(
+      listingOnlyAdded.reduce((acc, item) => {
+        if (!acc.has(item.shopName)) acc.set(item.shopName, [])
+        acc.get(item.shopName).push(item.asin)
+        return acc
+      }, new Map()),
+    )
+      .map(([shopName, asins]) => ({
+        shopName,
+        count: asins.length,
+        asins: asins.slice().sort((a, b) => a.localeCompare(b)),
+      }))
+      .sort((a, b) => b.count - a.count || a.shopName.localeCompare(b.shopName))
+
+    listingOnlyAddedTotal = listingOnlyAdded.length
+    listingOnlyUnresolvedTotal = listingOnlyUnresolved.length
   }
 
   const unmatchedByShop = Array.from(unmatchedByShopMap.entries())
@@ -529,6 +816,29 @@ function importWeekBundle(bundle) {
 
   const unmatchedTotal = unmatchedByShop.reduce((sum, x) => sum + x.count, 0)
 
+  // 以最终快照覆盖写回：确保仅 Listing ASIN 不会在重导入后丢失。
+  writeJson(`${WEEKS_DIR}/${weekId}.json`, {
+    id: weekId,
+    filename: `${folderName}/${orderFile}`,
+    listingFiles: validListingFiles,
+    columns,
+    rows: snapshotRows,
+    notes: nextNotes,
+  })
+
+  const finalWeeks = filtered.slice()
+  finalWeeks.push({
+    id: weekId,
+    filename: `${folderName}/${orderFile}`,
+    startDate,
+    endDate,
+    rowCount: snapshotRows.length,
+    listingFiles: validListingFiles,
+    importedAt: new Date().toISOString(),
+  })
+  finalWeeks.sort(cmpWeekByDateDesc)
+  writeJson(`${DATA_DIR}/weeks.json`, finalWeeks)
+
   return {
     weekId,
     folderName,
@@ -540,6 +850,10 @@ function importWeekBundle(bundle) {
     listingMatched: listingMap.size,
     unmatchedByShop,
     unmatchedTotal,
+    listingOnlyAddedByShop,
+    listingOnlyAddedTotal,
+    listingOnlyUnresolvedByFile,
+    listingOnlyUnresolvedTotal,
   }
 }
 
@@ -733,9 +1047,87 @@ function apiPlugin() {
           if (url === '/scan' && req.method === 'GET') {
             const bundles = scanWeekBundles()
             const weeks = readImportedWeeksFallback()
-            const importedIds = new Set(weeks.map((w) => w.id))
-            const unimported = bundles.filter((b) => !importedIds.has(b.weekId))
-            return sendJson(res, 200, { unimported, imported: weeks })
+            const importedMap = new Map(weeks.map((w) => [w.id, w]))
+
+            const listEquals = (a, b) => {
+              const sa = Array.isArray(a) ? a.slice().sort((x, y) => String(x).localeCompare(String(y))) : []
+              const sb = Array.isArray(b) ? b.slice().sort((x, y) => String(x).localeCompare(String(y))) : []
+              if (sa.length !== sb.length) return false
+              for (let i = 0; i < sa.length; i++) {
+                if (String(sa[i]) !== String(sb[i])) return false
+              }
+              return true
+            }
+
+            const hasSourceChangedByMtime = (bundle, importedAt) => {
+              if (!bundle?.folderName || !importedAt) return false
+              const importedTs = Date.parse(importedAt)
+              if (!Number.isFinite(importedTs)) return false
+
+              const files = [bundle.orderFile, ...(bundle.listingFiles || [])].filter(Boolean)
+              for (const file of files) {
+                const full = fp(XLSX_DIR, bundle.folderName, file)
+                try {
+                  const st = statSync(full)
+                  if (st.mtimeMs > importedTs) return true
+                } catch {
+                  // ignore
+                }
+              }
+              return false
+            }
+
+            const unimported = []
+            for (const b of bundles) {
+              const imported = importedMap.get(b.weekId)
+              if (!imported) {
+                unimported.push({ ...b, importMode: 'new', importHint: '新周数据' })
+                continue
+              }
+
+              const currentOrderPath = `${b.folderName}/${b.orderFile}`
+              const importedOrderPath = String(imported.filename || '')
+              const importedListingFiles = Array.isArray(imported.listingFiles)
+                ? imported.listingFiles
+                : []
+
+              let changed = false
+              let hint = ''
+
+              if (importedOrderPath && importedOrderPath !== currentOrderPath) {
+                changed = true
+                hint = '订单文件已变化'
+              }
+
+              if (!changed && importedListingFiles.length) {
+                if (!listEquals(importedListingFiles, b.listingFiles || [])) {
+                  changed = true
+                  hint = 'Listing 文件有新增或变化'
+                }
+              }
+
+              if (!changed && hasSourceChangedByMtime(b, imported.importedAt)) {
+                changed = true
+                hint = '源文件时间晚于上次导入'
+              }
+
+              if (changed) {
+                unimported.push({
+                  ...b,
+                  importMode: 'reimport',
+                  importHint: hint || '源文件已变化，建议重新导入',
+                })
+              }
+            }
+
+            return sendJson(res, 200, {
+              unimported,
+              imported: weeks,
+              scanSignature: buildDataScanSignature(),
+            })
+          }
+          if (url === '/scan-signature' && req.method === 'GET') {
+            return sendJson(res, 200, { scanSignature: buildDataScanSignature() })
           }
           if (url === '/import' && req.method === 'POST') {
             const body = (await readBody(req)) || {}
@@ -762,6 +1154,247 @@ function apiPlugin() {
               }
             }
             return sendJson(res, 200, { results })
+          }
+
+          if (url === '/import/resolve-listing-only' && req.method === 'POST') {
+            const body = (await readBody(req)) || {}
+            const weekId = String(body.weekId || '').trim()
+            const assignments = Array.isArray(body.assignments) ? body.assignments : []
+            if (!weekId) return sendJson(res, 400, { error: 'weekId required' })
+            if (!assignments.length) return sendJson(res, 400, { error: 'assignments required' })
+
+            const bundleMap = new Map(scanWeekBundles().map((b) => [b.weekId, b]))
+            const bundle = bundleMap.get(weekId)
+            if (!bundle) return sendJson(res, 404, { error: 'week bundle not found' })
+
+            const shops = readJson(`${DATA_DIR}/shops.json`, [])
+            const shopNameById = new Map(shops.map((s) => [s.id, s.name]))
+            const shopIdSet = new Set(shops.map((s) => s.id))
+
+            const listingData = readListingDataForBundle(bundle.folderName, bundle.listingFiles || [])
+            const listingMap = listingData.listingMap
+
+            const applyListingRow = (product, listingRow) => {
+              if (!listingRow) return false
+              const before = JSON.stringify({
+                name: product.name,
+                monthSales: product.monthSales,
+                monthRevenue: product.monthRevenue,
+                monthOrders: product.monthOrders,
+                dailySales: product.dailySales,
+                vineGiftSales: product.vineGiftSales,
+                sellable: product.sellable,
+                inbound: product.inbound,
+                unsellable: product.unsellable,
+                reserved: product.reserved,
+                fbaTotal: product.fbaTotal,
+                packageSize: product.packageSize,
+                packageType: product.packageType,
+                itemWeight: product.itemWeight,
+                productImage: product.productImage,
+                localWarehouse: product.localWarehouse,
+                orderedQty: product.orderedQty,
+              })
+
+              if (listingRow.name) product.name = listingRow.name
+              product.monthSales = listingRow.monthSales
+              product.monthRevenue = listingRow.monthRevenue
+              product.monthOrders = listingRow.monthOrders
+              product.dailySales = listingRow.dailySales
+              product.vineGiftSales = listingRow.vineGiftSales
+              product.sellable = listingRow.sellable
+              product.inbound = listingRow.inbound
+              product.unsellable = listingRow.unsellable
+              product.reserved = listingRow.reserved
+              product.fbaTotal = listingRow.fbaTotal
+              product.packageSize = listingRow.packageSize
+              product.packageType = listingRow.packageType
+              product.itemWeight = listingRow.itemWeight
+              product.productImage = listingRow.productImage
+              if (product.localWarehouse == null || product.localWarehouse === '') product.localWarehouse = 0
+              if (product.orderedQty == null || product.orderedQty === '') product.orderedQty = 0
+
+              const after = JSON.stringify({
+                name: product.name,
+                monthSales: product.monthSales,
+                monthRevenue: product.monthRevenue,
+                monthOrders: product.monthOrders,
+                dailySales: product.dailySales,
+                vineGiftSales: product.vineGiftSales,
+                sellable: product.sellable,
+                inbound: product.inbound,
+                unsellable: product.unsellable,
+                reserved: product.reserved,
+                fbaTotal: product.fbaTotal,
+                packageSize: product.packageSize,
+                packageType: product.packageType,
+                itemWeight: product.itemWeight,
+                productImage: product.productImage,
+                localWarehouse: product.localWarehouse,
+                orderedQty: product.orderedQty,
+              })
+              return before !== after
+            }
+
+            const shopBuckets = new Map()
+            const ensureBucket = (shopId) => {
+              if (!shopBuckets.has(shopId)) {
+                const list = readProductsByShop(shopId)
+                shopBuckets.set(shopId, {
+                  map: new Map(list.map((p) => [p.asin, p])),
+                  changed: false,
+                })
+              }
+              return shopBuckets.get(shopId)
+            }
+
+            const findAsinBucket = (asin) => {
+              for (const [shopId, bucket] of shopBuckets) {
+                if (bucket.map.has(asin)) return { shopId, bucket, product: bucket.map.get(asin) }
+              }
+              for (const s of shops) {
+                const b = ensureBucket(s.id)
+                if (b.map.has(asin)) return { shopId: s.id, bucket: b, product: b.map.get(asin) }
+              }
+              return null
+            }
+
+            const added = []
+            const unresolved = []
+            const seen = new Set()
+
+            for (const item of assignments) {
+              const asin = String(item?.asin || '').trim()
+              const shopId = String(item?.shopId || '').trim()
+              if (!asin || !shopId) continue
+              const uniq = `${asin}@@${shopId}`
+              if (seen.has(uniq)) continue
+              seen.add(uniq)
+
+              if (!shopIdSet.has(shopId)) {
+                unresolved.push({ asin, reason: 'shopId 不存在' })
+                continue
+              }
+
+              const listingRow = listingMap.get(asin)
+              if (!listingRow) {
+                unresolved.push({ asin, reason: 'Listing 文件中未找到该 ASIN' })
+                continue
+              }
+
+              const located = findAsinBucket(asin)
+              if (located) {
+                if (applyListingRow(located.product, listingRow)) located.bucket.changed = true
+                if (located.product.lastSeenWeek !== weekId) {
+                  located.product.lastSeenWeek = weekId
+                  located.bucket.changed = true
+                }
+                added.push({ asin, shopId: located.shopId, shopName: shopNameById.get(located.shopId) || located.shopId, mode: 'updated' })
+                continue
+              }
+
+              const target = ensureBucket(shopId)
+              const product = {
+                asin,
+                parentAsin: asin,
+                name: listingRow.name || '',
+                category: '新品',
+                restockCycle: 2,
+                sellable: listingRow.sellable,
+                inbound: listingRow.inbound,
+                unsellable: listingRow.unsellable,
+                reserved: listingRow.reserved,
+                fbaTotal: listingRow.fbaTotal,
+                localWarehouse: 0,
+                orderedQty: 0,
+                monthSales: listingRow.monthSales,
+                monthRevenue: listingRow.monthRevenue,
+                monthOrders: listingRow.monthOrders,
+                dailySales: listingRow.dailySales,
+                vineGiftSales: listingRow.vineGiftSales,
+                packageSize: listingRow.packageSize,
+                packageType: listingRow.packageType,
+                itemWeight: listingRow.itemWeight,
+                productImage: listingRow.productImage,
+                firstSeenWeek: weekId,
+                lastSeenWeek: weekId,
+              }
+              target.map.set(asin, product)
+              target.changed = true
+              added.push({ asin, shopId, shopName: shopNameById.get(shopId) || shopId, mode: 'created' })
+            }
+
+            for (const [shopId, bucket] of shopBuckets) {
+              if (bucket.changed) writeProductsByShop(shopId, Array.from(bucket.map.values()))
+            }
+
+            const weekSnapshotPath = `${WEEKS_DIR}/${weekId}.json`
+            const weekSnapshot = readJson(weekSnapshotPath, null)
+            if (
+              weekSnapshot &&
+              Array.isArray(weekSnapshot.columns) &&
+              Array.isArray(weekSnapshot.rows)
+            ) {
+              const colIdx = {}
+              weekSnapshot.columns.forEach((c, i) => {
+                colIdx[c] = i
+              })
+              const existingAsins = new Set(
+                weekSnapshot.rows
+                  .map((r) => String(r?.asin || '').trim())
+                  .filter(Boolean),
+              )
+              let nextRowIndex =
+                weekSnapshot.rows.reduce((maxIdx, r) => {
+                  const n = Number(r?._rowIndex)
+                  return Number.isFinite(n) ? Math.max(maxIdx, n) : maxIdx
+                }, -1) + 1
+
+              const shopById = new Map(shops.map((s) => [s.id, s]))
+              let snapshotChanged = false
+              for (const item of added) {
+                const asin = String(item?.asin || '').trim()
+                if (!asin || existingAsins.has(asin)) continue
+
+                const listingRow = listingMap.get(asin) || {}
+                const shop = shopById.get(item.shopId) || {}
+                const values = Array(weekSnapshot.columns.length).fill('')
+
+                if (colIdx['ASIN'] != null) values[colIdx['ASIN']] = asin
+                if (colIdx['父ASIN'] != null) values[colIdx['父ASIN']] = asin
+                if (colIdx['店铺'] != null) values[colIdx['店铺']] = shop.name || item.shopName || ''
+                if (colIdx['国家'] != null) values[colIdx['国家']] = shop.country || ''
+                if (colIdx['品名'] != null) values[colIdx['品名']] = listingRow.name || ''
+                if (colIdx['分类'] != null) values[colIdx['分类']] = '新品'
+
+                weekSnapshot.rows.push({ asin, values, _rowIndex: nextRowIndex++ })
+                existingAsins.add(asin)
+                snapshotChanged = true
+              }
+
+              if (snapshotChanged) writeJson(weekSnapshotPath, weekSnapshot)
+            }
+
+            const addedByShop = Array.from(
+              added.reduce((acc, item) => {
+                if (!acc.has(item.shopName)) acc.set(item.shopName, [])
+                acc.get(item.shopName).push(item.asin)
+                return acc
+              }, new Map()),
+            )
+              .map(([shopName, asins]) => ({
+                shopName,
+                count: asins.length,
+                asins: asins.slice().sort((a, b) => a.localeCompare(b)),
+              }))
+              .sort((a, b) => b.count - a.count || a.shopName.localeCompare(b.shopName))
+
+            return sendJson(res, 200, {
+              weekId,
+              addedCount: added.length,
+              addedByShop,
+              unresolved,
+            })
           }
         } catch (e) {
           return sendJson(res, 500, { error: String(e?.message || e) })
