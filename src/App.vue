@@ -717,6 +717,25 @@ const visibleAsinList = computed(() => {
 
 const selectedAsinCount = computed(() => selectedAsins.value.size)
 
+const selectedPackageAndOrderedRows = computed(() => {
+  const rows = []
+  for (const asin of selectedAsins.value) {
+    const product = productMap.value.get(asin)
+    if (!product) continue
+    const packageSize = String(
+      product.packageSize || product.packageSize1 || product.packageSize2 || '',
+    ).trim()
+    const orderedQtyRaw = product.orderedQty
+    const orderedQty = orderedQtyRaw == null || orderedQtyRaw === '' ? 0 : Number(orderedQtyRaw)
+    rows.push({
+      asin,
+      packageSize: packageSize || '—',
+      orderedQty: Number.isFinite(orderedQty) ? orderedQty : 0,
+    })
+  }
+  return rows.sort((a, b) => a.asin.localeCompare(b.asin))
+})
+
 const isAllVisibleAsinsSelected = computed(() => {
   const list = visibleAsinList.value
   if (!list.length) return false
@@ -855,6 +874,21 @@ async function copyNonAbandonedAsins() {
     showToast(`已复制 ${asins.length} 个 ASIN（放弃除外）`)
   } catch {
     showToast('批量复制失败，请手动复制', 'error')
+  }
+}
+
+async function copySelectedPackageAndOrdered() {
+  const rows = selectedPackageAndOrderedRows.value
+  if (!rows.length) {
+    showToast('请先勾选产品', 'warn')
+    return
+  }
+  const content = rows.map((x) => `${x.packageSize}\t${x.orderedQty}`).join('\n')
+  try {
+    await writeClipboard(content)
+    showToast(`已复制 ${rows.length} 条包装尺寸和已下单数量`, 'success')
+  } catch {
+    showToast('复制失败，请重试', 'error')
   }
 }
 
@@ -1718,6 +1752,9 @@ onBeforeUnmount(() => {
       <el-button @click="showProductPanel = true">ASIN</el-button>
       <el-button :disabled="!nonAbandonedVisibleAsins.length" @click="copyNonAbandonedAsins">
         复制非放弃ASIN（{{ nonAbandonedVisibleAsins.length }}）
+      </el-button>
+      <el-button :disabled="!selectedAsinCount" @click="copySelectedPackageAndOrdered">
+        复制包装尺寸+已下单（{{ selectedAsinCount }}）
       </el-button>
       <span class="tool-label">批量分类</span>
       <el-select v-model="batchCategoryValue" class="tool-ep-select" style="width: 122px" placeholder="选择分类">
