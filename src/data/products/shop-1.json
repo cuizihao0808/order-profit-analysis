@@ -28,7 +28,8 @@
     "productImage": "",
     "packageSize": "31.5×16×1.65",
     "packageType": "",
-    "fnsku": "X0048BS6AT"
+    "fnsku": "X0048BS6AT",
+    "productImages": []
   },
   {
     "asin": "B0FMY8F3ST",
@@ -59,7 +60,8 @@
     "productImage": "",
     "packageSize": "29×15×10",
     "packageType": "飞机盒",
-    "fnsku": "X004T1IO0P"
+    "fnsku": "X004T1IO0P",
+    "productImages": []
   },
   {
     "asin": "B0DP4868XV",
@@ -90,7 +92,8 @@
     "productImage": "",
     "packageSize": "37×15×16.5",
     "packageType": "",
-    "fnsku": "X004HBH3O5"
+    "fnsku": "X004HBH3O5",
+    "productImages": []
   },
   {
     "asin": "B0FWKQPPCG",
@@ -121,7 +124,8 @@
     "productImage": "",
     "packageSize": "",
     "packageType": "",
-    "fnsku": ""
+    "fnsku": "",
+    "productImages": []
   },
   {
     "asin": "B0FT3347D9",
@@ -152,7 +156,8 @@
     "productImage": "",
     "packageSize": "",
     "packageType": "",
-    "fnsku": ""
+    "fnsku": "",
+    "productImages": []
   },
   {
     "asin": "B0GMGCV2PQ",
@@ -183,7 +188,8 @@
     "productImage": "",
     "packageSize": "",
     "packageType": "",
-    "fnsku": ""
+    "fnsku": "",
+    "productImages": []
   },
   {
     "asin": "B0G2BBF1HD",
@@ -214,7 +220,8 @@
     "productImage": "",
     "packageSize": "",
     "packageType": "",
-    "fnsku": ""
+    "fnsku": "",
+    "productImages": []
   },
   {
     "asin": "B0G1MQMB8M",
@@ -245,7 +252,8 @@
     "productImage": "",
     "packageSize": "",
     "packageType": "",
-    "fnsku": ""
+    "fnsku": "",
+    "productImages": []
   },
   {
     "asin": "B0CYCGY6NM",
@@ -261,8 +269,8 @@
     "inbound": 20,
     "unsellable": 0,
     "reserved": 20,
-    "localWarehouse": 0,
-    "orderedQty": 100,
+    "localWarehouse": 100,
+    "orderedQty": 0,
     "monthSales": 50,
     "monthRevenue": 899.55,
     "monthOrders": 34,
@@ -276,7 +284,10 @@
     "productImage": "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2025-11-22/bc0fc64e-0cbe-4b84-9aff-a6bbf2baa7ce.jpg",
     "packageSize": "30×25×1",
     "packageType": "磨砂袋",
-    "fnsku": "X00465P8BH"
+    "fnsku": "X00465P8BH",
+    "productImages": [
+      "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2025-11-22/bc0fc64e-0cbe-4b84-9aff-a6bbf2baa7ce.jpg"
+    ]
   },
   {
     "asin": "B0GF226LY2",
@@ -307,7 +318,8 @@
     "productImage": "",
     "packageSize": "",
     "packageType": "",
-    "fnsku": ""
+    "fnsku": "",
+    "productImages": []
   },
   {
     "asin": "B0GF5ZF4G4",
@@ -338,7 +350,8 @@
     "productImage": "",
     "packageSize": "",
     "packageType": "",
-    "fnsku": ""
+    "fnsku": "",
+    "productImages": []
   },
   {
     "asin": "B0GF1N5T6Z",
@@ -369,7 +382,8 @@
     "productImage": "",
     "packageSize": "",
     "packageType": "",
-    "fnsku": ""
+    "fnsku": "",
+    "productImages": []
   },
   {
     "asin": "B0G2LZ4S3Q",
@@ -400,7 +414,8 @@
     "productImage": "",
     "packageSize": "",
     "packageType": "",
-    "fnsku": ""
+    "fnsku": "",
+    "productImages": []
   },
   {
     "asin": "B0G2BQS2SS",
@@ -431,7 +446,8 @@
     "productImage": "",
     "packageSize": "",
     "packageType": "",
-    "fnsku": ""
+    "fnsku": "",
+    "productImages": []
   },
   {
     "asin": "B0FPLZCXZX",
@@ -462,7 +478,8 @@
     "productImage": "",
     "packageSize": "",
     "packageType": "",
-    "fnsku": ""
+    "fnsku": "",
+    "productImages": []
   },
   {
     "asin": "B0FMY425XS",
@@ -493,7 +510,8 @@
     "productImage": "",
     "packageSize": "",
     "packageType": "",
-    "fnsku": ""
+    "fnsku": "",
+    "productImages": []
   },
   {
     "asin": "B0FJ8N1Q66",
@@ -524,7 +542,8 @@
     "productImage": "",
     "packageSize": "",
     "packageType": "",
-    "fnsku": ""
+    "fnsku": "",
+    "productImages": []
   },
   {
     "asin": "B0CSFLZ8Y6",
@@ -555,7 +574,8 @@
     "productImage": "",
     "packageSize": "",
     "packageType": "",
-    "fnsku": ""
+    "fnsku": "",
+    "productImages": []
   },
   {
     "asin": "B0CYCH1Y2T",
@@ -586,7 +606,8 @@
     "productImage": "",
     "packageSize": "25×20×1",
     "packageType": "",
-    "fnsku": "X00465P6G9"
+    "fnsku": "X00465P6G9",
+    "productImages": []
   },
   {
     "asin": "B0FWC2T3BW",
@@ -617,7 +638,8 @@
     "productImage": "",
     "packageSize": "",
     "packageType": "",
-    "fnsku": ""
+    "fnsku": "",
+    "productImages": []
   },
   {
     "asin": "B0FJ8GRR41",
@@ -648,7 +670,8 @@
     "productImage": "",
     "packageSize": "",
     "packageType": "",
-    "fnsku": ""
+    "fnsku": "",
+    "productImages": []
   },
   {
     "asin": "B0FCG3761P",
@@ -679,6 +702,7 @@
     "productImage": "",
     "packageSize": "",
     "packageType": "",
-    "fnsku": ""
+    "fnsku": "",
+    "productImages": []
   }
 ]
