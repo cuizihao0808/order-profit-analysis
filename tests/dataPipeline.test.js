@@ -56,6 +56,19 @@ describe('dataPipeline: product normalization', () => {
     expect(next.packageType).toBe('B')
     expect(next.productImage).toBe('https://img')
   })
+
+  it('normalizes amazonMainImage and merges image candidates', () => {
+    const next = normalizeInventoryProduct({
+      amazonMainImage: ' https://m.media-amazon.com/images/I/abc.jpg ',
+      productImage: 'https://detail.example/b.jpg',
+      productImages: ['https://detail.example/b.jpg'],
+    })
+
+    expect(next.amazonMainImage).toBe('https://m.media-amazon.com/images/I/abc.jpg')
+    expect(next.productImages[0]).toBe('https://m.media-amazon.com/images/I/abc.jpg')
+    expect(next.productImages).toContain('https://detail.example/b.jpg')
+    expect(next.productImages).toContain('https://m.media-amazon.com/images/I/abc.jpg')
+  })
 })
 
 describe('dataPipeline: folder/file parsing', () => {
@@ -150,6 +163,7 @@ describe('dataPipeline: listing row mapping', () => {
     expect(mapped.packageSize).toBe('30×20×10')
     expect(mapped.packageType).toBe('纸箱')
     expect(mapped.productImage).toBe('https://example.com/a.jpg')
+    expect(mapped.listingDetailImages).toEqual(['https://example.com/a.jpg'])
   })
 
   it('falls back to legacy package columns when single-column fields are empty', () => {
@@ -175,6 +189,34 @@ describe('dataPipeline: listing row mapping', () => {
     const row = ['B0IMG', '', 'https://example.com/1.jpg', 'https://example.com/2.jpg']
     const mapped = buildListingRowRecord(row, idx)
     expect(mapped.productImage).toBe('https://example.com/1.jpg')
+    expect(mapped.listingDetailImages).toEqual([
+      'https://example.com/1.jpg',
+      'https://example.com/2.jpg',
+    ])
+  })
+
+  it('uses 图片URL as 亚马逊主图 and puts it in image list first', () => {
+    const cols = ['ASIN', '图片URL', '产品图片1', '产品图片2']
+    const idx = Object.fromEntries(cols.map((c, i) => [c, i]))
+    const row = ['B0MAIN', 'https://m.media-amazon.com/images/I/main.jpg', 'https://cdn.example/1.jpg', '']
+    const mapped = buildListingRowRecord(row, idx)
+
+    expect(mapped.amazonMainImage).toBe('https://m.media-amazon.com/images/I/main.jpg')
+    expect(mapped.listingDetailImages).toEqual(['https://cdn.example/1.jpg'])
+    expect(mapped.productImage).toBe('https://m.media-amazon.com/images/I/main.jpg')
+    expect(mapped.productImages[0]).toBe('https://m.media-amazon.com/images/I/main.jpg')
+    expect(mapped.productImages).toContain('https://cdn.example/1.jpg')
+  })
+
+  it('ignores non media-amazon 图片URL for 亚马逊主图', () => {
+    const cols = ['ASIN', '图片URL', '产品图片1']
+    const idx = Object.fromEntries(cols.map((c, i) => [c, i]))
+    const row = ['B0NONMAIN', 'https://amz-client-global.example.com/a.jpg', 'https://cdn.example/1.jpg']
+    const mapped = buildListingRowRecord(row, idx)
+
+    expect(mapped.amazonMainImage).toBe('')
+    expect(mapped.productImage).toBe('https://cdn.example/1.jpg')
+    expect(mapped.productImages[0]).toBe('https://cdn.example/1.jpg')
   })
 
   it('falls back to second legacy package size/type when first is empty', () => {

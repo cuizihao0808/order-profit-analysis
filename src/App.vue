@@ -3,14 +3,15 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { computeRestockQty } from './lib/restockRules.js'
 
 /* ================= 常量 ================= */
-const FIXED_COLS = ['品名', 'ASIN']
+const FIXED_COLS = ['亚马逊主图', '品名', 'ASIN']
 const COL_CONFIG_KEY = 'opa:column-config:v4'
 const SHOP_FILTER_KEY = 'opa:shop-filter:v1'
 const SUPPLY_FILTER_KEY = 'opa:supply-filter:v1'
 const WEEK_KEY = 'opa:current-week:v1'
 const DEV_SESSION_KEY = 'opa:dev-session:v1'
-const FIXED_WIDTHS = { 品名: 260, ASIN: 180 }
+const FIXED_WIDTHS = { 亚马逊主图: 92, 品名: 320, ASIN: 180 }
 const EXPAND_COL_WIDTH = 40
+const SELECT_COL_WIDTH = 44
 
 /**
  * ASIN 主数据字段（存于 src/data/products/{shopId}.json）
@@ -171,6 +172,9 @@ const toast = ref({ show: false, text: '', type: 'success' })
 const copiedAsinMap = ref({})
 const noteOverflowMap = ref({})
 const expandedInventoryRows = ref(new Set())
+const selectedAsins = ref(new Set())
+const batchCategoryValue = ref('')
+const batchCategoryBusy = ref(false)
 const compact13Mode = ref(false)
 let toastTimer = null
 const copyResetTimers = new Map()
@@ -182,6 +186,17 @@ function updateCompact13Mode() {
 
 /* ================= 派生数据 ================= */
 const productMap = computed(() => new Map(products.value.map((p) => [p.asin, p])))
+const shopIdByName = computed(() => new Map(shops.value.map((s) => [s.name, s.id])))
+const productByShopAsin = computed(() => {
+  const map = new Map()
+  for (const p of products.value) {
+    const asin = String(p?.asin || '').trim()
+    const shopId = String(p?.shopId || '').trim()
+    if (!asin || !shopId) continue
+    map.set(`${shopId}::${asin}`, p)
+  }
+  return map
+})
 
 const colIndex = computed(() => {
   const idx = {}
@@ -190,10 +205,32 @@ const colIndex = computed(() => {
   return idx
 })
 
+function rowShopName(row) {
+  const idx = colIndex.value['店铺']
+  if (idx == null) return ''
+  return String(row?.values?.[idx] ?? '').trim()
+}
+
+function rowShopId(row) {
+  const name = rowShopName(row)
+  return name ? String(shopIdByName.value.get(name) || '').trim() : ''
+}
+
+function rowProduct(row) {
+  const asin = String(row?.asin || '').trim()
+  if (!asin) return null
+  const shopId = rowShopId(row)
+  if (shopId) {
+    const exact = productByShopAsin.value.get(`${shopId}::${asin}`)
+    return exact || null
+  }
+  return productMap.value.get(asin) || null
+}
+
 const allRows = computed(() => currentWeek.value?.rows ?? [])
 
 function rowMatchesSupplyFilter(row) {
-  const product = productMap.value.get(row?.asin)
+  const product = rowProduct(row)
   const localWarehouse = toNum(product?.localWarehouse)
   const orderedQty = toNum(product?.orderedQty)
   const hasLocalWarehouse = Number.isFinite(localWarehouse) && localWarehouse > 0
@@ -279,7 +316,7 @@ async function patchWeekNote(asin, note) {
  */
 function getCell(row, colName) {
   if (!row) return ''
-  const product = productMap.value.get(row.asin)
+  const product = rowProduct(row)
 
   if (colName === 'FNSKU') {
     const fromProduct = String(product?.fnsku || '').trim()
@@ -348,9 +385,28 @@ function productImageUrl(row) {
   return String(first).trim()
 }
 
+function amazonMainImageUrl(row) {
+  const product = rowProduct(row) || {}
+  const fromMain = String(product.amazonMainImage || '').trim()
+  if (fromMain) return fromMain
+  return ''
+}
+
+function displayProductName(row) {
+  return String(getCell(row, '品名') || '').trim()
+}
+
+function displayProductTitle(row) {
+  const title = String(getCell(row, '商品标题') || getCell(row, '标题') || '').trim()
+  return title
+}
+
 function productImageUrls(row) {
-  const product = productMap.value.get(row?.asin) || {}
+  const product = rowProduct(row) || {}
   const urls = []
+
+  const main = String(product.amazonMainImage || '').trim()
+  if (main) urls.push(main)
 
   if (Array.isArray(product.productImages)) {
     for (const u of product.productImages) {
@@ -368,6 +424,29 @@ function productImageUrls(row) {
   return Array.from(new Set(urls))
 }
 
+function inventoryDetailImageUrls(row) {
+  const product = rowProduct(row) || {}
+  const urls = []
+
+  if (Array.isArray(product.listingDetailImages)) {
+    for (const u of product.listingDetailImages) {
+      const s = String(u || '').trim()
+      if (s) urls.push(s)
+    }
+  }
+
+  if (!urls.length && Array.isArray(product.productImages)) {
+    const main = String(product.amazonMainImage || '').trim()
+    for (const u of product.productImages) {
+      const s = String(u || '').trim()
+      if (!s || s === main) continue
+      urls.push(s)
+    }
+  }
+
+  return Array.from(new Set(urls))
+}
+
 function openImagePreview(row, index = 0) {
   const urls = productImageUrls(row)
   if (!urls.length) return
@@ -377,6 +456,18 @@ function openImagePreview(row, index = 0) {
     urls,
     index: safeIndex,
     title: `${asinValue(row)} 产品图片`,
+  }
+}
+
+function openInventoryDetailImagePreview(row, index = 0) {
+  const urls = inventoryDetailImageUrls(row)
+  if (!urls.length) return
+  const safeIndex = Math.min(Math.max(Number(index) || 0, 0), urls.length - 1)
+  imagePreview.value = {
+    show: true,
+    urls,
+    index: safeIndex,
+    title: `${asinValue(row)} 库存详情图片`,
   }
 }
 
@@ -480,7 +571,7 @@ async function writeClipboard(text) {
 /** 判断某行是否被标记为「放弃」 */
 function isAbandoned(row) {
   if (!row) return false
-  return productMap.value.get(row.asin)?.category === '放弃'
+  return rowProduct(row)?.category === '放弃'
 }
 
 /** 单元格告警高亮：
@@ -541,7 +632,7 @@ function groupParentKey(row) {
   const rawParent = colIndex.value['父ASIN'] != null ? row.values[colIndex.value['父ASIN']] : ''
   const parent = normalizeAsinKey(rawParent)
   if (parent) return parent
-  const fromProduct = normalizeAsinKey(productMap.value.get(row.asin)?.parentAsin)
+  const fromProduct = normalizeAsinKey(rowProduct(row)?.parentAsin)
   if (fromProduct) return fromProduct
   return normalizeAsinKey(row.asin) || normalizeAsinKey(getCell(row, 'ASIN'))
 }
@@ -603,10 +694,59 @@ const tableRows = computed(() => {
   return rows
 })
 
+const visibleAsinList = computed(() => {
+  const list = []
+  const seen = new Set()
+  for (const item of tableRows.value) {
+    const asin = String(item?.row?.asin || '').trim()
+    if (!asin || seen.has(asin)) continue
+    seen.add(asin)
+    list.push(asin)
+  }
+  return list
+})
+
+const selectedAsinCount = computed(() => selectedAsins.value.size)
+
+const isAllVisibleAsinsSelected = computed(() => {
+  const list = visibleAsinList.value
+  if (!list.length) return false
+  for (const asin of list) {
+    if (!selectedAsins.value.has(asin)) return false
+  }
+  return true
+})
+
+function isAsinSelected(asin) {
+  return selectedAsins.value.has(String(asin || '').trim())
+}
+
+function toggleAsinSelected(asin, checked) {
+  const key = String(asin || '').trim()
+  if (!key) return
+  const next = new Set(selectedAsins.value)
+  if (checked) next.add(key)
+  else next.delete(key)
+  selectedAsins.value = next
+}
+
+function toggleSelectAllVisible(checked) {
+  const next = new Set(selectedAsins.value)
+  for (const asin of visibleAsinList.value) {
+    if (checked) next.add(asin)
+    else next.delete(asin)
+  }
+  selectedAsins.value = next
+}
+
+function clearSelectedAsins() {
+  selectedAsins.value = new Set()
+}
+
 const nonAbandonedVisibleAsins = computed(() => {
   const set = new Set()
   for (const row of visibleRows.value) {
-    const category = productMap.value.get(row.asin)?.category || '正常'
+    const category = rowProduct(row)?.category || '正常'
     if (category === '放弃') continue
     const asin = asinValue(row)
     if (asin) set.add(asin)
@@ -627,7 +767,7 @@ const exportLocalWarehouseDisabledReason = computed(() => {
 })
 
 function productField(row, key, fallback = '') {
-  const value = productMap.value.get(row?.asin)?.[key]
+  const value = rowProduct(row)?.[key]
   return value == null || value === '' ? fallback : value
 }
 
@@ -762,8 +902,10 @@ const shopMdNameByName = computed(() => {
 })
 
 function fixedLeft(displayIndex) {
-  let left = 0
-  const widthMap = compact13Mode.value ? { 品名: 220, ASIN: 150 } : FIXED_WIDTHS
+  let left = compact13Mode.value ? 38 : SELECT_COL_WIDTH
+  const widthMap = compact13Mode.value
+    ? { 亚马逊主图: 76, 品名: 260, ASIN: 150 }
+    : FIXED_WIDTHS
   for (let i = 0; i < displayIndex; i++) {
     const name = FIXED_COLS[i]
     left += widthMap[name] ?? 120
@@ -772,7 +914,9 @@ function fixedLeft(displayIndex) {
 }
 
 function fixedColStyle(displayIndex, colName) {
-  const widthMap = compact13Mode.value ? { 品名: 220, ASIN: 150 } : FIXED_WIDTHS
+  const widthMap = compact13Mode.value
+    ? { 亚马逊主图: 76, 品名: 260, ASIN: 150 }
+    : FIXED_WIDTHS
   const width = widthMap[colName] ?? 120
   return {
     left: fixedLeft(displayIndex),
@@ -1113,15 +1257,16 @@ async function deleteProduct(p) {
 }
 
 /** 内联编辑：直接改 products.json 的指定 ASIN 的某个字段 */
-async function patchProduct(asin, patch) {
+async function patchProduct(asin, patch, options = {}) {
   if (!asin) return
-  const targets = [{ asin, patch }]
+  const preferredShopId = String(options?.shopId || '').trim()
+  const targets = [{ asin, patch, shopId: preferredShopId }]
 
   // 联动：父体改为「放弃」时，所有子体同步「放弃」
   if (patch.category === '放弃') {
     for (const p of products.value) {
       if (p.parentAsin === asin && p.asin !== asin && p.category !== '放弃') {
-        targets.push({ asin: p.asin, patch: { category: '放弃' } })
+        targets.push({ asin: p.asin, patch: { category: '放弃' }, shopId: String(p.shopId || '').trim() })
       }
     }
   }
@@ -1129,7 +1274,9 @@ async function patchProduct(asin, patch) {
   // 乐观更新：先改本地
   const backups = []
   for (const t of targets) {
-    const idx = products.value.findIndex((p) => p.asin === t.asin)
+    const idx = products.value.findIndex(
+      (p) => p.asin === t.asin && (!t.shopId || String(p.shopId || '').trim() === t.shopId),
+    )
     if (idx < 0) continue
     backups.push({ idx, before: { ...products.value[idx] } })
     products.value[idx] = { ...products.value[idx], ...t.patch }
@@ -1142,7 +1289,7 @@ async function patchProduct(asin, patch) {
         fetch(`/api/products/${encodeURIComponent(t.asin)}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(t.patch),
+          body: JSON.stringify(t.shopId ? { ...t.patch, shopId: t.shopId } : t.patch),
         }).then((r) => {
           if (!r.ok) throw new Error(`save failed: ${t.asin}`)
         }),
@@ -1155,9 +1302,43 @@ async function patchProduct(asin, patch) {
   }
 }
 
-async function markOrderedArrived(asin) {
+async function applyBatchCategoryChange() {
+  const targetCategory = String(batchCategoryValue.value || '').trim()
+  if (!targetCategory) {
+    showToast('请先选择目标分类', 'warn')
+    return
+  }
+  const selected = Array.from(selectedAsins.value)
+  if (!selected.length) {
+    showToast('请先勾选要批量修改的 ASIN', 'warn')
+    return
+  }
+
+  const targets = selected.filter((asin) => {
+    const current = String(productMap.value.get(asin)?.category || '正常').trim()
+    return current !== targetCategory
+  })
+  if (!targets.length) {
+    showToast('勾选项分类已是目标值，无需修改', 'warn')
+    return
+  }
+
+  batchCategoryBusy.value = true
+  try {
+    for (const asin of targets) {
+      await patchProduct(asin, { category: targetCategory })
+    }
+    showToast(`已批量修改 ${targets.length} 个 ASIN 的分类`, 'success')
+    selectedAsins.value = new Set()
+  } finally {
+    batchCategoryBusy.value = false
+  }
+}
+
+async function markOrderedArrived(row) {
+  const asin = String(row?.asin || '').trim()
   if (!asin) return
-  const product = productMap.value.get(asin)
+  const product = rowProduct(row)
   const localWarehouse = toNum(product?.localWarehouse)
   const orderedQty = toNum(product?.orderedQty)
   if (!Number.isFinite(orderedQty) || orderedQty <= 0) return
@@ -1165,18 +1346,19 @@ async function markOrderedArrived(asin) {
   await patchProduct(asin, {
     localWarehouse: (Number.isFinite(localWarehouse) ? localWarehouse : 0) + orderedQty,
     orderedQty: 0,
-  })
+  }, { shopId: rowShopId(row) })
 }
 
-async function markLocalShipped(asin) {
+async function markLocalShipped(row) {
+  const asin = String(row?.asin || '').trim()
   if (!asin) return
-  const product = productMap.value.get(asin)
+  const product = rowProduct(row)
   const localWarehouse = toNum(product?.localWarehouse)
   if (!Number.isFinite(localWarehouse) || localWarehouse <= 0) return
 
   await patchProduct(asin, {
     localWarehouse: 0,
-  })
+  }, { shopId: rowShopId(row) })
 }
 
 /* ================= 导入 ================= */
@@ -1420,6 +1602,17 @@ watch(currentWeekId, async (v) => {
   updateStatus()
 })
 
+watch(visibleAsinList, (list) => {
+  const allowed = new Set(list)
+  const next = new Set()
+  for (const asin of selectedAsins.value) {
+    if (allowed.has(asin)) next.add(asin)
+  }
+  if (next.size !== selectedAsins.value.size) {
+    selectedAsins.value = next
+  }
+})
+
 onMounted(async () => {
   updateCompact13Mode()
   window.addEventListener('resize', updateCompact13Mode)
@@ -1512,6 +1705,20 @@ onBeforeUnmount(() => {
       <button class="tool-btn" type="button" :disabled="!nonAbandonedVisibleAsins.length" @click="copyNonAbandonedAsins">
         复制非放弃ASIN（{{ nonAbandonedVisibleAsins.length }}）
       </button>
+      <span class="tool-label">批量分类</span>
+      <select class="tool-select" v-model="batchCategoryValue" style="width: 110px">
+        <option value="">选择分类</option>
+        <option v-for="opt in CATEGORY_OPTIONS" :key="`batch-${opt}`" :value="opt">{{ opt }}</option>
+      </select>
+      <button
+        class="tool-btn"
+        type="button"
+        :disabled="!selectedAsinCount || !batchCategoryValue || batchCategoryBusy"
+        @click="applyBatchCategoryChange"
+      >
+        {{ batchCategoryBusy ? '批量修改中...' : `批量改分类（${selectedAsinCount}）` }}
+      </button>
+      <button class="tool-btn" type="button" :disabled="!selectedAsinCount" @click="clearSelectedAsins">清空勾选</button>
       <div class="export-tip-wrap">
         <button class="tool-btn" type="button" :disabled="!canExportLocalWarehousePdf || exportPdfBusy" @click="exportLocalWarehousePdf">
           {{ exportPdfBusy ? '导出PDF中...' : '导出本地仓库PDF' }}
@@ -1544,6 +1751,14 @@ onBeforeUnmount(() => {
       <table v-else>
         <thead>
           <tr>
+            <th class="select-col">
+              <input
+                type="checkbox"
+                :checked="isAllVisibleAsinsSelected"
+                :disabled="!visibleAsinList.length"
+                @change="toggleSelectAllVisible($event.target.checked)"
+              />
+            </th>
             <th
               v-for="(col, i) in displayCols"
               :key="col.name"
@@ -1564,6 +1779,13 @@ onBeforeUnmount(() => {
                 hasRestockNeed(item.row) ? 'row-need-restock' : '',
               ]"
             >
+              <td class="select-col">
+                <input
+                  type="checkbox"
+                  :checked="isAsinSelected(item.row.asin)"
+                  @change="toggleAsinSelected(item.row.asin, $event.target.checked)"
+                />
+              </td>
               <td
                 v-for="(col, i) in displayCols"
                 :key="col.name + '-' + (item.row.asin || item.row._rowIndex)"
@@ -1579,20 +1801,44 @@ onBeforeUnmount(() => {
                 <template v-if="editColKey(col.name) === 'category'">
                   <select
                     class="cell-select"
-                    :class="'cat-' + (productMap.get(item.row.asin)?.category || '正常')"
-                    :value="productMap.get(item.row.asin)?.category || '正常'"
-                    @change="patchProduct(item.row.asin, { category: $event.target.value })"
+                    :class="'cat-' + (rowProduct(item.row)?.category || '正常')"
+                    :value="rowProduct(item.row)?.category || '正常'"
+                    @change="patchProduct(item.row.asin, { category: $event.target.value }, { shopId: rowShopId(item.row) })"
                   >
                     <option v-for="opt in CATEGORY_OPTIONS" :key="opt" :value="opt">{{ opt }}</option>
                   </select>
                 </template>
-                <template v-else-if="editColKey(col.name) === 'name'">
-                  <input
-                    class="cell-input"
-                    type="text"
-                    :value="productMap.get(item.row.asin)?.name ?? ''"
-                    @change="patchProduct(item.row.asin, { name: $event.target.value.trim() })"
-                  />
+                <template v-else-if="col.name === '亚马逊主图'">
+                  <div class="amazon-main-cell">
+                    <button
+                      v-if="amazonMainImageUrl(item.row)"
+                      class="name-image-btn"
+                      type="button"
+                      @click="openImagePreview(item.row, 0)"
+                    >
+                      <img
+                        :src="amazonMainImageUrl(item.row)"
+                        :alt="displayProductName(item.row) || displayProductTitle(item.row) || asinValue(item.row)"
+                        class="name-image-thumb"
+                        loading="lazy"
+                      />
+                    </button>
+                    <div v-else class="name-image-placeholder">—</div>
+                  </div>
+                </template>
+                <template v-else-if="col.name === '品名'">
+                  <div class="name-cell-stack">
+                    <input
+                      class="cell-input"
+                      type="text"
+                      :value="rowProduct(item.row)?.name ?? ''"
+                      @change="patchProduct(item.row.asin, { name: $event.target.value.trim() }, { shopId: rowShopId(item.row) })"
+                    />
+                    <div class="title-tooltip-wrap name-title-subrow">
+                      <span class="name-title-ellipsis">标题：{{ displayProductTitle(item.row) || '—' }}</span>
+                      <span class="title-tooltip-bubble">{{ displayProductTitle(item.row) || '—' }}</span>
+                    </div>
+                  </div>
                 </template>
                 <template
                   v-else-if="editColKey(col.name) === 'restockCycle' || editColKey(col.name) === 'localWarehouse' || editColKey(col.name) === 'orderedQty'"
@@ -1600,8 +1846,8 @@ onBeforeUnmount(() => {
                   <input
                     class="cell-input"
                     type="number"
-                    :value="productMap.get(item.row.asin)?.[editColKey(col.name)] ?? ''"
-                    @change="patchProduct(item.row.asin, { [editColKey(col.name)]: $event.target.value === '' ? '' : Number($event.target.value) })"
+                    :value="rowProduct(item.row)?.[editColKey(col.name)] ?? ''"
+                    @change="patchProduct(item.row.asin, { [editColKey(col.name)]: $event.target.value === '' ? '' : Number($event.target.value) }, { shopId: rowShopId(item.row) })"
                   />
                 </template>
                 <template v-else-if="editColKey(col.name) === 'note'">
@@ -1668,7 +1914,7 @@ onBeforeUnmount(() => {
               </td>
             </tr>
             <tr v-if="isInventoryRowExpanded(item.row.asin)" class="inventory-row">
-              <td :colspan="displayCols.length" class="inventory-detail-cell">
+              <td :colspan="displayCols.length + 1" class="inventory-detail-cell">
                 <div class="inventory-detail-grid">
                   <div class="inventory-item"><span>FNSKU</span><strong>{{ getCell(item.row, 'FNSKU') || '—' }}</strong></div>
                   <div class="inventory-item"><span>可售</span><strong>{{ getCell(item.row, '可售') || '—' }}</strong></div>
@@ -1676,16 +1922,16 @@ onBeforeUnmount(() => {
                   <div class="inventory-item"><span>不可售</span><strong>{{ getCell(item.row, '不可售') || '—' }}</strong></div>
                   <div class="inventory-item"><span>预留</span><strong>{{ getCell(item.row, '预留') || '—' }}</strong></div>
                   <div class="inventory-item"><span>FBA总量</span><strong>{{ getCell(item.row, 'FBA总量') || '—' }}</strong></div>
-                  <div class="inventory-item"><span>包装尺寸/cm</span><strong>{{ productMap.get(item.row.asin)?.packageSize || productMap.get(item.row.asin)?.packageSize1 || productMap.get(item.row.asin)?.packageSize2 || '—' }}</strong></div>
-                  <div class="inventory-item"><span>包装类型</span><strong>{{ productMap.get(item.row.asin)?.packageType || productMap.get(item.row.asin)?.packageType1 || productMap.get(item.row.asin)?.packageType2 || '—' }}</strong></div>
-                  <div class="inventory-item"><span>单品重量/g</span><strong>{{ productMap.get(item.row.asin)?.itemWeight || '—' }}</strong></div>
+                  <div class="inventory-item"><span>包装尺寸/cm</span><strong>{{ rowProduct(item.row)?.packageSize || rowProduct(item.row)?.packageSize1 || rowProduct(item.row)?.packageSize2 || '—' }}</strong></div>
+                  <div class="inventory-item"><span>包装类型</span><strong>{{ rowProduct(item.row)?.packageType || rowProduct(item.row)?.packageType1 || rowProduct(item.row)?.packageType2 || '—' }}</strong></div>
+                  <div class="inventory-item"><span>单品重量/g</span><strong>{{ rowProduct(item.row)?.itemWeight || '—' }}</strong></div>
                   <label class="inventory-item inventory-input-item">
                     <span>本地仓库</span>
                     <input
                       class="cell-input"
                       type="number"
-                      :value="productMap.get(item.row.asin)?.localWarehouse ?? 0"
-                      @change="patchProduct(item.row.asin, { localWarehouse: $event.target.value === '' ? 0 : Number($event.target.value) })"
+                      :value="rowProduct(item.row)?.localWarehouse ?? 0"
+                      @change="patchProduct(item.row.asin, { localWarehouse: $event.target.value === '' ? 0 : Number($event.target.value) }, { shopId: rowShopId(item.row) })"
                     />
                   </label>
                   <label class="inventory-item inventory-input-item">
@@ -1693,8 +1939,8 @@ onBeforeUnmount(() => {
                     <input
                       class="cell-input"
                       type="number"
-                      :value="productMap.get(item.row.asin)?.orderedQty ?? 0"
-                      @change="patchProduct(item.row.asin, { orderedQty: $event.target.value === '' ? 0 : Number($event.target.value) })"
+                      :value="rowProduct(item.row)?.orderedQty ?? 0"
+                      @change="patchProduct(item.row.asin, { orderedQty: $event.target.value === '' ? 0 : Number($event.target.value) }, { shopId: rowShopId(item.row) })"
                     />
                   </label>
                   <label class="inventory-item inventory-input-item">
@@ -1702,8 +1948,8 @@ onBeforeUnmount(() => {
                     <input
                       class="cell-input"
                       type="number"
-                      :value="productMap.get(item.row.asin)?.restockCycle ?? ''"
-                      @change="patchProduct(item.row.asin, { restockCycle: $event.target.value === '' ? '' : Number($event.target.value) })"
+                      :value="rowProduct(item.row)?.restockCycle ?? ''"
+                      @change="patchProduct(item.row.asin, { restockCycle: $event.target.value === '' ? '' : Number($event.target.value) }, { shopId: rowShopId(item.row) })"
                     />
                   </label>
                   <div class="inventory-item"><span>补货数量</span><strong>{{ getCell(item.row, '补货数量') || '—' }}</strong></div>
@@ -1711,13 +1957,13 @@ onBeforeUnmount(() => {
                 <div class="inventory-footer-bar">
                   <div class="inventory-item inventory-item-image inventory-item-image-footer">
                     <span>产品图片</span>
-                    <div v-if="productImageUrls(item.row).length" class="product-image-list">
+                    <div v-if="inventoryDetailImageUrls(item.row).length" class="product-image-list">
                       <button
-                        v-for="(imgUrl, imgIndex) in productImageUrls(item.row)"
+                        v-for="(imgUrl, imgIndex) in inventoryDetailImageUrls(item.row)"
                         :key="`${item.row.asin}-detail-${imgIndex}-${imgUrl}`"
                         class="product-image-link"
                         type="button"
-                        @click="openImagePreview(item.row, imgIndex)"
+                        @click="openInventoryDetailImagePreview(item.row, imgIndex)"
                       >
                         <img :src="imgUrl" :alt="`${asinValue(item.row)} 产品图片 ${imgIndex + 1}`" class="product-image-thumb" loading="lazy" />
                       </button>
@@ -1728,16 +1974,16 @@ onBeforeUnmount(() => {
                     <button
                       class="inventory-arrived-btn"
                       type="button"
-                      :disabled="!(Number(productMap.get(item.row.asin)?.orderedQty) > 0)"
-                      @click="markOrderedArrived(item.row.asin)"
+                      :disabled="!(Number(rowProduct(item.row)?.orderedQty) > 0)"
+                      @click="markOrderedArrived(item.row)"
                     >
                       已到库
                     </button>
                     <button
                       class="inventory-shipped-btn"
                       type="button"
-                      :disabled="!(Number(productMap.get(item.row.asin)?.localWarehouse) > 0)"
-                      @click="markLocalShipped(item.row.asin)"
+                      :disabled="!(Number(rowProduct(item.row)?.localWarehouse) > 0)"
+                      @click="markLocalShipped(item.row)"
                     >
                       已发出
                     </button>
@@ -1784,7 +2030,7 @@ onBeforeUnmount(() => {
           <button class="tool-btn" type="button" @click="showFieldPanel = false">✕</button>
         </header>
         <div class="drawer-tip">
-          固定列：品名、ASIN（不可调整）。其它字段可自定义显隐与顺序，配置保存在浏览器。
+          固定列：亚马逊主图、品名、ASIN（不可调整）。其它字段可自定义显隐与顺序，配置保存在浏览器。
         </div>
         <div class="drawer-actions">
           <button class="tool-btn" type="button" @click="setAllColsVisible(true)">全选</button>
@@ -1823,7 +2069,7 @@ onBeforeUnmount(() => {
         <section class="shop-form">
           <div class="form-row">
             <label>店铺名称 *</label>
-            <input v-model="shopForm.name" placeholder="例如 LPH-主店三号-US" />
+            <input v-model="shopForm.name" placeholder="例如 LPH-主店三号" />
           </div>
           <div class="form-row">
             <label>国家</label>

@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "cleanup:dup-asin": "node scripts/cleanup-duplicate-asins.mjs",
     "test": "vitest run --coverage",
     "test:watch": "vitest"
   },

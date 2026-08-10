@@ -433,11 +433,64 @@ function genShopId(existing) {
   return `shop-${next}`
 }
 
+const SHOP_NAME_ALIAS = new Map([
+  ['LPH-主店三号-US', 'LPH-主店三号'],
+])
+
+function normalizeShopName(name) {
+  const raw = String(name || '').trim()
+  if (!raw) return ''
+  return SHOP_NAME_ALIAS.get(raw) || raw
+}
+
+function buildShopNameToIdMap(shops) {
+  const map = new Map()
+  for (const s of shops || []) {
+    const original = String(s?.name || '').trim()
+    const normalized = normalizeShopName(original)
+    if (original && !map.has(original)) map.set(original, s.id)
+    if (normalized && !map.has(normalized)) map.set(normalized, s.id)
+  }
+  return map
+}
+
 function cmpWeekByDateDesc(a, b) {
   const ad = a?.startDate || ''
   const bd = b?.startDate || ''
   if (ad === bd) return 0
   return ad < bd ? 1 : -1
+}
+
+function parseWeekNo(weekId) {
+  const m = String(weekId || '').match(/(\d+)/)
+  return m ? Number(m[1]) : NaN
+}
+
+function findPreviousWeekMeta(weeks, currentWeekId, currentStartDate) {
+  const list = Array.isArray(weeks) ? weeks : []
+  const currentDate = String(currentStartDate || '').trim()
+
+  if (currentDate) {
+    const byDate = list
+      .filter((w) => w?.id !== currentWeekId)
+      .filter((w) => String(w?.startDate || '').trim())
+      .filter((w) => String(w.startDate) < currentDate)
+      .sort(cmpWeekByDateDesc)
+    if (byDate.length) return byDate[0]
+  }
+
+  const currentNo = parseWeekNo(currentWeekId)
+  if (Number.isFinite(currentNo)) {
+    const byNo = list
+      .filter((w) => w?.id !== currentWeekId)
+      .map((w) => ({ week: w, no: parseWeekNo(w?.id) }))
+      .filter((x) => Number.isFinite(x.no) && x.no < currentNo)
+      .sort((a, b) => b.no - a.no)
+    if (byNo.length) return byNo[0].week
+  }
+
+  const sorted = list.filter((w) => w?.id !== currentWeekId).slice().sort(cmpWeekByDateDesc)
+  return sorted[0] || null
 }
 
 function readTableFile(filePath) {
@@ -640,6 +693,16 @@ function importWeekBundle(bundle) {
   const colIdx = {}
   columns.forEach((c, i) => (colIdx[c] = i))
 
+  // 订单利润表有时缺少/为空的标题列，这里允许从 Listing 的“商品标题”回填。
+  let titleColName = ''
+  if (colIdx['商品标题'] != null) titleColName = '商品标题'
+  else if (colIdx['标题'] != null) titleColName = '标题'
+  else {
+    titleColName = '商品标题'
+    colIdx[titleColName] = columns.length
+    columns.push(titleColName)
+  }
+
   const listingData = readListingDataForBundle(folderName, validListingFiles)
   const listingMap = listingData.listingMap
   const listingAsinsByFile = listingData.listingAsinsByFile
@@ -650,18 +713,7 @@ function importWeekBundle(bundle) {
   const filtered = weeks.filter((w) => w.id !== weekId)
   const dateSource = orderFile || validListingFiles[0] || folderName
   const { startDate, endDate } = parseDatesFromFilename(dateSource)
-  const nextWeeks = filtered.slice()
-  nextWeeks.push({
-    id: weekId,
-    filename: `${folderName}/${orderFile}`,
-    startDate,
-    endDate,
-    rowCount: 0,
-    importedAt: new Date().toISOString(),
-  })
-  nextWeeks.sort(cmpWeekByDateDesc)
-  const currentIdx = nextWeeks.findIndex((w) => w.id === weekId)
-  const previousWeek = currentIdx >= 0 ? nextWeeks[currentIdx + 1] : null
+  const previousWeek = findPreviousWeekMeta(filtered, weekId, startDate)
   const prevSnapshot = previousWeek?.id
     ? readJson(`${WEEKS_DIR}/${previousWeek.id}.json`, null)
     : null
@@ -669,11 +721,32 @@ function importWeekBundle(bundle) {
 
   // 组装 rows 快照，附带 asin 主键便于后续 join
   const asinIdx = colIdx['ASIN']
-  const snapshotRows = rows.map((values, i) => ({
-    asin: asinIdx != null ? values[asinIdx] : '',
-    values,
-    _rowIndex: i,
-  }))
+  const shopIdx = colIdx['店铺']
+  const snapshotRows = rows.map((values, i) => {
+    const nextValues = Array.isArray(values) ? values.slice() : []
+    while (nextValues.length < columns.length) nextValues.push('')
+
+    const asin = asinIdx != null ? String(nextValues[asinIdx] ?? '').trim() : ''
+    const listingRow = asin ? listingMap.get(asin) : null
+
+    if (shopIdx != null) {
+      const normalizedShop = normalizeShopName(listingRow?.shopName || nextValues[shopIdx])
+      if (normalizedShop) nextValues[shopIdx] = normalizedShop
+    }
+
+    const titleIdx = colIdx[titleColName]
+    if (titleIdx != null) {
+      const currentTitle = String(nextValues[titleIdx] ?? '').trim()
+      const listingTitle = String(listingRow?.productTitle || '').trim()
+      if (!currentTitle && listingTitle) nextValues[titleIdx] = listingTitle
+    }
+
+    return {
+      asin,
+      values: nextValues,
+      _rowIndex: i,
+    }
+  })
   const snapshotAsinSet = new Set(
     snapshotRows.map((r) => String(r?.asin || '').trim()).filter(Boolean),
   )
@@ -698,14 +771,14 @@ function importWeekBundle(bundle) {
   })
 
   // 同步 shops
-  const shopIdx = colIdx['店铺']
   const countryIdx = colIdx['国家']
   const shops = readJson(`${DATA_DIR}/shops.json`, [])
-  const existingShopNames = new Set(shops.map((s) => s.name))
+  const existingShopNames = new Set(shops.map((s) => normalizeShopName(s.name)).filter(Boolean))
   const newShops = []
   if (shopIdx != null) {
-    for (const values of rows) {
-      const name = (values[shopIdx] ?? '').trim()
+    for (const row of snapshotRows) {
+      const values = Array.isArray(row?.values) ? row.values : []
+      const name = normalizeShopName(values[shopIdx])
       if (!name || existingShopNames.has(name)) continue
       const country = countryIdx != null ? values[countryIdx] : ''
       const shop = { id: genShopId(shops), name, country, note: '' }
@@ -719,7 +792,7 @@ function importWeekBundle(bundle) {
   // 同步 products（按店铺分文件）
   // 重新读取一次 shops，包含刚新增的
   const shopsAfter = readJson(`${DATA_DIR}/shops.json`, [])
-  const shopNameToId = new Map(shopsAfter.map((s) => [s.name, s.id]))
+  const shopNameToId = buildShopNameToIdMap(shopsAfter)
   const shopNameById = new Map(shopsAfter.map((s) => [s.id, s.name]))
 
   // 每个 shop 一份 map，避免每行都读文件
@@ -768,6 +841,8 @@ function importWeekBundle(bundle) {
       packageSize: product.packageSize,
       packageType: product.packageType,
       itemWeight: product.itemWeight,
+      amazonMainImage: product.amazonMainImage,
+      listingDetailImages: product.listingDetailImages,
       productImage: product.productImage,
       productImages: product.productImages,
       localWarehouse: product.localWarehouse,
@@ -775,7 +850,10 @@ function importWeekBundle(bundle) {
     })
 
     product.fnsku = listingRow.fnsku
-    if (listingRow.name) product.name = listingRow.name
+    // 品名以本地可编辑值为准，仅在空值时用 Listing 初始化。
+    if (!String(product.name || '').trim() && listingRow.name) {
+      product.name = listingRow.name
+    }
     product.monthSales = listingRow.monthSales
     product.monthRevenue = listingRow.monthRevenue
     product.monthOrders = listingRow.monthOrders
@@ -789,6 +867,10 @@ function importWeekBundle(bundle) {
     product.packageSize = listingRow.packageSize
     product.packageType = listingRow.packageType
     product.itemWeight = listingRow.itemWeight
+    product.amazonMainImage = listingRow.amazonMainImage || ''
+    product.listingDetailImages = Array.isArray(listingRow.listingDetailImages)
+      ? listingRow.listingDetailImages
+      : []
     product.productImage = listingRow.productImage
     product.productImages = Array.isArray(listingRow.productImages) ? listingRow.productImages : []
     if (product.localWarehouse == null || product.localWarehouse === '') product.localWarehouse = 0
@@ -810,6 +892,8 @@ function importWeekBundle(bundle) {
       packageSize: product.packageSize,
       packageType: product.packageType,
       itemWeight: product.itemWeight,
+      amazonMainImage: product.amazonMainImage,
+      listingDetailImages: product.listingDetailImages,
       productImage: product.productImage,
       productImages: product.productImages,
       localWarehouse: product.localWarehouse,
@@ -838,10 +922,16 @@ function importWeekBundle(bundle) {
     if (colIdx['店铺'] != null) values[colIdx['店铺']] = shop?.name || ''
     if (colIdx['国家'] != null) values[colIdx['国家']] = shop?.country || ''
     if (colIdx['品名'] != null) values[colIdx['品名']] = listingRow?.name || ''
+    if (colIdx[titleColName] != null) values[colIdx[titleColName]] = listingRow?.productTitle || ''
     if (colIdx['分类'] != null) values[colIdx['分类']] = category
 
     snapshotRows.push({ asin: key, values, _rowIndex: snapshotRows.length })
     snapshotAsinSet.add(key)
+
+    const inherited = prevNotes[key]
+    if (typeof inherited === 'string' && inherited.trim() && !nextNotes[key]) {
+      nextNotes[key] = inherited
+    }
   }
 
   const orderAsinSet = new Set()
@@ -853,11 +943,12 @@ function importWeekBundle(bundle) {
   }
 
   if (asinIdx != null && shopIdx != null) {
-    for (const values of rows) {
-      const asin = (values[asinIdx] ?? '').trim()
+    for (const row of snapshotRows) {
+      const values = Array.isArray(row?.values) ? row.values : []
+      const asin = String(values[asinIdx] ?? '').trim()
       if (!asin) continue
       orderAsinSet.add(asin)
-      const shopName = (values[shopIdx] ?? '').trim()
+      const shopName = normalizeShopName(values[shopIdx])
       const shopId = shopNameToId.get(shopName)
       if (!shopId) continue // 理论上不会：上一步已经补齐 shops
       addOrderAsinByShop(shopId, asin)
@@ -894,6 +985,8 @@ function importWeekBundle(bundle) {
           packageSize: '',
           packageType: '',
           itemWeight: '',
+          amazonMainImage: '',
+          listingDetailImages: [],
           productImage: '',
           productImages: [],
           firstSeenWeek: weekId,
@@ -986,6 +1079,12 @@ function importWeekBundle(bundle) {
       return ''
     }
 
+    const resolveListingShopId = (listingRow) => {
+      const listingShopName = normalizeShopName(listingRow?.shopName)
+      if (!listingShopName) return ''
+      return String(shopNameToId.get(listingShopName) || '').trim()
+    }
+
     const listingOnlyAdded = []
     const listingOnlyUnresolved = []
     const processedListingOnly = new Set()
@@ -1001,8 +1100,22 @@ function importWeekBundle(bundle) {
         processedListingOnly.add(asin)
 
         const listingRow = fileRows.get(asin) || listingMap.get(asin)
-        const located = findAsinBucket(asin)
+        const listingShopId = resolveListingShopId(listingRow)
+        let located = findAsinBucket(asin)
         if (located) {
+          // 若 Listing 明确给出店铺且与现有主数据不一致，迁移到 Listing 对应店铺。
+          if (listingShopId && listingShopId !== located.shopId) {
+            const sourceBucket = located.bucket
+            const movedProduct = { ...located.product }
+            sourceBucket.map.delete(asin)
+            sourceBucket.changed = true
+
+            const targetBucket = ensureBucket(listingShopId)
+            targetBucket.map.set(asin, movedProduct)
+            targetBucket.changed = true
+            located = { shopId: listingShopId, bucket: targetBucket, product: movedProduct }
+          }
+
           if (applyListingRow(located.product, listingRow)) located.bucket.changed = true
           if (located.product.lastSeenWeek !== weekId) {
             located.product.lastSeenWeek = weekId
@@ -1012,12 +1125,13 @@ function importWeekBundle(bundle) {
           continue
         }
 
-        if (!inferredShopId) {
+        const targetShopId = listingShopId || inferredShopId
+        if (!targetShopId) {
           listingOnlyUnresolved.push({ listingFile, asin })
           continue
         }
 
-        const targetBucket = ensureBucket(inferredShopId)
+        const targetBucket = ensureBucket(targetShopId)
         const product = {
           asin,
           parentAsin: asin,
@@ -1040,6 +1154,10 @@ function importWeekBundle(bundle) {
           packageSize: listingRow?.packageSize ?? '',
           packageType: listingRow?.packageType ?? '',
           itemWeight: listingRow?.itemWeight ?? '',
+          amazonMainImage: listingRow?.amazonMainImage ?? '',
+          listingDetailImages: Array.isArray(listingRow?.listingDetailImages)
+            ? listingRow.listingDetailImages
+            : [],
           productImage: listingRow?.productImage ?? '',
           productImages: Array.isArray(listingRow?.productImages) ? listingRow.productImages : [],
           firstSeenWeek: weekId,
@@ -1047,12 +1165,12 @@ function importWeekBundle(bundle) {
         }
         targetBucket.map.set(asin, product)
         targetBucket.changed = true
-        newAsins.push({ ...product, shopId: inferredShopId })
-        appendSnapshotRowIfMissing(asin, inferredShopId, listingRow, '新品')
+        newAsins.push({ ...product, shopId: targetShopId })
+        appendSnapshotRowIfMissing(asin, targetShopId, listingRow, '新品')
         listingOnlyAdded.push({
           asin,
-          shopId: inferredShopId,
-          shopName: shopNameById.get(inferredShopId) || inferredShopId,
+          shopId: targetShopId,
+          shopName: shopNameById.get(targetShopId) || targetShopId,
         })
       }
     }
@@ -1240,7 +1358,12 @@ function apiPlugin() {
               packageSize: body.packageSize ?? '',
               packageType: body.packageType ?? '',
               itemWeight: body.itemWeight ?? '',
+              amazonMainImage: body.amazonMainImage ?? '',
+              listingDetailImages: Array.isArray(body.listingDetailImages)
+                ? body.listingDetailImages
+                : [],
               productImage: body.productImage ?? '',
+              productImages: Array.isArray(body.productImages) ? body.productImages : [],
               localWarehouse:
                 body.localWarehouse == null || body.localWarehouse === ''
                   ? 0
@@ -1257,13 +1380,29 @@ function apiPlugin() {
           if (url.startsWith('/products/')) {
             const asin = decodeURIComponent(url.slice('/products/'.length))
             const shops = readJson(`${DATA_DIR}/shops.json`, [])
-            const shopId = findShopIdByAsin(shops, asin)
-            if (!shopId) return sendJson(res, 404, { error: 'not found' })
-            const list = readProductsByShop(shopId)
-            const idx = list.findIndex((p) => p.asin === asin)
-            if (idx < 0) return sendJson(res, 404, { error: 'not found' })
             if (req.method === 'PUT') {
               const body = (await readBody(req)) || {}
+              const explicitShopId = String(body.shopId || '').trim()
+              if (explicitShopId && !shops.some((s) => s.id === explicitShopId)) {
+                return sendJson(res, 400, { error: 'shopId 不存在' })
+              }
+
+              let shopId = ''
+              if (explicitShopId) {
+                const explicitList = readProductsByShop(explicitShopId)
+                if (explicitList.some((p) => p.asin === asin)) {
+                  shopId = explicitShopId
+                }
+              }
+              if (!shopId) {
+                shopId = findShopIdByAsin(shops, asin)
+              }
+              if (!shopId) return sendJson(res, 404, { error: 'not found' })
+
+              const list = readProductsByShop(shopId)
+              const idx = list.findIndex((p) => p.asin === asin)
+              if (idx < 0) return sendJson(res, 404, { error: 'not found' })
+
               // 支持迁移到另一个店铺
               if (body.shopId && body.shopId !== shopId) {
                 if (!shops.some((s) => s.id === body.shopId)) {
@@ -1285,6 +1424,11 @@ function apiPlugin() {
               return sendJson(res, 200, { ...list[idx], shopId })
             }
             if (req.method === 'DELETE') {
+              const shopId = findShopIdByAsin(shops, asin)
+              if (!shopId) return sendJson(res, 404, { error: 'not found' })
+              const list = readProductsByShop(shopId)
+              const idx = list.findIndex((p) => p.asin === asin)
+              if (idx < 0) return sendJson(res, 404, { error: 'not found' })
               const removed = list.splice(idx, 1)[0]
               writeProductsByShop(shopId, list)
               return sendJson(res, 200, { ...removed, shopId })
@@ -1508,6 +1652,8 @@ function apiPlugin() {
                 packageSize: product.packageSize,
                 packageType: product.packageType,
                 itemWeight: product.itemWeight,
+                amazonMainImage: product.amazonMainImage,
+                listingDetailImages: product.listingDetailImages,
                 productImage: product.productImage,
                 productImages: product.productImages,
                 localWarehouse: product.localWarehouse,
@@ -1515,7 +1661,10 @@ function apiPlugin() {
               })
 
               product.fnsku = listingRow.fnsku
-              if (listingRow.name) product.name = listingRow.name
+              // 品名以本地可编辑值为准，仅在空值时用 Listing 初始化。
+              if (!String(product.name || '').trim() && listingRow.name) {
+                product.name = listingRow.name
+              }
               product.monthSales = listingRow.monthSales
               product.monthRevenue = listingRow.monthRevenue
               product.monthOrders = listingRow.monthOrders
@@ -1529,6 +1678,10 @@ function apiPlugin() {
               product.packageSize = listingRow.packageSize
               product.packageType = listingRow.packageType
               product.itemWeight = listingRow.itemWeight
+              product.amazonMainImage = listingRow.amazonMainImage || ''
+              product.listingDetailImages = Array.isArray(listingRow.listingDetailImages)
+                ? listingRow.listingDetailImages
+                : []
               product.productImage = listingRow.productImage
               product.productImages = Array.isArray(listingRow.productImages)
                 ? listingRow.productImages
@@ -1552,6 +1705,8 @@ function apiPlugin() {
                 packageSize: product.packageSize,
                 packageType: product.packageType,
                 itemWeight: product.itemWeight,
+                amazonMainImage: product.amazonMainImage,
+                listingDetailImages: product.listingDetailImages,
                 productImage: product.productImage,
                 productImages: product.productImages,
                 localWarehouse: product.localWarehouse,
@@ -1640,6 +1795,10 @@ function apiPlugin() {
                 packageSize: listingRow.packageSize,
                 packageType: listingRow.packageType,
                 itemWeight: listingRow.itemWeight,
+                amazonMainImage: listingRow.amazonMainImage || '',
+                listingDetailImages: Array.isArray(listingRow.listingDetailImages)
+                  ? listingRow.listingDetailImages
+                  : [],
                 productImage: listingRow.productImage,
                 productImages: Array.isArray(listingRow.productImages)
                   ? listingRow.productImages

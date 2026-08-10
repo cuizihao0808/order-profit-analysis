@@ -4,6 +4,12 @@ export function normalizeNumber(value, fallback = '') {
   return Number.isFinite(n) ? n : fallback
 }
 
+function isAmazonMainImageUrl(url) {
+  return /^https?:\/\/(?:[a-z0-9-]+\.)*media-amazon\.com\/images\//i.test(
+    String(url || '').trim(),
+  )
+}
+
 export function normalizeInventoryProduct(product) {
   const next = { ...product }
   next.fnsku = next.fnsku == null ? '' : String(next.fnsku).trim()
@@ -39,12 +45,31 @@ export function normalizeInventoryProduct(product) {
         .map((x) => String(x == null ? '' : x).trim())
         .filter(Boolean)
     : []
+  const normalizedDetailImages = Array.isArray(next.listingDetailImages)
+    ? next.listingDetailImages
+        .map((x) => String(x == null ? '' : x).trim())
+        .filter(Boolean)
+    : []
   const normalizedProductImage = String(next.productImage == null ? '' : next.productImage).trim()
+  const rawAmazonMainImage = String(next.amazonMainImage == null ? '' : next.amazonMainImage).trim()
+  const normalizedAmazonMainImage = isAmazonMainImageUrl(rawAmazonMainImage)
+    ? rawAmazonMainImage
+    : ''
+  const fallbackAmazonMainImage = isAmazonMainImageUrl(normalizedProductImage)
+    ? normalizedProductImage
+    : ''
+  if (normalizedAmazonMainImage && !normalizedImages.includes(normalizedAmazonMainImage)) {
+    normalizedImages.unshift(normalizedAmazonMainImage)
+  }
   if (normalizedProductImage && !normalizedImages.includes(normalizedProductImage)) {
     normalizedImages.unshift(normalizedProductImage)
   }
   next.productImages = normalizedImages
+  next.listingDetailImages = normalizedDetailImages.length
+    ? Array.from(new Set(normalizedDetailImages))
+    : Array.from(new Set(normalizedImages.filter((u) => u && u !== normalizedAmazonMainImage)))
   next.productImage = normalizedProductImage || normalizedImages[0] || ''
+  next.amazonMainImage = normalizedAmazonMainImage || fallbackAmazonMainImage || ''
   return next
 }
 
@@ -99,8 +124,18 @@ export function isListingStockFile(name) {
 }
 
 export function buildListingRowRecord(values, listingColIdx) {
-  const productImages = collectListingImageUrls(values, listingColIdx)
+  const listingDetailImages = collectListingImageUrls(values, listingColIdx)
+  const rawAmazonMainImage = String(values[listingColIdx['图片URL']] ?? '').trim()
+  const amazonMainImage = isAmazonMainImageUrl(rawAmazonMainImage) ? rawAmazonMainImage : ''
+  const mergedImages = listingDetailImages.slice()
+  if (amazonMainImage && !mergedImages.includes(amazonMainImage)) {
+    mergedImages.unshift(amazonMainImage)
+  }
   return {
+    shopName: String(values[listingColIdx['店铺']] ?? '').trim(),
+    productTitle:
+      String(values[listingColIdx['商品标题']] ?? '').trim() ||
+      String(values[listingColIdx['标题']] ?? '').trim(),
     fnsku: String(values[listingColIdx['FNSKU']] ?? '').trim(),
     name: String(values[listingColIdx['产品中文名']] ?? '').trim(),
     monthSales: normalizeNumber(values[listingColIdx['销量']], ''),
@@ -122,7 +157,9 @@ export function buildListingRowRecord(values, listingColIdx) {
       String(values[listingColIdx['包装类型1']] ?? '').trim() ||
       String(values[listingColIdx['包装类型2']] ?? '').trim(),
     itemWeight: normalizeNumber(values[listingColIdx['单品重量(g)']], ''),
-    productImage: productImages[0] || '',
-    productImages,
+    amazonMainImage,
+    listingDetailImages,
+    productImage: mergedImages[0] || '',
+    productImages: mergedImages,
   }
 }
