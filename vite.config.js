@@ -942,6 +942,17 @@ function importWeekBundle(bundle) {
     orderAsinsByShop.get(shopId).add(asin)
   }
 
+  const findAsinBucketAny = (asin) => {
+    for (const [shopId, bucket] of shopBuckets) {
+      if (bucket.map.has(asin)) return { shopId, bucket, product: bucket.map.get(asin) }
+    }
+    for (const s of shopsAfter) {
+      const b = ensureBucket(s.id)
+      if (b.map.has(asin)) return { shopId: s.id, bucket: b, product: b.map.get(asin) }
+    }
+    return null
+  }
+
   if (asinIdx != null && shopIdx != null) {
     for (const row of snapshotRows) {
       const values = Array.isArray(row?.values) ? row.values : []
@@ -959,7 +970,20 @@ function importWeekBundle(bundle) {
         addUnmatchedAsin(shopName, asin)
       }
 
-      if (!bucket.map.has(asin)) {
+      let current = bucket.map.get(asin)
+      if (!current) {
+        const located = findAsinBucketAny(asin)
+        if (located && located.shopId !== shopId) {
+          const movedProduct = { ...located.product }
+          located.bucket.map.delete(asin)
+          located.bucket.changed = true
+          bucket.map.set(asin, movedProduct)
+          bucket.changed = true
+          current = movedProduct
+        }
+      }
+
+      if (!current) {
         const master = {}
         for (const f of MASTER_FIELDS) {
           const i = colIdx[f.column]
@@ -1001,7 +1025,7 @@ function importWeekBundle(bundle) {
         bucket.changed = true
         newAsins.push({ ...product, shopId })
       } else {
-        const p = bucket.map.get(asin)
+        const p = current
         if (listingRow) {
           if (applyListingRow(p, listingRow)) bucket.changed = true
         } else {

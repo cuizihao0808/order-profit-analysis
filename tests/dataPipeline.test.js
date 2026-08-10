@@ -69,12 +69,68 @@ describe('dataPipeline: product normalization', () => {
     expect(next.productImages).toContain('https://detail.example/b.jpg')
     expect(next.productImages).toContain('https://m.media-amazon.com/images/I/abc.jpg')
   })
+
+  it('normalizes listingDetailImages and falls back amazonMainImage from productImage', () => {
+    const next = normalizeInventoryProduct({
+      amazonMainImage: ' https://cdn.example/not-amazon.jpg ',
+      productImage: ' https://m.media-amazon.com/images/I/main-fallback.jpg ',
+      listingDetailImages: [' https://detail.example/1.jpg ', '', null, 'https://detail.example/1.jpg'],
+      productImages: null,
+    })
+
+    expect(next.amazonMainImage).toBe('https://m.media-amazon.com/images/I/main-fallback.jpg')
+    expect(next.productImage).toBe('https://m.media-amazon.com/images/I/main-fallback.jpg')
+    expect(next.productImages[0]).toBe('https://m.media-amazon.com/images/I/main-fallback.jpg')
+    expect(next.listingDetailImages).toEqual(['https://detail.example/1.jpg'])
+  })
+
+  it('falls back productImage to first normalized productImages entry', () => {
+    const next = normalizeInventoryProduct({
+      productImage: '',
+      productImages: [' https://detail.example/first.jpg ', ''],
+      listingDetailImages: [],
+    })
+
+    expect(next.productImage).toBe('https://detail.example/first.jpg')
+    expect(next.productImages).toEqual(['https://detail.example/first.jpg'])
+  })
+
+  it('handles null fnsku and empty legacy secondary package fields', () => {
+    const next = normalizeInventoryProduct({
+      fnsku: null,
+      packageSize1: '',
+      packageSize2: null,
+      packageType1: '',
+      packageType2: null,
+      productImages: [null, ' https://detail.example/a.jpg '],
+    })
+
+    expect(next.fnsku).toBe('')
+    expect(next.packageSize).toBe('')
+    expect(next.packageType).toBe('')
+    expect(next.productImages).toEqual(['https://detail.example/a.jpg'])
+  })
+
+  it('keeps non-empty fnsku and uses legacy packageSize2 when packageSize1 is empty', () => {
+    const next = normalizeInventoryProduct({
+      fnsku: ' X001 ',
+      packageSize1: '',
+      packageSize2: '22×11×5',
+      packageType1: '',
+      packageType2: '袋装',
+    })
+
+    expect(next.fnsku).toBe('X001')
+    expect(next.packageSize).toBe('22×11×5')
+    expect(next.packageType).toBe('袋装')
+  })
 })
 
 describe('dataPipeline: folder/file parsing', () => {
   it('parses weekId from folder', () => {
     expect(parseWeekIdFromFolder('31周 (07:26～08:01)')).toBe('31周')
     expect(parseWeekIdFromFolder('自定义周目录')).toBe('自定义周目录')
+    expect(parseWeekIdFromFolder()).toBe('')
   })
 
   it('parses date range from filename', () => {
@@ -83,6 +139,7 @@ describe('dataPipeline: folder/file parsing', () => {
       endDate: '2026-08-01',
     })
     expect(parseDatesFromFilename('bad-file')).toEqual({ startDate: '', endDate: '' })
+    expect(parseDatesFromFilename()).toEqual({ startDate: '', endDate: '' })
   })
 
   it('selects preferred file and recognizes file types', () => {
@@ -101,6 +158,11 @@ describe('dataPipeline: folder/file parsing', () => {
   it('scores bracketed duplicate names correctly', () => {
     const files = ['Listing销售库存_2026 (1).csv', 'Listing销售库存_2026.csv']
     expect(choosePreferredFile(files)).toBe('Listing销售库存_2026.csv')
+  })
+
+  it('uses lexical order when file scores tie', () => {
+    const files = ['b.csv', 'a.csv']
+    expect(choosePreferredFile(files)).toBe('a.csv')
   })
 
   it('recognizes multiple listing file suffixes', () => {
@@ -208,6 +270,23 @@ describe('dataPipeline: listing row mapping', () => {
     expect(mapped.productImages).toContain('https://cdn.example/1.jpg')
   })
 
+  it('does not duplicate 亚马逊主图 when it already exists in detail images', () => {
+    const cols = ['ASIN', '图片URL', '产品图片1', '店铺', '商品标题']
+    const idx = Object.fromEntries(cols.map((c, i) => [c, i]))
+    const row = [
+      'B0MAIN2',
+      'https://m.media-amazon.com/images/I/main.jpg',
+      'https://m.media-amazon.com/images/I/main.jpg',
+      'CZH-主店一号',
+      'Title A',
+    ]
+    const mapped = buildListingRowRecord(row, idx)
+
+    expect(mapped.productImages).toEqual(['https://m.media-amazon.com/images/I/main.jpg'])
+    expect(mapped.shopName).toBe('CZH-主店一号')
+    expect(mapped.productTitle).toBe('Title A')
+  })
+
   it('ignores non media-amazon 图片URL for 亚马逊主图', () => {
     const cols = ['ASIN', '图片URL', '产品图片1']
     const idx = Object.fromEntries(cols.map((c, i) => [c, i]))
@@ -217,6 +296,38 @@ describe('dataPipeline: listing row mapping', () => {
     expect(mapped.amazonMainImage).toBe('')
     expect(mapped.productImage).toBe('https://cdn.example/1.jpg')
     expect(mapped.productImages[0]).toBe('https://cdn.example/1.jpg')
+  })
+
+  it('falls back productTitle to 标题 when 商品标题 is absent', () => {
+    const cols = ['ASIN', '标题', '店铺']
+    const idx = Object.fromEntries(cols.map((c, i) => [c, i]))
+    const row = ['B0TITLE', 'Fallback Title', 'LPH-主店三号-US']
+    const mapped = buildListingRowRecord(row, idx)
+
+    expect(mapped.productTitle).toBe('Fallback Title')
+    expect(mapped.shopName).toBe('LPH-主店三号-US')
+  })
+
+  it('handles sparse row values in product image columns', () => {
+    const cols = ['ASIN', '产品图片1', '产品图片2']
+    const idx = Object.fromEntries(cols.map((c, i) => [c, i]))
+    const row = ['B0SPARSE', 'https://example.com/1.jpg']
+    const mapped = buildListingRowRecord(row, idx)
+
+    expect(mapped.listingDetailImages).toEqual(['https://example.com/1.jpg'])
+    expect(mapped.productImage).toBe('https://example.com/1.jpg')
+  })
+
+  it('sorts 产品图片 before numbered image columns when mixed', () => {
+    const cols = ['ASIN', '产品图片2', '产品图片']
+    const idx = Object.fromEntries(cols.map((c, i) => [c, i]))
+    const row = ['B0SORT', 'https://example.com/2.jpg', 'https://example.com/0.jpg']
+    const mapped = buildListingRowRecord(row, idx)
+
+    expect(mapped.listingDetailImages).toEqual([
+      'https://example.com/0.jpg',
+      'https://example.com/2.jpg',
+    ])
   })
 
   it('falls back to second legacy package size/type when first is empty', () => {
