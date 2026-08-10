@@ -1,6 +1,8 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { computeRestockQty } from './lib/restockRules.js'
+
+const ImportDialog = defineAsyncComponent(() => import('./components/ImportDialog.vue'))
 
 /* ================= 常量 ================= */
 const FIXED_COLS = ['亚马逊主图', '品名', 'ASIN']
@@ -175,13 +177,14 @@ const expandedInventoryRows = ref(new Set())
 const selectedAsins = ref(new Set())
 const batchCategoryValue = ref('')
 const batchCategoryBusy = ref(false)
+const filtersCollapsed = ref(false)
 const compact13Mode = ref(false)
 let toastTimer = null
 const copyResetTimers = new Map()
 
 function updateCompact13Mode() {
   if (typeof window === 'undefined') return
-  compact13Mode.value = window.innerWidth <= 1440 && window.innerHeight <= 900
+  compact13Mode.value = window.innerWidth <= 1512 && window.innerHeight <= 982
 }
 
 /* ================= 派生数据 ================= */
@@ -525,7 +528,13 @@ function isAsinCopied(row) {
 
 function updateNoteOverflow(asin, event) {
   if (!asin) return
-  const input = event?.target
+  const target = event?.target
+  const current = event?.currentTarget
+  const input = target instanceof HTMLInputElement
+    ? target
+    : current instanceof HTMLElement
+      ? current.querySelector('input')
+      : null
   if (!(input instanceof HTMLInputElement)) return
   const text = String(input.value || '').trim()
   const overflow = !!text && input.scrollWidth > input.clientWidth + 1
@@ -1646,97 +1655,95 @@ onBeforeUnmount(() => {
         <span class="crumb">订单利润分析</span>
         <span class="crumb-sep">/</span>
         <span class="title">
-          <span class="title-badge">▦</span>
+          <span class="title-badge">OPA</span>
           周订单利润
         </span>
       </div>
     </header>
 
-    <div class="toolbar">
-      <span class="tool-label">周次</span>
-      <select class="tool-select" v-model="currentWeekId" :disabled="!weeks.length">
-        <option v-if="!weeks.length" value="">暂无</option>
-        <option v-for="w in weeks" :key="w.id" :value="w.id">
-          {{ w.id }} · {{ w.startDate }} ~ {{ w.endDate }}（{{ w.rowCount }} 行）
-        </option>
-      </select>
+    <div class="toolbar toolbar-modern">
+      <el-button class="filter-toggle-btn" plain @click="filtersCollapsed = !filtersCollapsed">
+        {{ filtersCollapsed ? '展开筛选' : '收起筛选' }}
+      </el-button>
 
-      <span class="tool-divider"></span>
+      <div v-show="!filtersCollapsed" class="toolbar-filter-group">
+        <div class="filter-item filter-item-week">
+          <span class="tool-label">周次</span>
+          <el-select v-model="currentWeekId" class="tool-ep-select" placeholder="选择周次" :disabled="!weeks.length" filterable>
+            <el-option v-if="!weeks.length" label="暂无" value="" />
+            <el-option
+              v-for="w in weeks"
+              :key="w.id"
+              :label="`${w.id} · ${w.startDate} ~ ${w.endDate}（${w.rowCount} 行）`"
+              :value="w.id"
+            />
+          </el-select>
+        </div>
 
-      <span class="tool-label">店铺</span>
-      <select class="tool-select" v-model="shopFilter" :disabled="!shopNames.length">
-        <option value="__all__">全部店铺（{{ shopNames.length }}）</option>
-        <option v-for="s in shopNames" :key="s" :value="s">{{ s }}</option>
-      </select>
+        <div class="filter-item filter-item-shop">
+          <span class="tool-label">店铺</span>
+          <el-select v-model="shopFilter" class="tool-ep-select" :disabled="!shopNames.length" filterable>
+            <el-option :label="`全部店铺（${shopNames.length}）`" value="__all__" />
+            <el-option v-for="s in shopNames" :key="s" :label="s" :value="s" />
+          </el-select>
+        </div>
 
-      <span class="tool-label">补货筛选</span>
-      <select class="tool-select" v-model="supplyFilter">
-        <option value="__all__">全部</option>
-        <option value="need-restock">需要补货</option>
-        <option value="no-restock">不需要补货</option>
-        <option value="ordered">已经下单的</option>
-        <option value="local-warehouse">本地仓库有的</option>
-        <option value="need-restock-no-local-no-ordered">需要补货且本地没有和没有下单的</option>
-      </select>
+        <div class="filter-item filter-item-supply">
+          <span class="tool-label">补货筛选</span>
+          <el-select v-model="supplyFilter" class="tool-ep-select" filterable>
+            <el-option label="全部" value="__all__" />
+            <el-option label="需要补货" value="need-restock" />
+            <el-option label="不需要补货" value="no-restock" />
+            <el-option label="已经下单的" value="ordered" />
+            <el-option label="本地仓库有的" value="local-warehouse" />
+            <el-option label="需要补货且本地没有和没有下单的" value="need-restock-no-local-no-ordered" />
+          </el-select>
+        </div>
 
-      <span class="tool-label">ASIN/FNSKU搜索</span>
-      <div class="search-input-wrap" style="width: 210px">
-        <input class="tool-select search-input" v-model="asinSearch" placeholder="ASIN / FNSKU" />
-        <button
-          v-if="asinSearch"
-          class="search-clear-btn"
-          type="button"
-          title="清空搜索"
-          aria-label="清空搜索"
-          @click="asinSearch = ''"
-        >
-          ×
-        </button>
+        <div class="filter-item filter-item-search">
+          <span class="tool-label">ASIN/FNSKU搜索</span>
+          <el-input
+            v-model="asinSearch"
+            class="tool-ep-input"
+            placeholder="ASIN / FNSKU"
+            clearable
+          />
+        </div>
       </div>
 
-      <span class="tool-divider"></span>
-
-      <button class="tool-btn primary" type="button" :disabled="importLoading || importBusy" @click="openImport">
-        <span v-if="importLoading || importBusy" class="loading-dot loading-spin"></span>
-        {{ importLoading ? '扫描中...' : importBusy ? '导入中...' : '⇪ 扫描并导入' }}
-      </button>
-      <button class="tool-btn" type="button" @click="showShopPanel = true">店铺</button>
-      <button class="tool-btn" type="button" @click="showProductPanel = true">ASIN</button>
-      <button class="tool-btn" type="button" :disabled="!nonAbandonedVisibleAsins.length" @click="copyNonAbandonedAsins">
+      <el-button type="primary" :loading="importLoading || importBusy" :disabled="importLoading || importBusy" @click="openImport">
+        {{ importLoading ? '扫描中...' : importBusy ? '导入中...' : '扫描并导入' }}
+      </el-button>
+      <el-button @click="showShopPanel = true">店铺</el-button>
+      <el-button @click="showProductPanel = true">ASIN</el-button>
+      <el-button :disabled="!nonAbandonedVisibleAsins.length" @click="copyNonAbandonedAsins">
         复制非放弃ASIN（{{ nonAbandonedVisibleAsins.length }}）
-      </button>
+      </el-button>
       <span class="tool-label">批量分类</span>
-      <select class="tool-select" v-model="batchCategoryValue" style="width: 110px">
-        <option value="">选择分类</option>
-        <option v-for="opt in CATEGORY_OPTIONS" :key="`batch-${opt}`" :value="opt">{{ opt }}</option>
-      </select>
-      <button
-        class="tool-btn"
-        type="button"
-        :disabled="!selectedAsinCount || !batchCategoryValue || batchCategoryBusy"
-        @click="applyBatchCategoryChange"
-      >
+      <el-select v-model="batchCategoryValue" class="tool-ep-select" style="width: 122px" placeholder="选择分类">
+        <el-option value="" label="选择分类" />
+        <el-option v-for="opt in CATEGORY_OPTIONS" :key="`batch-${opt}`" :value="opt" :label="opt" />
+      </el-select>
+      <el-button :disabled="!selectedAsinCount || !batchCategoryValue || batchCategoryBusy" @click="applyBatchCategoryChange">
         {{ batchCategoryBusy ? '批量修改中...' : `批量改分类（${selectedAsinCount}）` }}
-      </button>
-      <button class="tool-btn" type="button" :disabled="!selectedAsinCount" @click="clearSelectedAsins">清空勾选</button>
+      </el-button>
+      <el-button :disabled="!selectedAsinCount" @click="clearSelectedAsins">清空勾选</el-button>
       <div class="export-tip-wrap">
-        <button class="tool-btn" type="button" :disabled="!canExportLocalWarehousePdf || exportPdfBusy" @click="exportLocalWarehousePdf">
+        <el-button :disabled="!canExportLocalWarehousePdf || exportPdfBusy" @click="exportLocalWarehousePdf">
           {{ exportPdfBusy ? '导出PDF中...' : '导出本地仓库PDF' }}
-        </button>
+        </el-button>
         <span v-if="!canExportLocalWarehousePdf" class="export-tip-bubble">{{ exportLocalWarehouseDisabledReason }}</span>
       </div>
 
       <span class="tool-divider"></span>
 
-      <button class="tool-btn primary" type="button" @click="showFieldPanel = true">
-        ⚙ 字段
-      </button>
+      <el-button type="primary" plain @click="showFieldPanel = true">字段设置</el-button>
     </div>
 
     <div class="metabar">
-      <div class="pill">父ASIN组 {{ groupCount }}</div>
-      <div class="pill">ASIN {{ asinCount }}</div>
-      <div class="pill" v-if="shopFilter !== '__all__'">当前店铺：{{ shopFilter }}</div>
+      <el-tag effect="light" round>父ASIN组 {{ groupCount }}</el-tag>
+      <el-tag effect="light" round>ASIN {{ asinCount }}</el-tag>
+      <el-tag v-if="shopFilter !== '__all__'" type="success" effect="light" round>当前店铺：{{ shopFilter }}</el-tag>
       <div class="status">{{ status }}</div>
     </div>
 
@@ -1799,14 +1806,14 @@ onBeforeUnmount(() => {
                 :style="col.fixed ? fixedColStyle(i, col.name) : null"
               >
                 <template v-if="editColKey(col.name) === 'category'">
-                  <select
-                    class="cell-select"
-                    :class="'cat-' + (rowProduct(item.row)?.category || '正常')"
-                    :value="rowProduct(item.row)?.category || '正常'"
-                    @change="patchProduct(item.row.asin, { category: $event.target.value }, { shopId: rowShopId(item.row) })"
+                  <el-select
+                    :class="['cell-ep-select', 'cat-' + (rowProduct(item.row)?.category || '正常')]"
+                    size="small"
+                    :model-value="rowProduct(item.row)?.category || '正常'"
+                    @change="patchProduct(item.row.asin, { category: $event }, { shopId: rowShopId(item.row) })"
                   >
-                    <option v-for="opt in CATEGORY_OPTIONS" :key="opt" :value="opt">{{ opt }}</option>
-                  </select>
+                    <el-option v-for="opt in CATEGORY_OPTIONS" :key="opt" :value="opt" :label="opt" />
+                  </el-select>
                 </template>
                 <template v-else-if="col.name === '亚马逊主图'">
                   <div class="amazon-main-cell">
@@ -1828,11 +1835,11 @@ onBeforeUnmount(() => {
                 </template>
                 <template v-else-if="col.name === '品名'">
                   <div class="name-cell-stack">
-                    <input
-                      class="cell-input"
-                      type="text"
-                      :value="rowProduct(item.row)?.name ?? ''"
-                      @change="patchProduct(item.row.asin, { name: $event.target.value.trim() }, { shopId: rowShopId(item.row) })"
+                    <el-input
+                      class="cell-ep-input"
+                      size="small"
+                      :model-value="rowProduct(item.row)?.name ?? ''"
+                      @change="patchProduct(item.row.asin, { name: ($event || '').trim() }, { shopId: rowShopId(item.row) })"
                     />
                     <div class="title-tooltip-wrap name-title-subrow">
                       <span class="name-title-ellipsis">标题：{{ displayProductTitle(item.row) || '—' }}</span>
@@ -1843,23 +1850,24 @@ onBeforeUnmount(() => {
                 <template
                   v-else-if="editColKey(col.name) === 'restockCycle' || editColKey(col.name) === 'localWarehouse' || editColKey(col.name) === 'orderedQty'"
                 >
-                  <input
-                    class="cell-input"
+                  <el-input
+                    class="cell-ep-input cell-ep-input-num"
                     type="number"
-                    :value="rowProduct(item.row)?.[editColKey(col.name)] ?? ''"
-                    @change="patchProduct(item.row.asin, { [editColKey(col.name)]: $event.target.value === '' ? '' : Number($event.target.value) }, { shopId: rowShopId(item.row) })"
+                    size="small"
+                    :model-value="rowProduct(item.row)?.[editColKey(col.name)] ?? ''"
+                    @change="patchProduct(item.row.asin, { [editColKey(col.name)]: $event === '' ? '' : Number($event) }, { shopId: rowShopId(item.row) })"
                   />
                 </template>
                 <template v-else-if="editColKey(col.name) === 'note'">
                   <div class="note-tooltip-wrap">
-                    <input
-                      class="cell-input"
-                      type="text"
-                      :value="getWeekNote(item.row.asin)"
+                    <el-input
+                      class="cell-ep-input"
+                      size="small"
+                      :model-value="getWeekNote(item.row.asin)"
                       placeholder="本周备注"
                       @mouseenter="updateNoteOverflow(item.row.asin, $event)"
-                      @focus="updateNoteOverflow(item.row.asin, $event)"
-                      @change="patchWeekNote(item.row.asin, $event.target.value)"
+                      @focusin="updateNoteOverflow(item.row.asin, $event)"
+                      @change="patchWeekNote(item.row.asin, $event)"
                     />
                     <span v-if="shouldShowNoteTooltip(item.row.asin)" class="note-tooltip-bubble">{{ getWeekNote(item.row.asin) }}</span>
                   </div>
@@ -1927,29 +1935,32 @@ onBeforeUnmount(() => {
                   <div class="inventory-item"><span>单品重量/g</span><strong>{{ rowProduct(item.row)?.itemWeight || '—' }}</strong></div>
                   <label class="inventory-item inventory-input-item">
                     <span>本地仓库</span>
-                    <input
-                      class="cell-input"
+                    <el-input
+                      class="cell-ep-input cell-ep-input-num"
                       type="number"
-                      :value="rowProduct(item.row)?.localWarehouse ?? 0"
-                      @change="patchProduct(item.row.asin, { localWarehouse: $event.target.value === '' ? 0 : Number($event.target.value) }, { shopId: rowShopId(item.row) })"
+                      size="small"
+                      :model-value="rowProduct(item.row)?.localWarehouse ?? 0"
+                      @change="patchProduct(item.row.asin, { localWarehouse: $event === '' ? 0 : Number($event) }, { shopId: rowShopId(item.row) })"
                     />
                   </label>
                   <label class="inventory-item inventory-input-item">
                     <span>已下单</span>
-                    <input
-                      class="cell-input"
+                    <el-input
+                      class="cell-ep-input cell-ep-input-num"
                       type="number"
-                      :value="rowProduct(item.row)?.orderedQty ?? 0"
-                      @change="patchProduct(item.row.asin, { orderedQty: $event.target.value === '' ? 0 : Number($event.target.value) }, { shopId: rowShopId(item.row) })"
+                      size="small"
+                      :model-value="rowProduct(item.row)?.orderedQty ?? 0"
+                      @change="patchProduct(item.row.asin, { orderedQty: $event === '' ? 0 : Number($event) }, { shopId: rowShopId(item.row) })"
                     />
                   </label>
                   <label class="inventory-item inventory-input-item">
                     <span>补货用时</span>
-                    <input
-                      class="cell-input"
+                    <el-input
+                      class="cell-ep-input cell-ep-input-num"
                       type="number"
-                      :value="rowProduct(item.row)?.restockCycle ?? ''"
-                      @change="patchProduct(item.row.asin, { restockCycle: $event.target.value === '' ? '' : Number($event.target.value) }, { shopId: rowShopId(item.row) })"
+                      size="small"
+                      :model-value="rowProduct(item.row)?.restockCycle ?? ''"
+                      @change="patchProduct(item.row.asin, { restockCycle: $event === '' ? '' : Number($event) }, { shopId: rowShopId(item.row) })"
                     />
                   </label>
                   <div class="inventory-item"><span>补货数量</span><strong>{{ getCell(item.row, '补货数量') || '—' }}</strong></div>
@@ -1996,377 +2007,192 @@ onBeforeUnmount(() => {
       </table>
     </div>
 
-    <div v-if="imagePreview.show" class="image-preview-mask" @click.self="closeImagePreview">
-      <div class="image-preview-dialog">
-        <button class="image-preview-close" type="button" @click="closeImagePreview">✕</button>
-        <button
+    <el-dialog
+      :model-value="imagePreview.show"
+      class="opa-dialog image-preview-ep"
+      width="min(92vw, 1120px)"
+      align-center
+      :show-close="false"
+      @update:model-value="(v) => { if (!v) closeImagePreview() }"
+    >
+      <template #header>
+        <div class="image-preview-head">
+          <span>{{ imagePreview.title || '图片预览' }}</span>
+          <el-button circle size="small" @click="closeImagePreview">✕</el-button>
+        </div>
+      </template>
+      <div class="image-preview-stage">
+        <el-button
           v-if="imagePreview.urls.length > 1"
           class="image-preview-nav image-preview-nav-prev"
-          type="button"
+          circle
           @click="prevPreviewImage"
         >
           ‹
-        </button>
+        </el-button>
         <img :src="currentPreviewImageUrl" :alt="imagePreview.title" class="image-preview-large" />
-        <button
+        <el-button
           v-if="imagePreview.urls.length > 1"
           class="image-preview-nav image-preview-nav-next"
-          type="button"
+          circle
           @click="nextPreviewImage"
         >
           ›
-        </button>
-        <div v-if="imagePreview.urls.length > 1" class="image-preview-indicator">
-          {{ imagePreview.index + 1 }} / {{ imagePreview.urls.length }}
+        </el-button>
+      </div>
+      <div v-if="imagePreview.urls.length > 1" class="image-preview-indicator">
+        {{ imagePreview.index + 1 }} / {{ imagePreview.urls.length }}
+      </div>
+    </el-dialog>
+
+    <el-dialog v-model="showFieldPanel" class="opa-dialog" title="字段配置" width="920px" top="6vh">
+      <div class="drawer-tip">
+        固定列：亚马逊主图、品名、ASIN（不可调整）。其它字段可自定义显隐与顺序，配置保存在浏览器。
+      </div>
+      <div class="drawer-actions">
+        <el-button @click="setAllColsVisible(true)">全选</el-button>
+        <el-button @click="setAllColsVisible(false)">全不选</el-button>
+        <el-button @click="resetColConfig">重置</el-button>
+      </div>
+      <el-table :data="customCols" border class="opa-table" max-height="460">
+        <el-table-column label="显示" width="80" align="center">
+          <template #default="scope">
+            <el-switch :model-value="scope.row.visible" @change="toggleColVisible(scope.$index)" />
+          </template>
+        </el-table-column>
+        <el-table-column label="字段">
+          <template #default="scope">
+            <span>{{ displayColName(scope.row.name) }}</span>
+            <el-tag v-if="isCalcCol(scope.row.name)" size="small" type="warning" effect="plain" style="margin-left: 8px">公式</el-tag>
+            <el-tag v-else-if="EXTRA_COL_NAMES.includes(scope.row.name)" size="small" effect="plain" style="margin-left: 8px">可编辑</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="顺序" width="140" align="center">
+          <template #default="scope">
+            <el-button size="small" :disabled="scope.$index === 0" @click="moveCol(scope.$index, -1)">上移</el-button>
+            <el-button size="small" :disabled="scope.$index === customCols.length - 1" @click="moveCol(scope.$index, 1)">下移</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-dialog>
+
+    <el-dialog v-model="showShopPanel" class="opa-dialog" title="店铺管理" width="860px" top="6vh">
+      <div class="drawer-tip">
+        数据存于 <code>src/data/shops.json</code>。导入周数据时新店铺会自动追加。
+      </div>
+      <div class="shop-form">
+        <el-form label-width="88px" label-position="left" class="opa-form-inline">
+          <div class="form-grid shop-grid">
+            <el-form-item label="店铺名称 *">
+              <el-input v-model="shopForm.name" placeholder="例如 LPH-主店三号" />
+            </el-form-item>
+            <el-form-item label="国家">
+              <el-input v-model="shopForm.country" placeholder="美国 / 日本..." />
+            </el-form-item>
+            <el-form-item label="备注" class="form-row-wide">
+              <el-input v-model="shopForm.note" placeholder="选填" />
+            </el-form-item>
+          </div>
+        </el-form>
+        <div class="form-actions">
+          <el-button type="primary" @click="saveShop">{{ shopEditingId ? '保存修改' : '新增店铺' }}</el-button>
+          <el-button v-if="shopEditingId" @click="resetShopForm">取消</el-button>
+          <span v-if="shopMessage" class="form-msg">{{ shopMessage }}</span>
         </div>
       </div>
-    </div>
+      <div class="shop-list-head">已有店铺（{{ shops.length }}）</div>
+      <el-table :data="shops" border class="opa-table" max-height="380" empty-text="还没有店铺">
+        <el-table-column prop="name" label="店铺名称" min-width="220" />
+        <el-table-column label="国家" min-width="110">
+          <template #default="scope">{{ scope.row.country || '—' }}</template>
+        </el-table-column>
+        <el-table-column label="备注" min-width="160">
+          <template #default="scope">{{ scope.row.note || '—' }}</template>
+        </el-table-column>
+        <el-table-column prop="id" label="ID" width="120" />
+        <el-table-column label="操作" width="150" fixed="right">
+          <template #default="scope">
+            <el-button size="small" @click="pickShop(scope.row)">编辑</el-button>
+            <el-button size="small" type="danger" plain @click="deleteShop(scope.row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-dialog>
 
-    <!-- 字段配置抽屉 -->
-    <div v-if="showFieldPanel" class="drawer-mask" @click.self="showFieldPanel = false">
-      <aside class="drawer">
-        <header class="drawer-head">
-          <h3>字段配置</h3>
-          <button class="tool-btn" type="button" @click="showFieldPanel = false">✕</button>
-        </header>
-        <div class="drawer-tip">
-          固定列：亚马逊主图、品名、ASIN（不可调整）。其它字段可自定义显隐与顺序，配置保存在浏览器。
-        </div>
-        <div class="drawer-actions">
-          <button class="tool-btn" type="button" @click="setAllColsVisible(true)">全选</button>
-          <button class="tool-btn" type="button" @click="setAllColsVisible(false)">全不选</button>
-          <button class="tool-btn" type="button" @click="resetColConfig">重置</button>
-        </div>
-        <ul class="col-list">
-          <li v-for="(col, i) in customCols" :key="col.name" class="col-item">
-            <label class="col-check">
-              <input type="checkbox" :checked="col.visible" @change="toggleColVisible(i)" />
-              <span>
-                {{ displayColName(col.name) }}
-                <em v-if="isCalcCol(col.name)" class="col-badge col-badge-calc">公式</em>
-                <em v-else-if="EXTRA_COL_NAMES.includes(col.name)" class="col-badge">可编辑</em>
-              </span>
-            </label>
-            <div class="col-order">
-              <button class="tool-btn icon" type="button" :disabled="i === 0" @click="moveCol(i, -1)">↑</button>
-              <button class="tool-btn icon" type="button" :disabled="i === customCols.length - 1" @click="moveCol(i, 1)">↓</button>
-            </div>
-          </li>
-        </ul>
-      </aside>
-    </div>
+    <el-dialog v-model="showProductPanel" class="opa-dialog" :title="`ASIN 主数据（${products.length}）`" width="1080px" top="4vh">
+      <div class="drawer-tip">
+        数据存于 <code>src/data/products/{shopId}.json</code>（每个店铺一个文件）。导入周数据时新 ASIN 会根据店铺自动归属。
+      </div>
 
-    <!-- 店铺管理抽屉 -->
-    <div v-if="showShopPanel" class="drawer-mask" @click.self="showShopPanel = false">
-      <aside class="drawer drawer-wide">
-        <header class="drawer-head">
-          <h3>店铺管理</h3>
-          <button class="tool-btn" type="button" @click="showShopPanel = false">✕</button>
-        </header>
-        <div class="drawer-tip">
-          数据存于 <code>src/data/shops.json</code>。导入周数据时新店铺会自动追加。
-        </div>
-        <section class="shop-form">
-          <div class="form-row">
-            <label>店铺名称 *</label>
-            <input v-model="shopForm.name" placeholder="例如 LPH-主店三号" />
-          </div>
-          <div class="form-row">
-            <label>国家</label>
-            <input v-model="shopForm.country" placeholder="美国 / 日本..." />
-          </div>
-          <div class="form-row">
-            <label>备注</label>
-            <input v-model="shopForm.note" placeholder="选填" />
-          </div>
-          <div class="form-actions">
-            <button class="tool-btn primary" type="button" @click="saveShop">
-              {{ shopEditingId ? '保存修改' : '新增店铺' }}
-            </button>
-            <button v-if="shopEditingId" class="tool-btn" type="button" @click="resetShopForm">取消</button>
-            <span v-if="shopMessage" class="form-msg">{{ shopMessage }}</span>
-          </div>
-        </section>
-        <div class="shop-list-head">已有店铺（{{ shops.length }}）</div>
-        <ul class="shop-list">
-          <li v-for="shop in shops" :key="shop.id" class="shop-item">
-            <div class="shop-info">
-              <div class="shop-name">{{ shop.name }}</div>
-              <div class="shop-meta">
-                <span>{{ shop.country || '—' }}</span>
-                <span v-if="shop.note"> · {{ shop.note }}</span>
-                <span class="shop-id">{{ shop.id }}</span>
-              </div>
-            </div>
-            <div class="shop-actions">
-              <button class="tool-btn" type="button" @click="pickShop(shop)">编辑</button>
-              <button class="tool-btn danger" type="button" @click="deleteShop(shop)">删除</button>
-            </div>
-          </li>
-          <li v-if="!shops.length" class="shop-empty">还没有店铺</li>
-        </ul>
-      </aside>
-    </div>
-
-    <!-- 产品(ASIN) 管理抽屉 -->
-    <div v-if="showProductPanel" class="drawer-mask" @click.self="showProductPanel = false">
-      <aside class="drawer drawer-wide">
-        <header class="drawer-head">
-          <h3>ASIN 主数据（{{ products.length }}）</h3>
-          <button class="tool-btn" type="button" @click="showProductPanel = false">✕</button>
-        </header>
-        <div class="drawer-tip">
-          数据存于 <code>src/data/products/{shopId}.json</code>（每个店铺一个文件）。导入周数据时新 ASIN 会根据店铺自动归属。
-        </div>
-
-        <section class="shop-form">
+      <div class="shop-form">
+        <el-form label-width="88px" label-position="left" class="opa-form-inline">
           <div class="form-grid">
-            <div class="form-row">
-              <label>ASIN *</label>
-              <input v-model="productForm.asin" :disabled="productEditing" />
-            </div>
-            <div class="form-row">
-              <label>父 ASIN</label>
-              <input v-model="productForm.parentAsin" />
-            </div>
-            <div class="form-row form-row-wide">
-              <label>品名</label>
-              <input v-model="productForm.name" />
-            </div>
-            <div class="form-row">
-              <label>店铺 *</label>
-              <select v-model="productForm.shopId">
-                <option value="" disabled>请选择</option>
-                <option v-for="s in shops" :key="s.id" :value="s.id">{{ s.name }}</option>
-              </select>
-            </div>
+            <el-form-item label="ASIN *">
+              <el-input v-model="productForm.asin" :disabled="productEditing" />
+            </el-form-item>
+            <el-form-item label="父 ASIN">
+              <el-input v-model="productForm.parentAsin" />
+            </el-form-item>
+            <el-form-item label="品名" class="form-row-wide">
+              <el-input v-model="productForm.name" />
+            </el-form-item>
+            <el-form-item label="店铺 *">
+              <el-select v-model="productForm.shopId" placeholder="请选择店铺" style="width: 100%" filterable>
+                <el-option v-for="s in shops" :key="s.id" :value="s.id" :label="s.name" />
+              </el-select>
+            </el-form-item>
           </div>
-          <div class="form-actions">
-            <button class="tool-btn primary" type="button" @click="saveProduct">
-              {{ productEditing ? '保存修改' : '新增 ASIN' }}
-            </button>
-            <button v-if="productEditing" class="tool-btn" type="button" @click="resetProductForm">取消编辑</button>
-            <span v-if="productMessage" class="form-msg">{{ productMessage }}</span>
-          </div>
-        </section>
-
-        <div class="shop-list-head" style="display: flex; gap: 8px; align-items: center">
-          <span>已有 ASIN ({{ filteredProducts.length }} / {{ products.length }})</span>
-          <input v-model="productSearch" class="tool-select" placeholder="搜索 ASIN / 品名 / 店铺" style="flex: 1; height: 30px; padding: 0 10px" />
+        </el-form>
+        <div class="form-actions">
+          <el-button type="primary" @click="saveProduct">{{ productEditing ? '保存修改' : '新增 ASIN' }}</el-button>
+          <el-button v-if="productEditing" @click="resetProductForm">取消编辑</el-button>
+          <span v-if="productMessage" class="form-msg">{{ productMessage }}</span>
         </div>
-        <ul class="shop-list">
-          <li v-for="p in filteredProducts" :key="p.asin" class="shop-item">
-            <div class="shop-info">
-              <div class="shop-name">
-                {{ p.name || '(未命名)' }}
-                <span class="col-badge">{{ p.asin }}</span>
-              </div>
-              <div class="shop-meta">
-                <span>{{ shopNameById.get(p.shopId) || '—' }}</span>
-                <span v-if="p.parentAsin"> · 父 {{ p.parentAsin }}</span>
-              </div>
-            </div>
-            <div class="shop-actions">
-              <button class="tool-btn" type="button" @click="pickProduct(p)">编辑</button>
-              <button class="tool-btn danger" type="button" @click="deleteProduct(p)">删除</button>
-            </div>
-          </li>
-          <li v-if="!filteredProducts.length" class="shop-empty">
-            {{ products.length ? '没有匹配结果' : '还没有 ASIN，请先导入周数据' }}
-          </li>
-        </ul>
-      </aside>
-    </div>
+      </div>
 
-    <!-- 导入抽屉 -->
-    <div v-if="showImportPanel" class="drawer-mask" @click.self="closeImportPanel">
-      <aside class="drawer drawer-wide">
-        <header class="drawer-head">
-          <h3>扫描并导入周数据</h3>
-          <button class="tool-btn" type="button" @click="closeImportPanel">✕</button>
-        </header>
-        <div class="drawer-tip">
-          周数据目录放在 <code>public/data/第x周/</code>，目录内需包含订单利润表和 Listing销售库存表。导入后每周数据会永久保存到 <code>src/data/weeks/</code>。
-        </div>
-        <div class="drawer-actions" style="margin-top: 8px">
-          <button class="tool-btn" type="button" :disabled="importLoading || importBusy" @click="openImport">
-            {{ importLoading ? '扫描中...' : '重新扫描' }}
-          </button>
-        </div>
-        <div v-if="importMessage" class="drawer-tip" :class="{ 'is-loading': importLoading || importBusy }">
-          <span v-if="importLoading || importBusy" class="loading-dot loading-spin"></span>
-          {{ importMessage }}
-        </div>
+      <div class="shop-list-head search-head">
+        <span>已有 ASIN ({{ filteredProducts.length }} / {{ products.length }})</span>
+        <el-input v-model="productSearch" clearable placeholder="搜索 ASIN / 品名 / 店铺" style="max-width: 360px" />
+      </div>
+      <el-table :data="filteredProducts" border class="opa-table" max-height="400" empty-text="还没有 ASIN，请先导入周数据">
+        <el-table-column label="ASIN" width="150">
+          <template #default="scope"><span class="shop-id">{{ scope.row.asin }}</span></template>
+        </el-table-column>
+        <el-table-column label="品名" min-width="220">
+          <template #default="scope">{{ scope.row.name || '(未命名)' }}</template>
+        </el-table-column>
+        <el-table-column label="店铺" min-width="170">
+          <template #default="scope">{{ shopNameById.get(scope.row.shopId) || '—' }}</template>
+        </el-table-column>
+        <el-table-column label="父 ASIN" width="150">
+          <template #default="scope">{{ scope.row.parentAsin || '—' }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="150" fixed="right">
+          <template #default="scope">
+            <el-button size="small" @click="pickProduct(scope.row)">编辑</el-button>
+            <el-button size="small" type="danger" plain @click="deleteProduct(scope.row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-dialog>
 
-        <section class="shop-form" v-if="importScan.unimported.length">
-          <div class="shop-list-head">
-            待导入（{{ importScan.unimported.length }}）
-          </div>
-          <ul class="shop-list">
-            <li v-for="f in importScan.unimported" :key="f.weekId" class="shop-item">
-              <div class="shop-info">
-                <div class="shop-name">
-                  {{ f.weekId }} · {{ f.folderName }}
-                  <span v-if="f.importMode === 'reimport'" class="col-badge" style="color: #f5b32f">重新导入</span>
-                  <span v-else-if="f.importMode === 'new'" class="col-badge">新导入</span>
-                  <span class="col-badge">订单: {{ f.orderFile }}</span>
-                  <span class="col-badge" :style="{ color: (f.listingFiles && f.listingFiles.length) ? '' : '#f54a45' }">
-                    {{ (f.listingFiles && f.listingFiles.length)
-                      ? `库存: ${f.listingFiles.length} 个文件`
-                      : '缺少 Listing销售库存' }}
-                  </span>
-                </div>
-                <div class="shop-meta" v-if="f.importHint">
-                  <span>扫描提示：{{ f.importHint }}</span>
-                </div>
-                <div class="shop-meta" v-if="f.listingFiles && f.listingFiles.length">
-                  <span>Listing文件：{{ f.listingFiles.join('、') }}</span>
-                </div>
-                <div class="shop-meta">
-                  <span>{{ f.startDate || '—' }} ~ {{ f.endDate || '—' }}</span>
-                </div>
-              </div>
-              <div class="shop-actions">
-                <button
-                  class="tool-btn primary"
-                  type="button"
-                  :disabled="importBusy || importLoading || !(f.listingFiles && f.listingFiles.length)"
-                  @click="doImport([f.weekId])"
-                >
-                  <span v-if="importBusy" class="loading-dot loading-spin"></span>
-                  {{ importBusy ? '导入中...' : '导入' }}
-                </button>
-              </div>
-            </li>
-          </ul>
-          <div class="form-actions">
-            <button
-              class="tool-btn primary"
-              type="button"
-              :disabled="importBusy || importLoading || !importScan.unimported.some((f) => f.listingFiles && f.listingFiles.length)"
-              @click="doImport(importScan.unimported.filter((f) => f.listingFiles && f.listingFiles.length).map((f) => f.weekId))"
-            >
-              <span v-if="importBusy" class="loading-dot loading-spin"></span>
-              {{ importBusy ? '导入中...' : '全部导入' }}
-            </button>
-          </div>
-        </section>
-        <div v-else class="drawer-tip" style="padding: 20px 16px">
-          没有待导入的周目录。请把新一周文件放到 <code>public/data/第x周/</code> 后再次扫描。
-        </div>
-
-        <section v-if="importResult && importResult.length" class="shop-form">
-          <div class="shop-list-head">导入结果</div>
-          <ul class="shop-list">
-            <li v-for="(r, i) in importResult" :key="r.filename || r.weekId" class="shop-item">
-              <div class="shop-info" style="width: 100%">
-                <div class="shop-name">
-                  <template v-if="r.error">
-                    <span style="color: #f54a45">✗ {{ r.weekId || '未知周次' }}</span>
-                  </template>
-                  <template v-else>
-                    ✓ {{ r.weekId }} · {{ r.folderName }}
-                    <span class="col-badge">{{ r.rowCount }} 行</span>
-                  </template>
-                </div>
-                <div class="shop-meta" v-if="!r.error">
-                  <span v-if="r.newShops && r.newShops.length">
-                    新增店铺 {{ r.newShops.length }}：{{ r.newShops.map((s) => s.name).join('、') }}
-                  </span>
-                  <span v-if="r.newAsins && r.newAsins.length">
-                    · 新增 ASIN {{ r.newAsins.length }}
-                  </span>
-                  <span v-if="r.unmatchedTotal">
-                    · 未命中 ASIN {{ r.unmatchedTotal }}
-                  </span>
-                  <span v-if="r.listingOnlyAddedTotal">
-                    · Listing 新增新品 {{ r.listingOnlyAddedTotal }}
-                  </span>
-                  <span v-if="!(r.newShops || []).length && !(r.newAsins || []).length">
-                    无新增主数据
-                  </span>
-                </div>
-                <div class="shop-meta" v-if="!r.error && r.unmatchedByShop && r.unmatchedByShop.length">
-                  <span>
-                    未命中清单：
-                    {{ r.unmatchedByShop.map((x) => `${x.shopName}(${x.count})：${(x.asins || []).join('、')}`).join(' ｜ ') }}
-                  </span>
-                </div>
-                <div class="shop-meta" v-if="!r.error && r.listingOnlyAddedByShop && r.listingOnlyAddedByShop.length">
-                  <span>
-                    Listing 新品清单：
-                    {{ r.listingOnlyAddedByShop.map((x) => `${x.shopName}(${x.count})：${(x.asins || []).join('、')}`).join(' ｜ ') }}
-                  </span>
-                </div>
-                <div class="shop-meta" v-if="!r.error && r.listingOnlyUnresolvedByFile && r.listingOnlyUnresolvedByFile.length" style="color: #f5b32f">
-                  <span>
-                    Listing 待确认店铺：
-                    {{ r.listingOnlyUnresolvedByFile.map((x) => `${x.listingFile}(${x.count})：${(x.asins || []).join('、')}`).join(' ｜ ') }}
-                  </span>
-                  <button
-                    class="tool-btn"
-                    type="button"
-                    style="margin-left: 10px"
-                    :disabled="resolvePanel.busy"
-                    @click="openResolvePanel(r, i)"
-                  >
-                    选择店铺并写入
-                  </button>
-                </div>
-                <div class="shop-meta" v-if="r.error">{{ r.error }}</div>
-              </div>
-            </li>
-          </ul>
-        </section>
-
-        <section v-if="resolvePanel.show" class="shop-form" style="border-color: #f5b32f">
-          <div class="shop-list-head">无法推断店铺，手动分配</div>
-          <div class="drawer-tip" style="margin-top: 8px">
-            {{ resolvePanel.message }}
-          </div>
-          <ul class="shop-list">
-            <li v-for="(x, idx) in resolvePanel.items" :key="x.asin + '-' + idx" class="shop-item">
-              <div class="shop-info">
-                <div class="shop-name">
-                  <span class="col-badge">{{ x.asin }}</span>
-                  <span v-if="x.listingFile">{{ x.listingFile }}</span>
-                </div>
-              </div>
-              <div class="shop-actions">
-                <select class="tool-select" v-model="x.shopId" :disabled="resolvePanel.busy" style="min-width: 180px">
-                  <option value="" disabled>请选择店铺</option>
-                  <option v-for="s in shops" :key="s.id" :value="s.id">{{ s.name }}</option>
-                </select>
-              </div>
-            </li>
-          </ul>
-          <div class="form-actions">
-            <button class="tool-btn primary" type="button" :disabled="!resolveReady || resolvePanel.busy" @click="submitResolvePanel">
-              <span v-if="resolvePanel.busy" class="loading-dot loading-spin"></span>
-              {{ resolvePanel.busy ? '写入中...' : '确认写入' }}
-            </button>
-            <button class="tool-btn" type="button" :disabled="resolvePanel.busy" @click="closeResolvePanel">取消</button>
-          </div>
-        </section>
-
-        <div class="shop-list-head">已导入（{{ importScan.imported.length }}）</div>
-        <ul class="shop-list">
-          <li v-for="w in importScan.imported" :key="w.id" class="shop-item">
-            <div class="shop-info">
-              <div class="shop-name">{{ w.filename }}</div>
-              <div class="shop-meta">
-                <span>{{ w.startDate }} ~ {{ w.endDate }}</span>
-                <span> · {{ w.rowCount }} 行</span>
-                <span> · {{ (w.importedAt || '').replace('T', ' ').slice(0, 19) }}</span>
-              </div>
-            </div>
-            <div class="shop-actions">
-              <button class="tool-btn danger" type="button" @click="deleteWeek(w)">删除</button>
-            </div>
-          </li>
-          <li v-if="!importScan.imported.length" class="shop-empty">尚未导入任何周</li>
-        </ul>
-      </aside>
-    </div>
+    <ImportDialog
+      :show-import-panel="showImportPanel"
+      :import-loading="importLoading"
+      :import-busy="importBusy"
+      :import-message="importMessage"
+      :import-scan="importScan"
+      :import-result="importResult"
+      :resolve-panel="resolvePanel"
+      :resolve-ready="resolveReady"
+      :shops="shops"
+      @close="closeImportPanel"
+      @scan="openImport"
+      @import-weeks="doImport"
+      @open-resolve="({ row, index }) => openResolvePanel(row, index)"
+      @submit-resolve="submitResolvePanel"
+      @close-resolve="closeResolvePanel"
+      @delete-week="deleteWeek"
+    />
   </div>
 </template>

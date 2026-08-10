@@ -1,5 +1,8 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import AutoImport from 'unplugin-auto-import/vite'
+import Components from 'unplugin-vue-components/vite'
+import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import {
   readdirSync,
   readFileSync,
@@ -1919,7 +1922,31 @@ function apiPlugin() {
 }
 
 export default defineConfig({
-  plugins: [vue(), apiPlugin()],
+  plugins: [
+    vue(),
+    AutoImport({
+      imports: ['vue'],
+      resolvers: [ElementPlusResolver()],
+    }),
+    Components({
+      resolvers: [ElementPlusResolver({ importStyle: 'css' })],
+    }),
+    apiPlugin(),
+  ],
+  build: {
+    chunkSizeWarningLimit: 820,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/vue')) return 'vendor-vue'
+          if (id.includes('node_modules/element-plus/es/components/table')) return 'vendor-el-table'
+          if (id.includes('node_modules/element-plus')) return 'vendor-element-plus'
+          if (id.includes('node_modules/@element-plus/icons-vue')) return 'vendor-el-icons'
+          return undefined
+        },
+      },
+    },
+  },
   server: {
     host: '127.0.0.1',
     port: 8000,
