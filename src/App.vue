@@ -1345,6 +1345,18 @@ async function patchProduct(asin, patch, options = {}) {
   }
 }
 
+function commitEditableNumber(row, key, value) {
+  if (!row || !key) return
+  const raw = value && typeof value === 'object' && 'target' in value
+    ? value.target?.value
+    : value
+  const text = raw == null ? '' : String(raw).trim()
+  const emptyValue = key === 'restockCycle' ? '' : 0
+  const nextValue = text === '' ? emptyValue : Number(text)
+  if (text !== '' && !Number.isFinite(nextValue)) return
+  patchProduct(row.asin, { [key]: nextValue }, { shopId: rowShopId(row) })
+}
+
 async function applyBatchCategoryChange() {
   const targetCategory = String(batchCategoryValue.value || '').trim()
   if (!targetCategory) {
@@ -1892,19 +1904,20 @@ onBeforeUnmount(() => {
                     type="number"
                     size="small"
                     :model-value="rowProduct(item.row)?.[editColKey(col.name)] ?? ''"
-                    @change="patchProduct(item.row.asin, { [editColKey(col.name)]: $event === '' ? '' : Number($event) }, { shopId: rowShopId(item.row) })"
+                    @change="commitEditableNumber(item.row, editColKey(col.name), $event)"
+                    @blur="commitEditableNumber(item.row, editColKey(col.name), $event)"
                   />
                 </template>
                 <template v-else-if="editColKey(col.name) === 'note'">
                   <div class="note-tooltip-wrap">
-                    <el-input
-                      class="cell-ep-input"
-                      size="small"
-                      :model-value="getWeekNote(item.row.asin)"
+                    <input
+                      class="cell-input"
+                      type="text"
+                      :value="getWeekNote(item.row.asin)"
                       placeholder="本周备注"
                       @mouseenter="updateNoteOverflow(item.row.asin, $event)"
-                      @focusin="updateNoteOverflow(item.row.asin, $event)"
-                      @change="patchWeekNote(item.row.asin, $event)"
+                      @focus="updateNoteOverflow(item.row.asin, $event)"
+                      @change="patchWeekNote(item.row.asin, $event.target.value)"
                     />
                     <span v-if="shouldShowNoteTooltip(item.row.asin)" class="note-tooltip-bubble">{{ getWeekNote(item.row.asin) }}</span>
                   </div>
@@ -1972,32 +1985,32 @@ onBeforeUnmount(() => {
                   <div class="inventory-item"><span>单品重量/g</span><strong>{{ rowProduct(item.row)?.itemWeight || '—' }}</strong></div>
                   <label class="inventory-item inventory-input-item">
                     <span>本地仓库</span>
-                    <el-input
-                      class="cell-ep-input cell-ep-input-num"
+                    <input
+                      class="cell-input"
                       type="number"
-                      size="small"
-                      :model-value="rowProduct(item.row)?.localWarehouse ?? 0"
-                      @change="patchProduct(item.row.asin, { localWarehouse: $event === '' ? 0 : Number($event) }, { shopId: rowShopId(item.row) })"
+                      :value="rowProduct(item.row)?.localWarehouse ?? 0"
+                      @change="commitEditableNumber(item.row, 'localWarehouse', $event)"
+                      @blur="commitEditableNumber(item.row, 'localWarehouse', $event)"
                     />
                   </label>
                   <label class="inventory-item inventory-input-item">
                     <span>已下单</span>
-                    <el-input
-                      class="cell-ep-input cell-ep-input-num"
+                    <input
+                      class="cell-input"
                       type="number"
-                      size="small"
-                      :model-value="rowProduct(item.row)?.orderedQty ?? 0"
-                      @change="patchProduct(item.row.asin, { orderedQty: $event === '' ? 0 : Number($event) }, { shopId: rowShopId(item.row) })"
+                      :value="rowProduct(item.row)?.orderedQty ?? 0"
+                      @change="commitEditableNumber(item.row, 'orderedQty', $event)"
+                      @blur="commitEditableNumber(item.row, 'orderedQty', $event)"
                     />
                   </label>
                   <label class="inventory-item inventory-input-item">
                     <span>补货用时</span>
-                    <el-input
-                      class="cell-ep-input cell-ep-input-num"
+                    <input
+                      class="cell-input"
                       type="number"
-                      size="small"
-                      :model-value="rowProduct(item.row)?.restockCycle ?? ''"
-                      @change="patchProduct(item.row.asin, { restockCycle: $event === '' ? '' : Number($event) }, { shopId: rowShopId(item.row) })"
+                      :value="rowProduct(item.row)?.restockCycle ?? ''"
+                      @change="commitEditableNumber(item.row, 'restockCycle', $event)"
+                      @blur="commitEditableNumber(item.row, 'restockCycle', $event)"
                     />
                   </label>
                   <div class="inventory-item"><span>补货数量</span><strong>{{ getCell(item.row, '补货数量') || '—' }}</strong></div>
