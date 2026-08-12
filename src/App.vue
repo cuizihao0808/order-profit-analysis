@@ -137,6 +137,30 @@ function toNum(v) {
   return Number.isFinite(n) ? n : NaN
 }
 
+function parsePackageDimsCm(sizeText) {
+  const raw = String(sizeText || '').trim()
+  if (!raw) return null
+  const nums = raw.match(/\d+(?:\.\d+)?/g) || []
+  if (nums.length < 3) return null
+  const dims = nums.slice(0, 3).map((v) => Number(v))
+  if (dims.some((n) => !Number.isFinite(n) || n <= 0)) return null
+  return dims
+}
+
+function weightTypeText(row) {
+  const product = rowProduct(row)
+  const itemWeightG = toNum(product?.itemWeight)
+  if (!Number.isFinite(itemWeightG) || itemWeightG <= 0) return '—'
+
+  const packageSize = product?.packageSize || product?.packageSize1 || product?.packageSize2 || ''
+  const dims = parsePackageDimsCm(packageSize)
+  if (!dims) return '—'
+
+  const [lengthCm, widthCm, heightCm] = dims
+  const volumetricWeightG = (lengthCm * widthCm * heightCm * 1000) / 6000
+  return itemWeightG > volumetricWeightG ? '实重' : '抛重'
+}
+
 /* ================= 状态 ================= */
 const shops = ref([])
 const products = ref([])
@@ -1983,6 +2007,7 @@ onBeforeUnmount(() => {
                   <div class="inventory-item"><span>包装尺寸/cm</span><strong>{{ rowProduct(item.row)?.packageSize || rowProduct(item.row)?.packageSize1 || rowProduct(item.row)?.packageSize2 || '—' }}</strong></div>
                   <div class="inventory-item"><span>包装类型</span><strong>{{ rowProduct(item.row)?.packageType || rowProduct(item.row)?.packageType1 || rowProduct(item.row)?.packageType2 || '—' }}</strong></div>
                   <div class="inventory-item"><span>单品重量/g</span><strong>{{ rowProduct(item.row)?.itemWeight || '—' }}</strong></div>
+                  <div class="inventory-item"><span>重量类型</span><strong>{{ weightTypeText(item.row) }}</strong></div>
                   <label class="inventory-item inventory-input-item">
                     <span>本地仓库</span>
                     <input
