@@ -172,6 +172,8 @@ const restockConfig = ref({}) // { monthlyMultiplier, quantityMultiplier, quanti
 const customCols = ref([]) // [{ name, visible }]
 const shopFilter = ref('__all__')
 const supplyFilter = ref('__all__')
+const categoryFilter = ref('__all__')
+const inventoryHealthFilter = ref('__all__')
 const asinSearch = ref('')
 const status = ref('正在加载...')
 
@@ -203,6 +205,25 @@ const batchCategoryValue = ref('')
 const batchCategoryBusy = ref(false)
 const filtersCollapsed = ref(false)
 const compact13Mode = ref(false)
+
+const activeFilterCount = computed(() => {
+  let n = 0
+  if (currentWeekId.value) n++
+  if (shopFilter.value !== '__all__') n++
+  if (supplyFilter.value !== '__all__') n++
+  if (categoryFilter.value !== '__all__') n++
+  if (inventoryHealthFilter.value !== '__all__') n++
+  if (asinSearch.value.trim()) n++
+  return n
+})
+
+function resetFilters() {
+  shopFilter.value = '__all__'
+  supplyFilter.value = '__all__'
+  categoryFilter.value = '__all__'
+  inventoryHealthFilter.value = '__all__'
+  asinSearch.value = ''
+}
 let toastTimer = null
 const copyResetTimers = new Map()
 
@@ -254,6 +275,20 @@ function rowProduct(row) {
   return productMap.value.get(asin) || null
 }
 
+function inventoryHealthText(row) {
+  const sellable = toNum(getCell(row, '可售'))
+  const reserved = toNum(getCell(row, '预留'))
+  const monthSales = toNum(getCell(row, '月销量'))
+
+  const stock = (Number.isFinite(sellable) ? sellable : 0) + (Number.isFinite(reserved) ? reserved : 0)
+  const monthly = Number.isFinite(monthSales) ? monthSales : 0
+  return stock > monthly * 1.5 ? '健康' : '不足'
+}
+
+function inventoryHealthClass(row) {
+  return inventoryHealthText(row) === '健康' ? 'inventory-health-good' : 'inventory-health-low'
+}
+
 const allRows = computed(() => currentWeek.value?.rows ?? [])
 
 function rowMatchesSupplyFilter(row) {
@@ -286,6 +321,12 @@ const filteredRows = computed(() => {
     rows = rows.filter((r) => getCell(r, '店铺') === shopFilter.value)
   }
   rows = rows.filter(rowMatchesSupplyFilter)
+  if (categoryFilter.value !== '__all__') {
+    rows = rows.filter((r) => (rowProduct(r)?.category || '') === categoryFilter.value)
+  }
+  if (inventoryHealthFilter.value !== '__all__') {
+    rows = rows.filter((r) => inventoryHealthText(r) === inventoryHealthFilter.value)
+  }
 
   const q = asinSearch.value.trim().toLowerCase()
   if (!q) return rows
@@ -308,6 +349,9 @@ async function patchWeekNote(asin, note) {
   if (!currentWeekId.value || !asin) return
   const text = (note || '').trim()
   if (!currentWeek.value || typeof currentWeek.value !== 'object') return
+
+  // 值未变则跳过，避免 @change + @blur 双重触发时重复请求
+  if (text === getWeekNote(asin)) return
 
   const beforeNotes = { ...(currentWeek.value.notes || {}) }
   const nextNotes = { ...beforeNotes }
@@ -1732,53 +1776,87 @@ onBeforeUnmount(() => {
     </header>
 
     <div class="toolbar toolbar-modern">
-      <el-button class="filter-toggle-btn" plain @click="filtersCollapsed = !filtersCollapsed">
-        {{ filtersCollapsed ? '展开筛选' : '收起筛选' }}
-      </el-button>
+      <div class="filter-bar">
+        <button class="filter-toggle-btn" @click="filtersCollapsed = !filtersCollapsed">
+          <svg v-if="filtersCollapsed" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 4h10M4 7h6M6 10h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <svg v-else width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 4h10M4 7h6M6 10h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <span>{{ filtersCollapsed ? '筛选' : '筛选' }}</span>
+          <span v-if="activeFilterCount > 0" class="filter-active-badge">{{ activeFilterCount }}</span>
+        </button>
 
-      <div v-show="!filtersCollapsed" class="toolbar-filter-group">
-        <div class="filter-item filter-item-week">
-          <span class="tool-label">周次</span>
-          <el-select v-model="currentWeekId" class="tool-ep-select" placeholder="选择周次" :disabled="!weeks.length" filterable>
-            <el-option v-if="!weeks.length" label="暂无" value="" />
-            <el-option
-              v-for="w in weeks"
-              :key="w.id"
-              :label="`${w.id} · ${w.startDate} ~ ${w.endDate}（${w.rowCount} 行）`"
-              :value="w.id"
-            />
-          </el-select>
-        </div>
+        <transition name="filter-fade">
+          <div v-show="!filtersCollapsed" class="toolbar-filter-group">
+            <div class="filter-item filter-item-week">
+              <span class="tool-label">周次</span>
+              <el-select v-model="currentWeekId" class="tool-ep-select" placeholder="选择周次" :disabled="!weeks.length" filterable>
+                <el-option v-if="!weeks.length" label="暂无" value="" />
+                <el-option
+                  v-for="w in weeks"
+                  :key="w.id"
+                  :label="`${w.id} · ${w.startDate} ~ ${w.endDate}（${w.rowCount} 行）`"
+                  :value="w.id"
+                />
+              </el-select>
+            </div>
 
-        <div class="filter-item filter-item-shop">
-          <span class="tool-label">店铺</span>
-          <el-select v-model="shopFilter" class="tool-ep-select" :disabled="!shopNames.length" filterable>
-            <el-option :label="`全部店铺（${shopNames.length}）`" value="__all__" />
-            <el-option v-for="s in shopNames" :key="s" :label="s" :value="s" />
-          </el-select>
-        </div>
+            <div class="filter-item filter-item-shop" :class="{ 'filter-item-active': shopFilter !== '__all__' }">
+              <span class="tool-label">店铺</span>
+              <el-select v-model="shopFilter" class="tool-ep-select" :disabled="!shopNames.length" filterable>
+                <el-option :label="`全部店铺（${shopNames.length}）`" value="__all__" />
+                <el-option v-for="s in shopNames" :key="s" :label="s" :value="s" />
+              </el-select>
+            </div>
 
-        <div class="filter-item filter-item-supply">
-          <span class="tool-label">补货筛选</span>
-          <el-select v-model="supplyFilter" class="tool-ep-select" filterable>
-            <el-option label="全部" value="__all__" />
-            <el-option label="需要补货" value="need-restock" />
-            <el-option label="不需要补货" value="no-restock" />
-            <el-option label="已经下单的" value="ordered" />
-            <el-option label="本地仓库有的" value="local-warehouse" />
-            <el-option label="需要补货且本地没有和没有下单的" value="need-restock-no-local-no-ordered" />
-          </el-select>
-        </div>
+            <div class="filter-item filter-item-supply" :class="{ 'filter-item-active': supplyFilter !== '__all__' }">
+              <span class="tool-label">补货</span>
+              <el-select v-model="supplyFilter" class="tool-ep-select" filterable>
+                <el-option label="全部" value="__all__" />
+                <el-option label="需要补货" value="need-restock" />
+                <el-option label="不需要补货" value="no-restock" />
+                <el-option label="已下单" value="ordered" />
+                <el-option label="本地仓有货" value="local-warehouse" />
+                <el-option label="待补且无本地/下单" value="need-restock-no-local-no-ordered" />
+              </el-select>
+            </div>
 
-        <div class="filter-item filter-item-search">
-          <span class="tool-label">ASIN/FNSKU搜索</span>
-          <el-input
-            v-model="asinSearch"
-            class="tool-ep-input"
-            placeholder="ASIN / FNSKU"
-            clearable
-          />
-        </div>
+            <div class="filter-item filter-item-category" :class="{ 'filter-item-active': categoryFilter !== '__all__' }">
+              <span class="tool-label">分类</span>
+              <el-select v-model="categoryFilter" class="tool-ep-select" filterable>
+                <el-option label="全部分类" value="__all__" />
+                <el-option v-for="opt in CATEGORY_OPTIONS" :key="opt" :label="opt" :value="opt" />
+              </el-select>
+            </div>
+
+            <div class="filter-item filter-item-health" :class="{ 'filter-item-active': inventoryHealthFilter !== '__all__' }">
+              <span class="tool-label">库存健康</span>
+              <el-select v-model="inventoryHealthFilter" class="tool-ep-select">
+                <el-option label="全部" value="__all__" />
+                <el-option label="健康" value="健康" />
+                <el-option label="不足" value="不足" />
+              </el-select>
+            </div>
+
+            <div class="filter-item filter-item-search" :class="{ 'filter-item-active': asinSearch.trim() }">
+              <span class="tool-label">ASIN / FNSKU</span>
+              <el-input
+                v-model="asinSearch"
+                class="tool-ep-input"
+                placeholder="搜索…"
+                clearable
+              />
+            </div>
+
+            <button
+              v-if="shopFilter !== '__all__' || supplyFilter !== '__all__' || categoryFilter !== '__all__' || inventoryHealthFilter !== '__all__' || asinSearch.trim()"
+              class="filter-reset-btn"
+              title="清空所有筛选条件"
+              @click="resetFilters"
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+              重置
+            </button>
+          </div>
+        </transition>
       </div>
 
       <el-button type="primary" :loading="importLoading || importBusy" :disabled="importLoading || importBusy" @click="openImport">
@@ -1942,6 +2020,7 @@ onBeforeUnmount(() => {
                       @mouseenter="updateNoteOverflow(item.row.asin, $event)"
                       @focus="updateNoteOverflow(item.row.asin, $event)"
                       @change="patchWeekNote(item.row.asin, $event.target.value)"
+                      @blur="patchWeekNote(item.row.asin, $event.target.value)"
                     />
                     <span v-if="shouldShowNoteTooltip(item.row.asin)" class="note-tooltip-bubble">{{ getWeekNote(item.row.asin) }}</span>
                   </div>
@@ -1998,6 +2077,10 @@ onBeforeUnmount(() => {
             <tr v-if="isInventoryRowExpanded(item.row.asin)" class="inventory-row">
               <td :colspan="displayCols.length + 1" class="inventory-detail-cell">
                 <div class="inventory-detail-grid">
+                  <div class="inventory-item">
+                    <span>库存健康</span>
+                    <strong :class="inventoryHealthClass(item.row)">{{ inventoryHealthText(item.row) }}</strong>
+                  </div>
                   <div class="inventory-item"><span>FNSKU</span><strong>{{ getCell(item.row, 'FNSKU') || '—' }}</strong></div>
                   <div class="inventory-item"><span>可售</span><strong>{{ getCell(item.row, '可售') || '—' }}</strong></div>
                   <div class="inventory-item"><span>入库中</span><strong>{{ getCell(item.row, '入库中') || '—' }}</strong></div>
