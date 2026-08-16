@@ -7,29 +7,30 @@
     "restockCycle": 2,
     "stock": 695,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "32周",
-    "fbaTotal": 675,
-    "sellable": 667,
+    "lastSeenWeek": "33周",
+    "fbaTotal": 654,
+    "sellable": 648,
     "inbound": 0,
     "unsellable": 1,
-    "reserved": 7,
+    "reserved": 5,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 136,
-    "monthRevenue": 1038.7,
-    "monthOrders": 133,
-    "dailySales": 4.53,
+    "monthSales": 114,
+    "monthRevenue": 894.88,
+    "monthOrders": 112,
+    "dailySales": 3.8,
     "vineGiftSales": 0,
     "packageSize": "23×16×3",
     "packageType": "",
     "itemWeight": 141,
     "productImage": "https://m.media-amazon.com/images/I/41lrLThQWvL.jpg",
-    "fnsku": "X004VJU6M9",
+    "fnsku": "",
     "productImages": [
       "https://m.media-amazon.com/images/I/41lrLThQWvL.jpg"
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/41lrLThQWvL.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0FWJ6BW9K",
@@ -39,29 +40,30 @@
     "restockCycle": 2,
     "stock": "",
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "32周",
-    "fbaTotal": 23,
-    "sellable": 21,
+    "lastSeenWeek": "33周",
+    "fbaTotal": 21,
+    "sellable": 19,
     "inbound": 0,
     "unsellable": 0,
     "reserved": 2,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 20,
-    "monthRevenue": 379.81,
-    "monthOrders": 19,
-    "dailySales": 0.67,
+    "monthSales": 18,
+    "monthRevenue": 359.82,
+    "monthOrders": 18,
+    "dailySales": 0.6,
     "vineGiftSales": 0,
     "packageSize": "1×1×1",
     "packageType": "",
     "itemWeight": 550,
     "productImage": "https://m.media-amazon.com/images/I/51Nbj8F8NVL.jpg",
-    "fnsku": "X004VM3K47",
+    "fnsku": "",
     "productImages": [
       "https://m.media-amazon.com/images/I/51Nbj8F8NVL.jpg"
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/51Nbj8F8NVL.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0FWKCXWY6",
@@ -71,29 +73,30 @@
     "restockCycle": 2,
     "stock": 259,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "32周",
-    "fbaTotal": 336,
-    "sellable": 200,
+    "lastSeenWeek": "33周",
+    "fbaTotal": 316,
+    "sellable": 193,
     "inbound": 120,
     "unsellable": 0,
-    "reserved": 16,
+    "reserved": 3,
     "localWarehouse": 100,
     "orderedQty": 0,
-    "monthSales": 110,
-    "monthRevenue": 1817.93,
-    "monthOrders": 92,
-    "dailySales": 3.67,
+    "monthSales": 98,
+    "monthRevenue": 1631.04,
+    "monthOrders": 86,
+    "dailySales": 3.27,
     "vineGiftSales": 0,
     "packageSize": "19×10×8",
     "packageType": "",
     "itemWeight": 331,
     "productImage": "https://m.media-amazon.com/images/I/515rTJpD3IL.jpg",
-    "fnsku": "X004VMSVQT",
+    "fnsku": "",
     "productImages": [
       "https://m.media-amazon.com/images/I/515rTJpD3IL.jpg"
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/515rTJpD3IL.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0FY2WZLGG",
@@ -103,24 +106,24 @@
     "restockCycle": 2,
     "stock": 705,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "32周",
-    "fbaTotal": 650,
-    "sellable": 261,
-    "inbound": 240,
+    "lastSeenWeek": "33周",
+    "fbaTotal": 914,
+    "sellable": 351,
+    "inbound": 460,
     "unsellable": 0,
-    "reserved": 149,
+    "reserved": 103,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 267,
-    "monthRevenue": 2597.4,
-    "monthOrders": 262,
-    "dailySales": 8.9,
+    "monthSales": 253,
+    "monthRevenue": 2467.53,
+    "monthOrders": 248,
+    "dailySales": 8.43,
     "vineGiftSales": 0,
     "packageSize": "13×8×4",
     "packageType": "飞机盒",
     "itemWeight": 145,
     "productImage": "https://m.media-amazon.com/images/I/311xovmvm3L.jpg",
-    "fnsku": "X004W6JOQZ",
+    "fnsku": "",
     "productImages": [
       "https://m.media-amazon.com/images/I/311xovmvm3L.jpg",
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-08-07/6546823e-d3db-467c-9000-fd4f295c5909.jpg"
@@ -128,7 +131,8 @@
     "amazonMainImage": "https://m.media-amazon.com/images/I/311xovmvm3L.jpg",
     "listingDetailImages": [
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-08-07/6546823e-d3db-467c-9000-fd4f295c5909.jpg"
-    ]
+    ],
+    "productTitle": ""
   },
   {
     "asin": "B0FYF131Z1",
@@ -138,29 +142,30 @@
     "restockCycle": 2,
     "stock": 787,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "32周",
-    "fbaTotal": 787,
-    "sellable": 435,
-    "inbound": 217,
+    "lastSeenWeek": "33周",
+    "fbaTotal": 757,
+    "sellable": 538,
+    "inbound": 138,
     "unsellable": 0,
-    "reserved": 135,
+    "reserved": 81,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 138,
-    "monthRevenue": 2158.65,
-    "monthOrders": 112,
-    "dailySales": 4.6,
+    "monthSales": 134,
+    "monthRevenue": 2110.68,
+    "monthOrders": 104,
+    "dailySales": 4.47,
     "vineGiftSales": 0,
     "packageSize": "20×20×4.5",
     "packageType": "",
     "itemWeight": 290,
     "productImage": "https://m.media-amazon.com/images/I/41h-SQc5eiL.jpg",
-    "fnsku": "X004WAE2R7",
+    "fnsku": "",
     "productImages": [
       "https://m.media-amazon.com/images/I/41h-SQc5eiL.jpg"
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/41h-SQc5eiL.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0FYFXX385",
@@ -190,7 +195,8 @@
     "fnsku": "",
     "productImages": [],
     "listingDetailImages": [],
-    "amazonMainImage": ""
+    "amazonMainImage": "",
+    "productTitle": ""
   },
   {
     "asin": "B0FZSY68B2",
@@ -200,29 +206,30 @@
     "restockCycle": 2,
     "stock": 202,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "32周",
-    "fbaTotal": 196,
-    "sellable": 161,
-    "inbound": 22,
+    "lastSeenWeek": "33周",
+    "fbaTotal": 191,
+    "sellable": 164,
+    "inbound": 12,
     "unsellable": 0,
-    "reserved": 13,
+    "reserved": 15,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 41,
-    "monthRevenue": 819.59,
-    "monthOrders": 41,
-    "dailySales": 1.37,
+    "monthSales": 38,
+    "monthRevenue": 759.62,
+    "monthOrders": 38,
+    "dailySales": 1.27,
     "vineGiftSales": 0,
     "packageSize": "26.5×26×3",
     "packageType": "",
     "itemWeight": 1050,
     "productImage": "https://m.media-amazon.com/images/I/31Dm+iWZIhL.jpg",
-    "fnsku": "X004WJDIRN",
+    "fnsku": "",
     "productImages": [
       "https://m.media-amazon.com/images/I/31Dm+iWZIhL.jpg"
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/31Dm+iWZIhL.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0FZT4JBTF",
@@ -232,16 +239,16 @@
     "restockCycle": 2,
     "stock": 86,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "32周",
-    "fbaTotal": 62,
-    "sellable": 58,
+    "lastSeenWeek": "33周",
+    "fbaTotal": 53,
+    "sellable": 52,
     "inbound": 0,
     "unsellable": 0,
-    "reserved": 4,
+    "reserved": 1,
     "localWarehouse": 0,
     "orderedQty": 0,
     "monthSales": 37,
-    "monthRevenue": 699.65,
+    "monthRevenue": 739.63,
     "monthOrders": 36,
     "dailySales": 1.23,
     "vineGiftSales": 0,
@@ -249,12 +256,13 @@
     "packageType": "",
     "itemWeight": 1999,
     "productImage": "https://m.media-amazon.com/images/I/413W8koN0oL.jpg",
-    "fnsku": "X004WJSC9R",
+    "fnsku": "",
     "productImages": [
       "https://m.media-amazon.com/images/I/413W8koN0oL.jpg"
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/413W8koN0oL.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0G1474PZP",
@@ -284,7 +292,8 @@
     "fnsku": "",
     "productImages": [],
     "listingDetailImages": [],
-    "amazonMainImage": ""
+    "amazonMainImage": "",
+    "productTitle": ""
   },
   {
     "asin": "B0G2B1Y26Q",
@@ -314,7 +323,8 @@
     "fnsku": "",
     "productImages": [],
     "listingDetailImages": [],
-    "amazonMainImage": ""
+    "amazonMainImage": "",
+    "productTitle": ""
   },
   {
     "asin": "B0G2BL89SH",
@@ -324,24 +334,24 @@
     "restockCycle": 2,
     "stock": 658,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "32周",
-    "fbaTotal": 601,
-    "sellable": 317,
+    "lastSeenWeek": "33周",
+    "fbaTotal": 546,
+    "sellable": 286,
     "inbound": 240,
     "unsellable": 0,
-    "reserved": 44,
+    "reserved": 20,
     "localWarehouse": 0,
     "orderedQty": 240,
-    "monthSales": 235,
-    "monthRevenue": 4537.73,
-    "monthOrders": 232,
-    "dailySales": 7.83,
+    "monthSales": 244,
+    "monthRevenue": 4837.58,
+    "monthOrders": 241,
+    "dailySales": 8.13,
     "vineGiftSales": 0,
     "packageSize": "34×20×4",
     "packageType": "",
     "itemWeight": 530,
     "productImage": "https://m.media-amazon.com/images/I/318OXMyr+uL.jpg",
-    "fnsku": "X004WY8HPV",
+    "fnsku": "",
     "productImages": [
       "https://m.media-amazon.com/images/I/318OXMyr+uL.jpg",
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-01-17/b1d51c2a-e339-4961-81fb-28d5b244aa6c.jpg"
@@ -349,7 +359,8 @@
     "amazonMainImage": "https://m.media-amazon.com/images/I/318OXMyr+uL.jpg",
     "listingDetailImages": [
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-01-17/b1d51c2a-e339-4961-81fb-28d5b244aa6c.jpg"
-    ]
+    ],
+    "productTitle": ""
   },
   {
     "asin": "B0G2BR58FK",
@@ -359,24 +370,24 @@
     "restockCycle": 2,
     "stock": 1417,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "32周",
-    "fbaTotal": 1344,
-    "sellable": 600,
-    "inbound": 580,
-    "unsellable": 3,
-    "reserved": 161,
+    "lastSeenWeek": "33周",
+    "fbaTotal": 1863,
+    "sellable": 637,
+    "inbound": 1100,
+    "unsellable": 6,
+    "reserved": 120,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 587,
-    "monthRevenue": 9162.27,
-    "monthOrders": 578,
-    "dailySales": 19.57,
+    "monthSales": 549,
+    "monthRevenue": 8538.66,
+    "monthOrders": 533,
+    "dailySales": 18.3,
     "vineGiftSales": 0,
     "packageSize": "24×20×4",
     "packageType": "飞机盒",
     "itemWeight": 500,
     "productImage": "https://m.media-amazon.com/images/I/31OmEvHSEcL.jpg",
-    "fnsku": "X004WY2SVP",
+    "fnsku": "",
     "productImages": [
       "https://m.media-amazon.com/images/I/31OmEvHSEcL.jpg",
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-08-07/7526664e-7839-49da-92dc-6308380f3741.jpg"
@@ -384,7 +395,8 @@
     "amazonMainImage": "https://m.media-amazon.com/images/I/31OmEvHSEcL.jpg",
     "listingDetailImages": [
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-08-07/7526664e-7839-49da-92dc-6308380f3741.jpg"
-    ]
+    ],
+    "productTitle": ""
   },
   {
     "asin": "B0G5131JKM",
@@ -394,29 +406,30 @@
     "restockCycle": 2,
     "stock": "",
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "32周",
-    "fbaTotal": 5,
-    "sellable": 0,
+    "lastSeenWeek": "33周",
+    "fbaTotal": 1,
+    "sellable": 1,
     "inbound": 0,
     "unsellable": 0,
-    "reserved": 5,
+    "reserved": 0,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 12,
-    "monthRevenue": 43.89,
-    "monthOrders": 12,
-    "dailySales": 0.4,
+    "monthSales": 8,
+    "monthRevenue": 31.92,
+    "monthOrders": 8,
+    "dailySales": 0.27,
     "vineGiftSales": 0,
     "packageSize": "",
     "packageType": "",
     "itemWeight": 55,
     "productImage": "https://m.media-amazon.com/images/I/515bLf7A03L.jpg",
-    "fnsku": "X004XOC85P",
+    "fnsku": "",
     "productImages": [
       "https://m.media-amazon.com/images/I/515bLf7A03L.jpg"
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/515bLf7A03L.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0G51DK4YX",
@@ -426,7 +439,7 @@
     "restockCycle": 2,
     "stock": "",
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "32周",
+    "lastSeenWeek": "33周",
     "fbaTotal": 1,
     "sellable": 0,
     "inbound": 0,
@@ -434,21 +447,22 @@
     "reserved": 1,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 7,
-    "monthRevenue": 23.94,
-    "monthOrders": 7,
-    "dailySales": 0.23,
+    "monthSales": 3,
+    "monthRevenue": 7.98,
+    "monthOrders": 3,
+    "dailySales": 0.1,
     "vineGiftSales": 0,
     "packageSize": "",
     "packageType": "",
     "itemWeight": 55,
     "productImage": "https://m.media-amazon.com/images/I/415n-aPQgCL.jpg",
-    "fnsku": "X004XOC84L",
+    "fnsku": "",
     "productImages": [
       "https://m.media-amazon.com/images/I/415n-aPQgCL.jpg"
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/415n-aPQgCL.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0G52GF51W",
@@ -458,7 +472,7 @@
     "restockCycle": 2,
     "stock": "",
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "32周",
+    "lastSeenWeek": "33周",
     "fbaTotal": 0,
     "sellable": 0,
     "inbound": 0,
@@ -475,7 +489,7 @@
     "packageType": "",
     "itemWeight": 152.5,
     "productImage": "https://m.media-amazon.com/images/I/31vNhwbG3XL.jpg",
-    "fnsku": "X004XP9O97",
+    "fnsku": "",
     "productImages": [
       "https://m.media-amazon.com/images/I/31vNhwbG3XL.jpg",
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-01-17/6d96dc45-074a-486b-8241-f8ef4f1fca1b.jpg"
@@ -483,7 +497,8 @@
     "amazonMainImage": "https://m.media-amazon.com/images/I/31vNhwbG3XL.jpg",
     "listingDetailImages": [
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-01-17/6d96dc45-074a-486b-8241-f8ef4f1fca1b.jpg"
-    ]
+    ],
+    "productTitle": ""
   },
   {
     "asin": "B0G57JYVXN",
@@ -493,24 +508,24 @@
     "restockCycle": 2,
     "stock": 467,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "32周",
-    "fbaTotal": 393,
-    "sellable": 139,
-    "inbound": 200,
+    "lastSeenWeek": "33周",
+    "fbaTotal": 398,
+    "sellable": 98,
+    "inbound": 275,
     "unsellable": 0,
-    "reserved": 54,
+    "reserved": 25,
     "localWarehouse": 125,
     "orderedQty": 0,
-    "monthSales": 281,
-    "monthRevenue": 2617.38,
-    "monthOrders": 272,
-    "dailySales": 9.37,
+    "monthSales": 301,
+    "monthRevenue": 2927.07,
+    "monthOrders": 293,
+    "dailySales": 10.03,
     "vineGiftSales": 0,
     "packageSize": "27×8×5",
     "packageType": "飞机盒",
     "itemWeight": 210,
     "productImage": "https://m.media-amazon.com/images/I/41HHLl4w2nL.jpg",
-    "fnsku": "X004XQTOEV",
+    "fnsku": "",
     "productImages": [
       "https://m.media-amazon.com/images/I/41HHLl4w2nL.jpg",
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-08-07/ec6934b2-87c5-474f-9bbf-7f9f7cc3c71a.png",
@@ -520,7 +535,8 @@
     "listingDetailImages": [
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-08-07/ec6934b2-87c5-474f-9bbf-7f9f7cc3c71a.png",
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-08-07/f94205a0-9d22-42a3-b897-2401e01767aa.jpg"
-    ]
+    ],
+    "productTitle": ""
   },
   {
     "asin": "B0G58J9G7P",
@@ -530,29 +546,30 @@
     "restockCycle": 2,
     "stock": "",
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "32周",
-    "fbaTotal": 40,
-    "sellable": 8,
+    "lastSeenWeek": "33周",
+    "fbaTotal": 18,
+    "sellable": 11,
     "inbound": 0,
     "unsellable": 0,
-    "reserved": 32,
+    "reserved": 7,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 5,
-    "monthRevenue": 35.96,
-    "monthOrders": 5,
-    "dailySales": 0.17,
+    "monthSales": 4,
+    "monthRevenue": 26.97,
+    "monthOrders": 4,
+    "dailySales": 0.13,
     "vineGiftSales": 0,
     "packageSize": "6.5×5×5",
     "packageType": "",
     "itemWeight": 60,
     "productImage": "https://m.media-amazon.com/images/I/41YMj1B6E+L.jpg",
-    "fnsku": "X004XQZAYT",
+    "fnsku": "",
     "productImages": [
       "https://m.media-amazon.com/images/I/41YMj1B6E+L.jpg"
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/41YMj1B6E+L.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0G8HN1Y93",
@@ -562,7 +579,7 @@
     "restockCycle": 2,
     "stock": "",
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "32周",
+    "lastSeenWeek": "33周",
     "fbaTotal": 1,
     "sellable": 1,
     "inbound": 0,
@@ -579,12 +596,13 @@
     "packageType": "",
     "itemWeight": 80,
     "productImage": "https://m.media-amazon.com/images/I/41S4pkyNAEL.jpg",
-    "fnsku": "X004Y8FV6D",
+    "fnsku": "",
     "productImages": [
       "https://m.media-amazon.com/images/I/41S4pkyNAEL.jpg"
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/41S4pkyNAEL.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0G8XXCJ2X",
@@ -594,29 +612,30 @@
     "restockCycle": 2,
     "stock": 419,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "32周",
-    "fbaTotal": 407,
+    "lastSeenWeek": "33周",
+    "fbaTotal": 398,
     "sellable": 213,
     "inbound": 180,
     "unsellable": 0,
-    "reserved": 14,
+    "reserved": 5,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 90,
-    "monthRevenue": 1091.16,
-    "monthOrders": 86,
-    "dailySales": 3,
+    "monthSales": 86,
+    "monthRevenue": 1104.15,
+    "monthOrders": 82,
+    "dailySales": 2.87,
     "vineGiftSales": 0,
     "packageSize": "23×16×5",
     "packageType": "",
     "itemWeight": 345,
     "productImage": "https://m.media-amazon.com/images/I/418EaP+np8L.jpg",
-    "fnsku": "X004YA8YZ1",
+    "fnsku": "",
     "productImages": [
       "https://m.media-amazon.com/images/I/418EaP+np8L.jpg"
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/418EaP+np8L.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0G91V37GH",
@@ -626,24 +645,24 @@
     "restockCycle": 2,
     "stock": 496,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "32周",
-    "fbaTotal": 454,
-    "sellable": 89,
-    "inbound": 298,
+    "lastSeenWeek": "33周",
+    "fbaTotal": 493,
+    "sellable": 84,
+    "inbound": 359,
     "unsellable": 0,
-    "reserved": 67,
+    "reserved": 50,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 152,
-    "monthRevenue": 3742.56,
-    "monthOrders": 151,
-    "dailySales": 5.07,
+    "monthSales": 181,
+    "monthRevenue": 4678.2,
+    "monthOrders": 180,
+    "dailySales": 6.03,
     "vineGiftSales": 0,
     "packageSize": "12.5×8×12.5",
     "packageType": "瓦楞扣底盒",
     "itemWeight": 190,
     "productImage": "https://m.media-amazon.com/images/I/41RKX5WlHQL.jpg",
-    "fnsku": "X004YJ4MMV",
+    "fnsku": "",
     "productImages": [
       "https://m.media-amazon.com/images/I/41RKX5WlHQL.jpg",
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-08-07/b5fa8bfa-1547-4f8d-a174-c2ab07d42083.jpg"
@@ -651,7 +670,8 @@
     "amazonMainImage": "https://m.media-amazon.com/images/I/41RKX5WlHQL.jpg",
     "listingDetailImages": [
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-08-07/b5fa8bfa-1547-4f8d-a174-c2ab07d42083.jpg"
-    ]
+    ],
+    "productTitle": ""
   },
   {
     "asin": "B0GCCRNMHK",
@@ -661,24 +681,24 @@
     "restockCycle": 2,
     "stock": 404,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "32周",
-    "fbaTotal": 387,
-    "sellable": 0,
-    "inbound": 234,
+    "lastSeenWeek": "33周",
+    "fbaTotal": 841,
+    "sellable": 83,
+    "inbound": 657,
     "unsellable": 0,
-    "reserved": 153,
+    "reserved": 101,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 226,
-    "monthRevenue": 2107.89,
-    "monthOrders": 217,
-    "dailySales": 7.53,
+    "monthSales": 185,
+    "monthRevenue": 1798.2,
+    "monthOrders": 176,
+    "dailySales": 6.17,
     "vineGiftSales": 0,
     "packageSize": "20.5×12.5×0.5",
     "packageType": "透明珠光袋",
     "itemWeight": 10,
     "productImage": "https://m.media-amazon.com/images/I/41cKVtT4bRL.jpg",
-    "fnsku": "X004YG59XF",
+    "fnsku": "",
     "productImages": [
       "https://m.media-amazon.com/images/I/41cKVtT4bRL.jpg",
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-08-07/89af37b5-4ffe-48b7-9994-64ff6e5b850d.jpg"
@@ -686,7 +706,8 @@
     "amazonMainImage": "https://m.media-amazon.com/images/I/41cKVtT4bRL.jpg",
     "listingDetailImages": [
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-08-07/89af37b5-4ffe-48b7-9994-64ff6e5b850d.jpg"
-    ]
+    ],
+    "productTitle": ""
   },
   {
     "asin": "B0GD6G5L61",
@@ -696,12 +717,12 @@
     "restockCycle": 2,
     "stock": "",
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "32周",
-    "fbaTotal": 20,
-    "sellable": 5,
+    "lastSeenWeek": "33周",
+    "fbaTotal": 16,
+    "sellable": 7,
     "inbound": 0,
     "unsellable": 0,
-    "reserved": 15,
+    "reserved": 9,
     "localWarehouse": 0,
     "orderedQty": 0,
     "monthSales": 2,
@@ -713,12 +734,13 @@
     "packageType": "",
     "itemWeight": 20,
     "productImage": "https://m.media-amazon.com/images/I/41GGuEGRK9L.jpg",
-    "fnsku": "X004YLRNI9",
+    "fnsku": "",
     "productImages": [
       "https://m.media-amazon.com/images/I/41GGuEGRK9L.jpg"
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/41GGuEGRK9L.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0GD6WFV99",
@@ -728,12 +750,12 @@
     "restockCycle": 2,
     "stock": "",
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "32周",
-    "fbaTotal": 4,
-    "sellable": 1,
+    "lastSeenWeek": "33周",
+    "fbaTotal": 2,
+    "sellable": 2,
     "inbound": 0,
     "unsellable": 0,
-    "reserved": 3,
+    "reserved": 0,
     "localWarehouse": 0,
     "orderedQty": 0,
     "monthSales": 3,
@@ -745,12 +767,13 @@
     "packageType": "",
     "itemWeight": 20,
     "productImage": "https://m.media-amazon.com/images/I/416G9PTugGL.jpg",
-    "fnsku": "X004YLRN57",
+    "fnsku": "",
     "productImages": [
       "https://m.media-amazon.com/images/I/416G9PTugGL.jpg"
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/416G9PTugGL.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0GGHCPDV3",
@@ -760,29 +783,30 @@
     "restockCycle": 2,
     "stock": 138,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "32周",
-    "fbaTotal": 123,
-    "sellable": 35,
-    "inbound": 75,
+    "lastSeenWeek": "33周",
+    "fbaTotal": 116,
+    "sellable": 31,
+    "inbound": 60,
     "unsellable": 0,
-    "reserved": 13,
+    "reserved": 25,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 48,
-    "monthRevenue": 719.55,
-    "monthOrders": 48,
-    "dailySales": 1.6,
+    "monthSales": 50,
+    "monthRevenue": 783.51,
+    "monthOrders": 50,
+    "dailySales": 1.67,
     "vineGiftSales": 0,
-    "packageSize": "20×7×6",
+    "packageSize": "14×22×1",
     "packageType": "",
     "itemWeight": 250,
     "productImage": "https://m.media-amazon.com/images/I/41f0pCGwzaL.jpg",
-    "fnsku": "X004Z4EZN1",
+    "fnsku": "",
     "productImages": [
       "https://m.media-amazon.com/images/I/41f0pCGwzaL.jpg"
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/41f0pCGwzaL.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0GGHJCFHB",
@@ -792,29 +816,30 @@
     "restockCycle": 2,
     "stock": 117,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "32周",
-    "fbaTotal": 116,
-    "sellable": 28,
-    "inbound": 76,
-    "unsellable": 1,
-    "reserved": 11,
+    "lastSeenWeek": "33周",
+    "fbaTotal": 112,
+    "sellable": 24,
+    "inbound": 61,
+    "unsellable": 0,
+    "reserved": 27,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 41,
-    "monthRevenue": 607.62,
-    "monthOrders": 40,
-    "dailySales": 1.37,
+    "monthSales": 43,
+    "monthRevenue": 671.58,
+    "monthOrders": 42,
+    "dailySales": 1.43,
     "vineGiftSales": 0,
     "packageSize": "20×7×6",
     "packageType": "",
     "itemWeight": 250,
     "productImage": "https://m.media-amazon.com/images/I/41IeLlUiwVL.jpg",
-    "fnsku": "X004Z4GWBJ",
+    "fnsku": "",
     "productImages": [
       "https://m.media-amazon.com/images/I/41IeLlUiwVL.jpg"
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/41IeLlUiwVL.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0GGQRSCM1",
@@ -824,29 +849,30 @@
     "restockCycle": 2,
     "stock": 166,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "32周",
-    "fbaTotal": 154,
-    "sellable": 67,
-    "inbound": 64,
+    "lastSeenWeek": "33周",
+    "fbaTotal": 142,
+    "sellable": 81,
+    "inbound": 24,
     "unsellable": 0,
-    "reserved": 23,
+    "reserved": 37,
     "localWarehouse": 100,
     "orderedQty": 0,
-    "monthSales": 67,
-    "monthRevenue": 1104.35,
-    "monthOrders": 66,
-    "dailySales": 2.23,
+    "monthSales": 68,
+    "monthRevenue": 1121.34,
+    "monthOrders": 67,
+    "dailySales": 2.27,
     "vineGiftSales": 0,
     "packageSize": "10×10×4",
     "packageType": "飞机盒",
     "itemWeight": 393,
     "productImage": "https://m.media-amazon.com/images/I/51JXIRP+XoL.jpg",
-    "fnsku": "X004Z618J3",
+    "fnsku": "",
     "productImages": [
       "https://m.media-amazon.com/images/I/51JXIRP+XoL.jpg"
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/51JXIRP+XoL.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0GGRLM9Z9",
@@ -856,7 +882,7 @@
     "restockCycle": 2,
     "stock": "",
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "32周",
+    "lastSeenWeek": "33周",
     "fbaTotal": 4,
     "sellable": 4,
     "inbound": 0,
@@ -864,21 +890,22 @@
     "reserved": 0,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 15,
-    "monthRevenue": 149.85,
-    "monthOrders": 11,
-    "dailySales": 0.5,
+    "monthSales": 12,
+    "monthRevenue": 119.88,
+    "monthOrders": 9,
+    "dailySales": 0.4,
     "vineGiftSales": 0,
     "packageSize": "17.5×8.5×5",
     "packageType": "",
     "itemWeight": 145,
     "productImage": "https://m.media-amazon.com/images/I/4101My1PkML.jpg",
-    "fnsku": "X004Z5Z07Z",
+    "fnsku": "",
     "productImages": [
       "https://m.media-amazon.com/images/I/4101My1PkML.jpg"
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/4101My1PkML.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0GGZ1ZN5M",
@@ -888,12 +915,12 @@
     "restockCycle": 2,
     "stock": "",
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "32周",
-    "fbaTotal": 35,
-    "sellable": 33,
+    "lastSeenWeek": "33周",
+    "fbaTotal": 28,
+    "sellable": 28,
     "inbound": 0,
     "unsellable": 0,
-    "reserved": 2,
+    "reserved": 0,
     "localWarehouse": 0,
     "orderedQty": 0,
     "monthSales": 17,
@@ -905,12 +932,13 @@
     "packageType": "",
     "itemWeight": 76,
     "productImage": "https://m.media-amazon.com/images/I/41io7TEVo7L.jpg",
-    "fnsku": "X004Z7MWXX",
+    "fnsku": "",
     "productImages": [
       "https://m.media-amazon.com/images/I/41io7TEVo7L.jpg"
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/41io7TEVo7L.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0GH74B4RK",
@@ -920,29 +948,30 @@
     "restockCycle": 2,
     "stock": "",
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "32周",
+    "lastSeenWeek": "33周",
     "fbaTotal": 11,
-    "sellable": 11,
+    "sellable": 10,
     "inbound": 0,
     "unsellable": 0,
-    "reserved": 0,
+    "reserved": 1,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 4,
-    "monthRevenue": 87.96,
-    "monthOrders": 4,
-    "dailySales": 0.13,
+    "monthSales": 1,
+    "monthRevenue": 21.99,
+    "monthOrders": 1,
+    "dailySales": 0.03,
     "vineGiftSales": 0,
     "packageSize": "37×36.5×5",
     "packageType": "",
     "itemWeight": 550,
     "productImage": "https://m.media-amazon.com/images/I/512f-rE460L.jpg",
-    "fnsku": "X004ZAZVFB",
+    "fnsku": "",
     "productImages": [
       "https://m.media-amazon.com/images/I/512f-rE460L.jpg"
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/512f-rE460L.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0GHW55JGW",
@@ -952,12 +981,12 @@
     "restockCycle": 2,
     "stock": "",
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "32周",
-    "fbaTotal": 0,
+    "lastSeenWeek": "33周",
+    "fbaTotal": 1,
     "sellable": 0,
     "inbound": 0,
     "unsellable": 0,
-    "reserved": 0,
+    "reserved": 1,
     "localWarehouse": 0,
     "orderedQty": 0,
     "monthSales": 1,
@@ -969,12 +998,13 @@
     "packageType": "",
     "itemWeight": 134,
     "productImage": "https://m.media-amazon.com/images/I/31HsiONnhwL.jpg",
-    "fnsku": "X004ZFU8UJ",
+    "fnsku": "",
     "productImages": [
       "https://m.media-amazon.com/images/I/31HsiONnhwL.jpg"
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/31HsiONnhwL.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0GHXZ3LWF",
@@ -1001,9 +1031,10 @@
     "productImage": "",
     "productImages": [],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "32周",
+    "lastSeenWeek": "33周",
     "listingDetailImages": [],
-    "amazonMainImage": ""
+    "amazonMainImage": "",
+    "productTitle": ""
   },
   {
     "asin": "B0GKM9ZFHW",
@@ -1013,24 +1044,24 @@
     "restockCycle": 2,
     "stock": "",
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "32周",
+    "lastSeenWeek": "33周",
     "fbaTotal": 8,
-    "sellable": 2,
+    "sellable": 1,
     "inbound": 0,
     "unsellable": 0,
-    "reserved": 6,
+    "reserved": 7,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 2,
-    "monthRevenue": 15.98,
-    "monthOrders": 2,
-    "dailySales": 0.07,
+    "monthSales": 1,
+    "monthRevenue": 7.99,
+    "monthOrders": 1,
+    "dailySales": 0.03,
     "vineGiftSales": 0,
     "packageSize": "10×18×1",
     "packageType": "",
     "itemWeight": 31,
     "productImage": "https://m.media-amazon.com/images/I/41oE4sZeu8L.jpg",
-    "fnsku": "X004ZTY1JJ",
+    "fnsku": "",
     "productImages": [
       "https://m.media-amazon.com/images/I/41oE4sZeu8L.jpg",
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/aa507b44-2556-4e09-bf76-88d4e716b41d/uploads/2026-01-30/605b7fef-be15-4647-a3da-b6f3de669e73.jpg"
@@ -1038,7 +1069,8 @@
     "amazonMainImage": "https://m.media-amazon.com/images/I/41oE4sZeu8L.jpg",
     "listingDetailImages": [
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/aa507b44-2556-4e09-bf76-88d4e716b41d/uploads/2026-01-30/605b7fef-be15-4647-a3da-b6f3de669e73.jpg"
-    ]
+    ],
+    "productTitle": ""
   },
   {
     "asin": "B0GKMFXBLN",
@@ -1048,24 +1080,24 @@
     "restockCycle": 2,
     "stock": "",
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "32周",
+    "lastSeenWeek": "33周",
     "fbaTotal": 5,
-    "sellable": 0,
+    "sellable": 1,
     "inbound": 0,
     "unsellable": 0,
-    "reserved": 5,
+    "reserved": 4,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 4,
-    "monthRevenue": 31.96,
-    "monthOrders": 4,
-    "dailySales": 0.13,
+    "monthSales": 3,
+    "monthRevenue": 23.97,
+    "monthOrders": 3,
+    "dailySales": 0.1,
     "vineGiftSales": 0,
     "packageSize": "18×10×1",
     "packageType": "",
     "itemWeight": 31,
     "productImage": "https://m.media-amazon.com/images/I/41EPOk6wngL.jpg",
-    "fnsku": "X004ZTW8RL",
+    "fnsku": "",
     "productImages": [
       "https://m.media-amazon.com/images/I/41EPOk6wngL.jpg",
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/aa507b44-2556-4e09-bf76-88d4e716b41d/uploads/2026-01-30/5e4e0a54-3bc3-4f44-8718-35f770a9f41f.jpg"
@@ -1073,7 +1105,8 @@
     "amazonMainImage": "https://m.media-amazon.com/images/I/41EPOk6wngL.jpg",
     "listingDetailImages": [
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/aa507b44-2556-4e09-bf76-88d4e716b41d/uploads/2026-01-30/5e4e0a54-3bc3-4f44-8718-35f770a9f41f.jpg"
-    ]
+    ],
+    "productTitle": ""
   },
   {
     "asin": "B0GTLMH86Z",
@@ -1083,12 +1116,12 @@
     "restockCycle": 2,
     "stock": 360,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "32周",
-    "fbaTotal": 68,
-    "sellable": 3,
+    "lastSeenWeek": "33周",
+    "fbaTotal": 10,
+    "sellable": 4,
     "inbound": 0,
     "unsellable": 0,
-    "reserved": 65,
+    "reserved": 6,
     "localWarehouse": 0,
     "orderedQty": 0,
     "monthSales": 1,
@@ -1100,12 +1133,13 @@
     "packageType": "",
     "itemWeight": 20,
     "productImage": "https://m.media-amazon.com/images/I/41MKi2DOSXL.jpg",
-    "fnsku": "X004YLTUZX",
+    "fnsku": "",
     "productImages": [
       "https://m.media-amazon.com/images/I/41MKi2DOSXL.jpg"
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/41MKi2DOSXL.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0GYF5796P",
@@ -1115,29 +1149,30 @@
     "restockCycle": 2,
     "stock": 50,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "32周",
-    "fbaTotal": 50,
-    "sellable": 0,
-    "inbound": 40,
+    "lastSeenWeek": "33周",
+    "fbaTotal": 48,
+    "sellable": 4,
+    "inbound": 20,
     "unsellable": 0,
-    "reserved": 10,
+    "reserved": 24,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 8,
-    "monthRevenue": 14.99,
-    "monthOrders": 8,
-    "dailySales": 0.27,
+    "monthSales": 9,
+    "monthRevenue": 74.95,
+    "monthOrders": 9,
+    "dailySales": 0.3,
     "vineGiftSales": 0,
     "packageSize": "",
     "packageType": "",
     "itemWeight": 168.6,
     "productImage": "https://m.media-amazon.com/images/I/41gr+aBoXbL.jpg",
-    "fnsku": "X0053C90TX",
+    "fnsku": "",
     "productImages": [
       "https://m.media-amazon.com/images/I/41gr+aBoXbL.jpg"
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/41gr+aBoXbL.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0GYF5YXXG",
@@ -1147,7 +1182,7 @@
     "restockCycle": 2,
     "stock": 120,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "32周",
+    "lastSeenWeek": "33周",
     "fbaTotal": 120,
     "sellable": 0,
     "inbound": 120,
@@ -1155,21 +1190,22 @@
     "reserved": 0,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 24,
-    "monthRevenue": 9.99,
-    "monthOrders": 24,
-    "dailySales": 0.8,
+    "monthSales": 28,
+    "monthRevenue": 0,
+    "monthOrders": 28,
+    "dailySales": 0.93,
     "vineGiftSales": 0,
     "packageSize": "20×20×5",
     "packageType": "",
     "itemWeight": 333,
     "productImage": "https://m.media-amazon.com/images/I/41GtfMpEFML.jpg",
-    "fnsku": "X0053CDMYH",
+    "fnsku": "",
     "productImages": [
       "https://m.media-amazon.com/images/I/41GtfMpEFML.jpg"
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/41GtfMpEFML.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0GYF7WK58",
@@ -1179,29 +1215,30 @@
     "restockCycle": 2,
     "stock": 390,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "32周",
-    "fbaTotal": 392,
-    "sellable": 0,
-    "inbound": 312,
+    "lastSeenWeek": "33周",
+    "fbaTotal": 350,
+    "sellable": 58,
+    "inbound": 156,
     "unsellable": 0,
-    "reserved": 80,
+    "reserved": 136,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 52,
-    "monthRevenue": 9.99,
-    "monthOrders": 50,
-    "dailySales": 1.73,
+    "monthSales": 59,
+    "monthRevenue": 479.52,
+    "monthOrders": 59,
+    "dailySales": 1.97,
     "vineGiftSales": 0,
     "packageSize": "",
     "packageType": "",
     "itemWeight": 150,
     "productImage": "https://m.media-amazon.com/images/I/41CO9a9mKrL.jpg",
-    "fnsku": "X0053C7RJX",
+    "fnsku": "",
     "productImages": [
       "https://m.media-amazon.com/images/I/41CO9a9mKrL.jpg"
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/41CO9a9mKrL.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0GYFDQ2CG",
@@ -1211,29 +1248,30 @@
     "restockCycle": 2,
     "stock": 320,
     "firstSeenWeek": "订单利润-ASIN-2026-07-26~2026-08-01-942789467646570496",
-    "lastSeenWeek": "32周",
-    "fbaTotal": 320,
+    "lastSeenWeek": "33周",
+    "fbaTotal": 267,
     "sellable": 0,
-    "inbound": 256,
+    "inbound": 128,
     "unsellable": 0,
-    "reserved": 64,
+    "reserved": 139,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 20,
-    "monthRevenue": 0,
-    "monthOrders": 20,
-    "dailySales": 0.67,
-    "vineGiftSales": 0,
+    "monthSales": 64,
+    "monthRevenue": 735.54,
+    "monthOrders": 64,
+    "dailySales": 2.13,
+    "vineGiftSales": 8,
     "packageSize": "",
     "packageType": "",
     "itemWeight": 90,
     "productImage": "https://m.media-amazon.com/images/I/41ZiFokeTRL.jpg",
-    "fnsku": "X0053CEOFD",
+    "fnsku": "",
     "productImages": [
       "https://m.media-amazon.com/images/I/41ZiFokeTRL.jpg"
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/41ZiFokeTRL.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0H4Z1VCGS",
@@ -1243,34 +1281,35 @@
     "restockCycle": 2,
     "stock": 50,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "32周",
-    "fbaTotal": 44,
-    "sellable": 41,
+    "lastSeenWeek": "33周",
+    "fbaTotal": 42,
+    "sellable": 42,
     "inbound": 0,
     "unsellable": 0,
-    "reserved": 3,
+    "reserved": 0,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 5,
-    "monthRevenue": 129.95,
-    "monthOrders": 5,
-    "dailySales": 0.17,
+    "monthSales": 7,
+    "monthRevenue": 181.93,
+    "monthOrders": 7,
+    "dailySales": 0.23,
     "vineGiftSales": 0,
     "packageSize": "",
     "packageType": "",
     "itemWeight": 1000,
     "productImage": "https://m.media-amazon.com/images/I/31OjMDodaIL.jpg",
-    "fnsku": "X0055NIQLN",
+    "fnsku": "",
     "productImages": [
       "https://m.media-amazon.com/images/I/31OjMDodaIL.jpg"
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/31OjMDodaIL.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0FSXJQ73Q",
     "parentAsin": "B0FSXJQ73Q",
-    "fnsku": "X004USZCH5",
+    "fnsku": "",
     "name": "MANS马桶冲水开关",
     "category": "放弃",
     "restockCycle": 2,
@@ -1294,14 +1333,15 @@
       "https://m.media-amazon.com/images/I/31t2U-0J5IL.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "32周",
+    "lastSeenWeek": "33周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/31t2U-0J5IL.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0FWKD1L3W",
     "parentAsin": "B0FWKD1L3W",
-    "fnsku": "X004VMSKU1",
+    "fnsku": "",
     "name": "4Pcs吊牌保护套",
     "category": "放弃",
     "restockCycle": 2,
@@ -1325,14 +1365,15 @@
       "https://m.media-amazon.com/images/I/41LZ3aN305L.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "32周",
+    "lastSeenWeek": "33周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/41LZ3aN305L.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0FWKFH1H8",
     "parentAsin": "B0FWKFH1H8",
-    "fnsku": "X004VMRLZL",
+    "fnsku": "",
     "name": "货梯包",
     "category": "放弃",
     "restockCycle": 2,
@@ -1356,14 +1397,15 @@
       "https://m.media-amazon.com/images/I/412H1eQnV1L.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "32周",
+    "lastSeenWeek": "33周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/412H1eQnV1L.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0FY2XXG9F",
     "parentAsin": "B0FY2XXG9F",
-    "fnsku": "X004W8JFIF",
+    "fnsku": "",
     "name": "3Pcs浅蓝色O饭盒密封垫",
     "category": "放弃",
     "restockCycle": 2,
@@ -1387,14 +1429,15 @@
       "https://m.media-amazon.com/images/I/41YtgJvSAmL.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "32周",
+    "lastSeenWeek": "33周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/41YtgJvSAmL.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0FY31HN9D",
     "parentAsin": "B0FY31HN9D",
-    "fnsku": "X004W8K4XF",
+    "fnsku": "",
     "name": "3Pcs紫色O饭盒密封垫",
     "category": "放弃",
     "restockCycle": 2,
@@ -1418,14 +1461,15 @@
       "https://m.media-amazon.com/images/I/419oKiQ-W0L.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "32周",
+    "lastSeenWeek": "33周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/419oKiQ-W0L.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0FY31WV9L",
     "parentAsin": "B0FY31WV9L",
-    "fnsku": "X004W8K4XP",
+    "fnsku": "",
     "name": "3Pcs蓝色O饭盒密封垫",
     "category": "放弃",
     "restockCycle": 2,
@@ -1449,14 +1493,15 @@
       "https://m.media-amazon.com/images/I/41tUGi5DcNL.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "32周",
+    "lastSeenWeek": "33周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/41tUGi5DcNL.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0FY32B4PW",
     "parentAsin": "B0FY32B4PW",
-    "fnsku": "X004W8NBU3",
+    "fnsku": "",
     "name": "3Pcs白色O饭盒密封垫",
     "category": "放弃",
     "restockCycle": 2,
@@ -1480,14 +1525,15 @@
       "https://m.media-amazon.com/images/I/31eg6M4zGwL.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "32周",
+    "lastSeenWeek": "33周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/31eg6M4zGwL.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0FY32P4CL",
     "parentAsin": "B0FY32P4CL",
-    "fnsku": "X004W8N6ZD",
+    "fnsku": "",
     "name": "3Pcs橙色O饭盒密封垫",
     "category": "放弃",
     "restockCycle": 2,
@@ -1511,14 +1557,15 @@
       "https://m.media-amazon.com/images/I/41wFBIXkDrL.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "32周",
+    "lastSeenWeek": "33周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/41wFBIXkDrL.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0FY34NY1V",
     "parentAsin": "B0FY34NY1V",
-    "fnsku": "X004W8MG5J",
+    "fnsku": "",
     "name": "3Pcs萝卜色O饭盒密封垫",
     "category": "放弃",
     "restockCycle": 2,
@@ -1542,14 +1589,15 @@
       "https://m.media-amazon.com/images/I/41nHXFfzAxL.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "32周",
+    "lastSeenWeek": "33周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/41nHXFfzAxL.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0FZSM95JC",
     "parentAsin": "B0FZSM95JC",
-    "fnsku": "X004WJO4F3",
+    "fnsku": "",
     "name": "Nu婴儿车罩",
     "category": "放弃",
     "restockCycle": 2,
@@ -1573,9 +1621,10 @@
       "https://m.media-amazon.com/images/I/41xW9y8w8XL.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "32周",
+    "lastSeenWeek": "33周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/41xW9y8w8XL.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0G2BVWMMP",
@@ -1604,16 +1653,17 @@
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/a4e037ee-6fe5-4428-bb2d-4a981f8b78f2/uploads/2025-11-15/1eb276f8-dd00-4382-82b9-7bb44cb56216.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "32周",
+    "lastSeenWeek": "33周",
     "amazonMainImage": "",
     "listingDetailImages": [
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/a4e037ee-6fe5-4428-bb2d-4a981f8b78f2/uploads/2025-11-15/1eb276f8-dd00-4382-82b9-7bb44cb56216.jpg"
-    ]
+    ],
+    "productTitle": ""
   },
   {
     "asin": "B0G2BYPP3C",
     "parentAsin": "B0G2BYPP3C",
-    "fnsku": "X004WYA1NH",
+    "fnsku": "",
     "name": "2Pcs充气泵",
     "category": "放弃",
     "restockCycle": 2,
@@ -1637,14 +1687,15 @@
       "https://m.media-amazon.com/images/I/41mnFh6orJL.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "32周",
+    "lastSeenWeek": "33周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/41mnFh6orJL.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0G2C7D1SM",
     "parentAsin": "B0G2C7D1SM",
-    "fnsku": "X004WYAELL",
+    "fnsku": "",
     "name": "R20把手",
     "category": "放弃",
     "restockCycle": 2,
@@ -1669,16 +1720,17 @@
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/a4e037ee-6fe5-4428-bb2d-4a981f8b78f2/uploads/2025-11-15/ecf66af9-38d6-430a-9950-520a44b10394.png"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "32周",
+    "lastSeenWeek": "33周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/41ZJWfw9qYL.jpg",
     "listingDetailImages": [
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/a4e037ee-6fe5-4428-bb2d-4a981f8b78f2/uploads/2025-11-15/ecf66af9-38d6-430a-9950-520a44b10394.png"
-    ]
+    ],
+    "productTitle": ""
   },
   {
     "asin": "B0G4X9DYRD",
     "parentAsin": "B0G4X9DYRD",
-    "fnsku": "X004XNN021",
+    "fnsku": "",
     "name": "Ama表带灰色",
     "category": "放弃",
     "restockCycle": 2,
@@ -1697,19 +1749,20 @@
     "packageSize": "",
     "packageType": "",
     "itemWeight": 55,
-    "productImage": "https://m.media-amazon.com/images/I/415n-aPQgCL.jpg",
+    "productImage": "https://m.media-amazon.com/images/I/51zVvE+bLxL.jpg",
     "productImages": [
-      "https://m.media-amazon.com/images/I/415n-aPQgCL.jpg"
+      "https://m.media-amazon.com/images/I/51zVvE+bLxL.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "32周",
-    "amazonMainImage": "https://m.media-amazon.com/images/I/415n-aPQgCL.jpg",
-    "listingDetailImages": []
+    "lastSeenWeek": "33周",
+    "amazonMainImage": "https://m.media-amazon.com/images/I/51zVvE+bLxL.jpg",
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0G4ZW7HLD",
     "parentAsin": "B0G4ZW7HLD",
-    "fnsku": "X004XOJO2F",
+    "fnsku": "",
     "name": "Ama表带蓝色",
     "category": "放弃",
     "restockCycle": 2,
@@ -1720,41 +1773,42 @@
     "fbaTotal": 0,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 1,
-    "monthRevenue": 3.99,
-    "monthOrders": 1,
-    "dailySales": 0.03,
+    "monthSales": 0,
+    "monthRevenue": 0,
+    "monthOrders": 0,
+    "dailySales": 0,
     "vineGiftSales": 0,
     "packageSize": "",
     "packageType": "",
     "itemWeight": 55,
-    "productImage": "https://m.media-amazon.com/images/I/415n-aPQgCL.jpg",
+    "productImage": "https://m.media-amazon.com/images/I/51y0SdHQdcL.jpg",
     "productImages": [
-      "https://m.media-amazon.com/images/I/415n-aPQgCL.jpg"
+      "https://m.media-amazon.com/images/I/51y0SdHQdcL.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "32周",
-    "amazonMainImage": "https://m.media-amazon.com/images/I/415n-aPQgCL.jpg",
-    "listingDetailImages": []
+    "lastSeenWeek": "33周",
+    "amazonMainImage": "https://m.media-amazon.com/images/I/51y0SdHQdcL.jpg",
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0G5132KBX",
     "parentAsin": "B0G5132KBX",
-    "fnsku": "X004XOI593",
+    "fnsku": "",
     "name": "Ama表带深蓝色",
     "category": "放弃",
     "restockCycle": 2,
-    "sellable": 1,
+    "sellable": 0,
     "inbound": 0,
     "unsellable": 0,
     "reserved": 0,
-    "fbaTotal": 1,
+    "fbaTotal": 0,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 5,
-    "monthRevenue": 19.95,
-    "monthOrders": 5,
-    "dailySales": 0.17,
+    "monthSales": 3,
+    "monthRevenue": 11.97,
+    "monthOrders": 3,
+    "dailySales": 0.1,
     "vineGiftSales": 0,
     "packageSize": "",
     "packageType": "",
@@ -1764,14 +1818,15 @@
       "https://m.media-amazon.com/images/I/51HjT65ARpL.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "32周",
+    "lastSeenWeek": "33周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/51HjT65ARpL.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0G517WLDZ",
     "parentAsin": "B0G517WLDZ",
-    "fnsku": "X004XOKS39",
+    "fnsku": "",
     "name": "Ama表带橙色",
     "category": "放弃",
     "restockCycle": 2,
@@ -1790,19 +1845,20 @@
     "packageSize": "",
     "packageType": "",
     "itemWeight": 55,
-    "productImage": "https://m.media-amazon.com/images/I/415n-aPQgCL.jpg",
+    "productImage": "https://m.media-amazon.com/images/I/519zRqd-ZnL.jpg",
     "productImages": [
-      "https://m.media-amazon.com/images/I/415n-aPQgCL.jpg"
+      "https://m.media-amazon.com/images/I/519zRqd-ZnL.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "32周",
-    "amazonMainImage": "https://m.media-amazon.com/images/I/415n-aPQgCL.jpg",
-    "listingDetailImages": []
+    "lastSeenWeek": "33周",
+    "amazonMainImage": "https://m.media-amazon.com/images/I/519zRqd-ZnL.jpg",
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0G52D3YWJ",
     "parentAsin": "B0G52D3YWJ",
-    "fnsku": "X004XPAS9H",
+    "fnsku": "",
     "name": "klee纸巾套长方形",
     "category": "放弃",
     "restockCycle": 2,
@@ -1827,16 +1883,17 @@
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-01-17/2b88ffb7-9c53-4e32-aa45-376898c56a2a.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "32周",
+    "lastSeenWeek": "33周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/41+ODTCsygL.jpg",
     "listingDetailImages": [
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-01-17/2b88ffb7-9c53-4e32-aa45-376898c56a2a.jpg"
-    ]
+    ],
+    "productTitle": ""
   },
   {
     "asin": "B0G52H2CL5",
     "parentAsin": "B0G52H2CL5",
-    "fnsku": "X004XPBHKV",
+    "fnsku": "",
     "name": "klee纸巾套套装",
     "category": "放弃",
     "restockCycle": 2,
@@ -1860,14 +1917,15 @@
       "https://m.media-amazon.com/images/I/4120j9rS1-L.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "32周",
+    "lastSeenWeek": "33周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/4120j9rS1-L.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0GGH41FDJ",
     "parentAsin": "B0GGH41FDJ",
-    "fnsku": "X004Z43WAX",
+    "fnsku": "",
     "name": "新2pcs黑板磁铁",
     "category": "放弃",
     "restockCycle": 2,
@@ -1892,30 +1950,31 @@
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-01-17/c9839638-5ebe-4d9d-b811-241a74f66ab5.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "32周",
+    "lastSeenWeek": "33周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/41YCQ6HdxoL.jpg",
     "listingDetailImages": [
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-01-17/c9839638-5ebe-4d9d-b811-241a74f66ab5.jpg"
-    ]
+    ],
+    "productTitle": ""
   },
   {
     "asin": "B0GGYSVPSX",
     "parentAsin": "B0GGYSVPSX",
-    "fnsku": "X004Z7W3TL",
+    "fnsku": "",
     "name": "GOVEE线1母2公",
     "category": "放弃",
     "restockCycle": 2,
-    "sellable": 3,
+    "sellable": 1,
     "inbound": 0,
     "unsellable": 0,
-    "reserved": 0,
-    "fbaTotal": 3,
+    "reserved": 1,
+    "fbaTotal": 2,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 0,
-    "monthRevenue": 0,
-    "monthOrders": 0,
-    "dailySales": 0,
+    "monthSales": 1,
+    "monthRevenue": 7.99,
+    "monthOrders": 1,
+    "dailySales": 0.03,
     "vineGiftSales": 0,
     "packageSize": "11.5×9.5×1.8",
     "packageType": "",
@@ -1925,14 +1984,15 @@
       "https://m.media-amazon.com/images/I/411Nanz47ML.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "32周",
+    "lastSeenWeek": "33周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/411Nanz47ML.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0GHQRM96K",
     "parentAsin": "B0GHQRM96K",
-    "fnsku": "X004ZEFGPR",
+    "fnsku": "",
     "name": "",
     "category": "放弃",
     "restockCycle": 2,
@@ -1956,14 +2016,15 @@
       "https://m.media-amazon.com/images/I/71snQqB7Z1L._SL75_.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "32周",
+    "lastSeenWeek": "33周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/71snQqB7Z1L._SL75_.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0GHYCGQ4C",
     "parentAsin": "B0GHYCGQ4C",
-    "fnsku": "X004ZI0OUP",
+    "fnsku": "",
     "name": "墨水补充剂",
     "category": "放弃",
     "restockCycle": 2,
@@ -1974,10 +2035,10 @@
     "fbaTotal": 0,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 1,
-    "monthRevenue": 25.99,
-    "monthOrders": 1,
-    "dailySales": 0.03,
+    "monthSales": 0,
+    "monthRevenue": 0,
+    "monthOrders": 0,
+    "dailySales": 0,
     "vineGiftSales": 0,
     "packageSize": "28×14×6",
     "packageType": "",
@@ -1987,22 +2048,23 @@
       "https://m.media-amazon.com/images/I/41NelL40q+L.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "32周",
+    "lastSeenWeek": "33周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/41NelL40q+L.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0GJ3M3G9D",
     "parentAsin": "B0GJ3M3G9D",
-    "fnsku": "X004ZHNDPT",
+    "fnsku": "",
     "name": "透明款耳机保护套",
     "category": "放弃",
     "restockCycle": 2,
-    "sellable": 0,
+    "sellable": 1,
     "inbound": 0,
     "unsellable": 0,
     "reserved": 0,
-    "fbaTotal": 0,
+    "fbaTotal": 1,
     "localWarehouse": 0,
     "orderedQty": 0,
     "monthSales": 0,
@@ -2019,16 +2081,17 @@
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/aa507b44-2556-4e09-bf76-88d4e716b41d/uploads/2026-01-30/68b5db24-75f7-4d93-a0d3-7d2c7cd600a9.png"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "32周",
+    "lastSeenWeek": "33周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/317kFFQPj0L.jpg",
     "listingDetailImages": [
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/aa507b44-2556-4e09-bf76-88d4e716b41d/uploads/2026-01-30/68b5db24-75f7-4d93-a0d3-7d2c7cd600a9.png"
-    ]
+    ],
+    "productTitle": ""
   },
   {
     "asin": "B0GJDG4Q7C",
     "parentAsin": "B0GJDG4Q7C",
-    "fnsku": "X004ZJWEEN",
+    "fnsku": "",
     "name": "灰色款耳机保护套",
     "category": "放弃",
     "restockCycle": 2,
@@ -2053,16 +2116,17 @@
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/aa507b44-2556-4e09-bf76-88d4e716b41d/uploads/2026-01-30/84e79a08-8270-4798-a5bf-67514dd6e9de.png"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "32周",
+    "lastSeenWeek": "33周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/41VFvFwqFQL.jpg",
     "listingDetailImages": [
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/aa507b44-2556-4e09-bf76-88d4e716b41d/uploads/2026-01-30/84e79a08-8270-4798-a5bf-67514dd6e9de.png"
-    ]
+    ],
+    "productTitle": ""
   },
   {
     "asin": "B0GJDHSSVY",
     "parentAsin": "B0GJDHSSVY",
-    "fnsku": "X004ZJQZNJ",
+    "fnsku": "",
     "name": "橙色款耳机保护套",
     "category": "放弃",
     "restockCycle": 2,
@@ -2087,16 +2151,17 @@
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/aa507b44-2556-4e09-bf76-88d4e716b41d/uploads/2026-01-30/9e189dd0-97a3-4224-9cb3-4ccf204ce00f.png"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "32周",
+    "lastSeenWeek": "33周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/41wPJt4+hLL.jpg",
     "listingDetailImages": [
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/aa507b44-2556-4e09-bf76-88d4e716b41d/uploads/2026-01-30/9e189dd0-97a3-4224-9cb3-4ccf204ce00f.png"
-    ]
+    ],
+    "productTitle": ""
   },
   {
     "asin": "B0GKM2W6NK",
     "parentAsin": "B0GKM2W6NK",
-    "fnsku": "X004ZTLFAH",
+    "fnsku": "",
     "name": "新HB手环橙色",
     "category": "放弃",
     "restockCycle": 2,
@@ -2115,22 +2180,23 @@
     "packageSize": "",
     "packageType": "",
     "itemWeight": 10,
-    "productImage": "https://m.media-amazon.com/images/I/41MKi2DOSXL.jpg",
+    "productImage": "https://m.media-amazon.com/images/I/41rjHLgAZuL.jpg",
     "productImages": [
-      "https://m.media-amazon.com/images/I/41MKi2DOSXL.jpg",
+      "https://m.media-amazon.com/images/I/41rjHLgAZuL.jpg",
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/aa507b44-2556-4e09-bf76-88d4e716b41d/uploads/2026-01-30/47cc1a97-0851-4398-918e-bbb99a04b400.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "32周",
-    "amazonMainImage": "https://m.media-amazon.com/images/I/41MKi2DOSXL.jpg",
+    "lastSeenWeek": "33周",
+    "amazonMainImage": "https://m.media-amazon.com/images/I/41rjHLgAZuL.jpg",
     "listingDetailImages": [
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/aa507b44-2556-4e09-bf76-88d4e716b41d/uploads/2026-01-30/47cc1a97-0851-4398-918e-bbb99a04b400.jpg"
-    ]
+    ],
+    "productTitle": ""
   },
   {
     "asin": "B0GQ9CDWCP",
     "parentAsin": "B0GQ9CDWCP",
-    "fnsku": "X0050UHWAH",
+    "fnsku": "",
     "name": "",
     "category": "放弃",
     "restockCycle": 2,
@@ -2154,9 +2220,10 @@
       "https://m.media-amazon.com/images/I/51iQO6UF+uL.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "32周",
+    "lastSeenWeek": "33周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/51iQO6UF+uL.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0GQB6R4FL",
@@ -2183,14 +2250,15 @@
     "productImage": "",
     "productImages": [],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "32周",
+    "lastSeenWeek": "33周",
     "amazonMainImage": "",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0GQGQ8Z8F",
     "parentAsin": "B0GQGQ8Z8F",
-    "fnsku": "X0050OQRNB",
+    "fnsku": "",
     "name": "",
     "category": "放弃",
     "restockCycle": 2,
@@ -2214,14 +2282,15 @@
       "https://m.media-amazon.com/images/I/61p1KVs8ScL._SL75_.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "32周",
+    "lastSeenWeek": "33周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/61p1KVs8ScL._SL75_.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   },
   {
     "asin": "B0GQSP988T",
     "parentAsin": "B0GQSP988T",
-    "fnsku": "X0050S93H9",
+    "fnsku": "",
     "name": "",
     "category": "放弃",
     "restockCycle": 2,
@@ -2245,8 +2314,9 @@
       "https://m.media-amazon.com/images/I/71eHnIgDLwL._SL75_.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "32周",
+    "lastSeenWeek": "33周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/71eHnIgDLwL._SL75_.jpg",
-    "listingDetailImages": []
+    "listingDetailImages": [],
+    "productTitle": ""
   }
 ]

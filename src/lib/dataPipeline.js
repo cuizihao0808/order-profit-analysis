@@ -13,6 +13,7 @@ function isAmazonMainImageUrl(url) {
 export function normalizeInventoryProduct(product) {
   const next = { ...product }
   next.fnsku = next.fnsku == null ? '' : String(next.fnsku).trim()
+  next.productTitle = next.productTitle == null ? '' : String(next.productTitle).trim()
   if (next.fbaTotal == null || next.fbaTotal === '') {
     next.fbaTotal = normalizeNumber(next.stock, '')
   } else {

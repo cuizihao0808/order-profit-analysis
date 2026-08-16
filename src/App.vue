@@ -60,6 +60,7 @@ const EXTRA_COL_BY_NAME = Object.fromEntries(EXTRA_COLS.map((c) => [c.name, c]))
 /** \u5217\u540d \u2192 \u53ef\u7f16\u8f91\u5b57\u6bb5\u7684 key\uff08\u975e\u53ef\u7f16\u8f91\u8fd4\u56de ''\uff09 */
 function editColKey(name) {
   if (name === '品名') return 'name'
+  if (name === '商品标题' || name === '标题') return 'productTitle'
   const c = EXTRA_COL_BY_NAME[name]
   if (!c) return ''
   if (c.type === 'edit-select' || c.type === 'edit-num' || c.type === 'edit-week-text') return c.key
@@ -404,6 +405,13 @@ function getCell(row, colName) {
     return i != null ? row.values[i] ?? '' : ''
   }
 
+  if (colName === '商品标题' || colName === '标题') {
+    const fromProduct = String(product?.productTitle || '').trim()
+    if (fromProduct) return fromProduct
+    const i = colIndex.value[colName]
+    return i != null ? row.values[i] ?? '' : ''
+  }
+
   const extra = EXTRA_COL_BY_NAME[colName]
   if (extra) {
     if (extra.type === 'edit-week-text') {
@@ -468,6 +476,8 @@ function displayProductName(row) {
 }
 
 function displayProductTitle(row) {
+  const fromProduct = String(rowProduct(row)?.productTitle || '').trim()
+  if (fromProduct) return fromProduct
   const title = String(getCell(row, '商品标题') || getCell(row, '标题') || '').trim()
   return title
 }
@@ -1295,6 +1305,7 @@ const productForm = ref({
   asin: '',
   parentAsin: '',
   name: '',
+  productTitle: '',
   shopId: '',
 })
 const productEditing = ref(false)
@@ -1317,6 +1328,7 @@ function resetProductForm() {
     asin: '',
     parentAsin: '',
     name: '',
+    productTitle: '',
     shopId: shops.value[0]?.id || '',
   }
   productEditing.value = false
@@ -1326,6 +1338,7 @@ function pickProduct(p) {
     asin: p.asin,
     parentAsin: p.parentAsin || '',
     name: p.name || '',
+    productTitle: p.productTitle || '',
     shopId: p.shopId || '',
   }
   productEditing.value = true
@@ -1345,6 +1358,7 @@ async function saveProduct() {
         asin,
         parentAsin: productForm.value.parentAsin.trim(),
         name: productForm.value.name.trim(),
+        productTitle: productForm.value.productTitle.trim(),
         shopId: productForm.value.shopId,
       }),
     })
@@ -1422,6 +1436,17 @@ function commitEditableNumber(row, key, value) {
   const emptyValue = key === 'restockCycle' ? '' : 0
   const nextValue = text === '' ? emptyValue : Number(text)
   if (text !== '' && !Number.isFinite(nextValue)) return
+  patchProduct(row.asin, { [key]: nextValue }, { shopId: rowShopId(row) })
+}
+
+function commitEditableText(row, key, value) {
+  if (!row || !key) return
+  const raw = value && typeof value === 'object' && 'target' in value
+    ? value.target?.value
+    : value
+  const nextValue = raw == null ? '' : String(raw).trim()
+  const currentValue = String(rowProduct(row)?.[key] ?? '').trim()
+  if (nextValue === currentValue) return
   patchProduct(row.asin, { [key]: nextValue }, { shopId: rowShopId(row) })
 }
 
@@ -1986,17 +2011,33 @@ onBeforeUnmount(() => {
                 </template>
                 <template v-else-if="col.name === '品名'">
                   <div class="name-cell-stack">
-                    <el-input
-                      class="cell-ep-input"
-                      size="small"
-                      :model-value="rowProduct(item.row)?.name ?? ''"
-                      @change="patchProduct(item.row.asin, { name: ($event || '').trim() }, { shopId: rowShopId(item.row) })"
+                    <input
+                      class="cell-input"
+                      type="text"
+                      :value="rowProduct(item.row)?.name ?? ''"
+                      @change="commitEditableText(item.row, 'name', $event)"
+                      @blur="commitEditableText(item.row, 'name', $event)"
                     />
                     <div class="title-tooltip-wrap name-title-subrow">
-                      <span class="name-title-ellipsis">标题：{{ displayProductTitle(item.row) || '—' }}</span>
-                      <span class="title-tooltip-bubble">{{ displayProductTitle(item.row) || '—' }}</span>
+                      <input
+                        class="cell-input"
+                        type="text"
+                        :value="displayProductTitle(item.row)"
+                        placeholder="产品标题"
+                        @change="commitEditableText(item.row, 'productTitle', $event)"
+                        @blur="commitEditableText(item.row, 'productTitle', $event)"
+                      />
                     </div>
                   </div>
+                </template>
+                <template v-else-if="editColKey(col.name) === 'productTitle'">
+                  <input
+                    class="cell-input"
+                    type="text"
+                    :value="displayProductTitle(item.row)"
+                    @change="commitEditableText(item.row, 'productTitle', $event)"
+                    @blur="commitEditableText(item.row, 'productTitle', $event)"
+                  />
                 </template>
                 <template
                   v-else-if="editColKey(col.name) === 'restockCycle' || editColKey(col.name) === 'localWarehouse' || editColKey(col.name) === 'orderedQty'"
@@ -2294,6 +2335,9 @@ onBeforeUnmount(() => {
             <el-form-item label="品名" class="form-row-wide">
               <el-input v-model="productForm.name" />
             </el-form-item>
+            <el-form-item label="产品标题" class="form-row-wide">
+              <el-input v-model="productForm.productTitle" />
+            </el-form-item>
             <el-form-item label="店铺 *">
               <el-select v-model="productForm.shopId" placeholder="请选择店铺" style="width: 100%" filterable>
                 <el-option v-for="s in shops" :key="s.id" :value="s.id" :label="s.name" />
@@ -2318,6 +2362,9 @@ onBeforeUnmount(() => {
         </el-table-column>
         <el-table-column label="品名" min-width="220">
           <template #default="scope">{{ scope.row.name || '(未命名)' }}</template>
+        </el-table-column>
+        <el-table-column label="产品标题" min-width="300">
+          <template #default="scope">{{ scope.row.productTitle || '—' }}</template>
         </el-table-column>
         <el-table-column label="店铺" min-width="170">
           <template #default="scope">{{ shopNameById.get(scope.row.shopId) || '—' }}</template>

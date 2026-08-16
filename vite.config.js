@@ -831,6 +831,7 @@ function importWeekBundle(bundle) {
     const before = JSON.stringify({
       fnsku: product.fnsku,
       name: product.name,
+      productTitle: product.productTitle,
       monthSales: product.monthSales,
       monthRevenue: product.monthRevenue,
       monthOrders: product.monthOrders,
@@ -857,6 +858,9 @@ function importWeekBundle(bundle) {
     if (!String(product.name || '').trim() && listingRow.name) {
       product.name = listingRow.name
     }
+    if (!String(product.productTitle || '').trim() && listingRow.productTitle) {
+      product.productTitle = listingRow.productTitle
+    }
     product.monthSales = listingRow.monthSales
     product.monthRevenue = listingRow.monthRevenue
     product.monthOrders = listingRow.monthOrders
@@ -882,6 +886,7 @@ function importWeekBundle(bundle) {
     const after = JSON.stringify({
       fnsku: product.fnsku,
       name: product.name,
+      productTitle: product.productTitle,
       monthSales: product.monthSales,
       monthRevenue: product.monthRevenue,
       monthOrders: product.monthOrders,
@@ -995,6 +1000,7 @@ function importWeekBundle(bundle) {
         const product = {
           ...master,
           fnsku: '',
+          productTitle: '',
           category: '正常',
           restockCycle: 2,
           sellable: '',
@@ -1367,6 +1373,7 @@ function apiPlugin() {
               asin: body.asin,
               parentAsin: body.parentAsin ?? '',
               name: body.name ?? '',
+              productTitle: body.productTitle ?? '',
               category: body.category ?? '正常',
               restockCycle:
                 body.restockCycle == null || body.restockCycle === ''
@@ -1666,6 +1673,7 @@ function apiPlugin() {
               const before = JSON.stringify({
                 fnsku: product.fnsku,
                 name: product.name,
+                productTitle: product.productTitle,
                 monthSales: product.monthSales,
                 monthRevenue: product.monthRevenue,
                 monthOrders: product.monthOrders,
@@ -1691,6 +1699,9 @@ function apiPlugin() {
               // 品名以本地可编辑值为准，仅在空值时用 Listing 初始化。
               if (!String(product.name || '').trim() && listingRow.name) {
                 product.name = listingRow.name
+              }
+              if (!String(product.productTitle || '').trim() && listingRow.productTitle) {
+                product.productTitle = listingRow.productTitle
               }
               product.monthSales = listingRow.monthSales
               product.monthRevenue = listingRow.monthRevenue
@@ -1719,6 +1730,7 @@ function apiPlugin() {
               const after = JSON.stringify({
                 fnsku: product.fnsku,
                 name: product.name,
+                productTitle: product.productTitle,
                 monthSales: product.monthSales,
                 monthRevenue: product.monthRevenue,
                 monthOrders: product.monthOrders,
@@ -1805,6 +1817,7 @@ function apiPlugin() {
                 parentAsin: asin,
                 fnsku: listingRow.fnsku,
                 name: listingRow.name || '',
+                productTitle: listingRow.productTitle || '',
                 category: '新品',
                 restockCycle: 2,
                 sellable: listingRow.sellable,
