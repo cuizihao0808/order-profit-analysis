@@ -162,6 +162,37 @@ function choosePdfFontPath() {
   return candidates.find((p) => existsSync(p)) || ''
 }
 
+function parsePositiveNumber(value) {
+  if (value == null || value === '') return NaN
+  const n = Number(String(value).replace(/[$,\s]/g, '').replace(/%$/, ''))
+  return Number.isFinite(n) && n > 0 ? n : NaN
+}
+
+function parsePackageDimsCm(sizeText) {
+  const raw = String(sizeText || '').trim()
+  if (!raw) return null
+  const nums = raw.match(/\d+(?:\.\d+)?/g) || []
+  if (nums.length < 3) return null
+  const dims = nums.slice(0, 3).map((v) => Number(v))
+  if (dims.some((n) => !Number.isFinite(n) || n <= 0)) return null
+  return dims
+}
+
+function inferWeightType(rawWeightType, itemWeight, packageSize) {
+  const explicit = String(rawWeightType || '').trim()
+  if (explicit && explicit !== '—') return explicit
+
+  const itemWeightG = parsePositiveNumber(itemWeight)
+  if (!Number.isFinite(itemWeightG)) return '—'
+
+  const dims = parsePackageDimsCm(packageSize)
+  if (!dims) return '—'
+
+  const [lengthCm, widthCm, heightCm] = dims
+  const volumetricWeightG = (lengthCm * widthCm * heightCm * 1000) / 6000
+  return itemWeightG > volumetricWeightG ? '实重' : '抛重'
+}
+
 async function generateLocalWarehousePdfBuffer(payload) {
   const weekId = String(payload?.weekId || '').trim() || '周次'
   const shopName = String(payload?.shopName || '').trim() || '店铺'
@@ -197,8 +228,8 @@ async function generateLocalWarehousePdfBuffer(payload) {
   const imageGap = 3
   const imageCache = new Map()
 
-  const colWidths = [0.27, 0.17, 0.15, 0.08, 0.11, 0.11, 0.11].map((r) => contentWidth * r)
-  const headers = ['产品图片（多图）', '品名', 'FNSKU', '本地仓库', '包装尺寸/cm', '单品重量/g', '包装类型']
+  const colWidths = [0.25, 0.16, 0.14, 0.08, 0.11, 0.1, 0.08, 0.08].map((r) => contentWidth * r)
+  const headers = ['产品图片（多图）', '品名', 'FNSKU', '本地仓库', '包装尺寸/cm', '单品重量/g', '重量类型', '包装类型']
 
   const colX = [marginLeft]
   for (let i = 1; i < colWidths.length; i++) colX[i] = colX[i - 1] + colWidths[i - 1]
@@ -293,6 +324,7 @@ async function generateLocalWarehousePdfBuffer(payload) {
     const packageSize = String(row?.packageSize || '').trim() || '—'
     const packageType = String(row?.packageType || '').trim() || '—'
     const itemWeight = String(row?.itemWeight || '').trim() || '—'
+    const weightType = inferWeightType(row?.weightType, row?.itemWeight, row?.packageSize)
     const images = Array.isArray(row?.images)
       ? row.images.map((x) => String(x || '').trim()).filter(Boolean)
       : []
@@ -310,7 +342,8 @@ async function generateLocalWarehousePdfBuffer(payload) {
     const textHeightQty = oneLineHeight
     const textHeightSize = Math.max(14, doc.heightOfString(packageSize, { width: colWidths[4] - cellPadding * 2 }))
     const textHeightWeight = oneLineHeight
-    const textHeightType = Math.max(14, doc.heightOfString(packageType, { width: colWidths[6] - cellPadding * 2 }))
+    const textHeightWeightType = oneLineHeight
+    const textHeightType = Math.max(14, doc.heightOfString(packageType, { width: colWidths[7] - cellPadding * 2 }))
 
     const rowHeight = Math.max(
       imageBlockHeight + cellPadding * 2,
@@ -319,6 +352,7 @@ async function generateLocalWarehousePdfBuffer(payload) {
       textHeightQty + cellPadding * 2,
       textHeightSize + cellPadding * 2,
       textHeightWeight + cellPadding * 2,
+      textHeightWeightType + cellPadding * 2,
       textHeightType + cellPadding * 2,
       24,
     )
@@ -341,6 +375,7 @@ async function generateLocalWarehousePdfBuffer(payload) {
     const qtyY = cursorY + Math.max(cellPadding, (rowHeight - textHeightQty) / 2)
     const sizeY = cursorY + Math.max(cellPadding, (rowHeight - textHeightSize) / 2)
     const weightY = cursorY + Math.max(cellPadding, (rowHeight - textHeightWeight) / 2)
+    const weightTypeY = cursorY + Math.max(cellPadding, (rowHeight - textHeightWeightType) / 2)
     const typeY = cursorY + Math.max(cellPadding, (rowHeight - textHeightType) / 2)
 
     doc.text(displayName, colX[1] + cellPadding, nameY, {
@@ -366,8 +401,13 @@ async function generateLocalWarehousePdfBuffer(payload) {
       lineBreak: false,
       align: 'left',
     })
-    doc.text(packageType, colX[6] + cellPadding, typeY, {
+    doc.text(weightType, colX[6] + cellPadding, weightTypeY, {
       width: colWidths[6] - cellPadding * 2,
+      lineBreak: false,
+      align: 'left',
+    })
+    doc.text(packageType, colX[7] + cellPadding, typeY, {
+      width: colWidths[7] - cellPadding * 2,
       align: 'left',
     })
 
@@ -853,7 +893,8 @@ function importWeekBundle(bundle) {
       orderedQty: product.orderedQty,
     })
 
-    product.fnsku = listingRow.fnsku
+    const incomingFnsku = String(listingRow.fnsku || '').trim()
+    if (incomingFnsku) product.fnsku = incomingFnsku
     // 品名以本地可编辑值为准，仅在空值时用 Listing 初始化。
     if (!String(product.name || '').trim() && listingRow.name) {
       product.name = listingRow.name
@@ -1695,7 +1736,8 @@ function apiPlugin() {
                 orderedQty: product.orderedQty,
               })
 
-              product.fnsku = listingRow.fnsku
+              const incomingFnsku = String(listingRow.fnsku || '').trim()
+              if (incomingFnsku) product.fnsku = incomingFnsku
               // 品名以本地可编辑值为准，仅在空值时用 Listing 初始化。
               if (!String(product.name || '').trim() && listingRow.name) {
                 product.name = listingRow.name

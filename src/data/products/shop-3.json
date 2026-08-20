@@ -24,7 +24,7 @@
     "packageType": "",
     "itemWeight": 141,
     "productImage": "https://m.media-amazon.com/images/I/41lrLThQWvL.jpg",
-    "fnsku": "",
+    "fnsku": "X004VJU6M9",
     "productImages": [
       "https://m.media-amazon.com/images/I/41lrLThQWvL.jpg"
     ],
@@ -57,7 +57,7 @@
     "packageType": "",
     "itemWeight": 550,
     "productImage": "https://m.media-amazon.com/images/I/51Nbj8F8NVL.jpg",
-    "fnsku": "",
+    "fnsku": "X004VM3K47",
     "productImages": [
       "https://m.media-amazon.com/images/I/51Nbj8F8NVL.jpg"
     ],
@@ -90,7 +90,7 @@
     "packageType": "",
     "itemWeight": 331,
     "productImage": "https://m.media-amazon.com/images/I/515rTJpD3IL.jpg",
-    "fnsku": "",
+    "fnsku": "X004VMSVQT",
     "productImages": [
       "https://m.media-amazon.com/images/I/515rTJpD3IL.jpg"
     ],
@@ -123,7 +123,7 @@
     "packageType": "飞机盒",
     "itemWeight": 145,
     "productImage": "https://m.media-amazon.com/images/I/311xovmvm3L.jpg",
-    "fnsku": "",
+    "fnsku": "X004W6JOQZ",
     "productImages": [
       "https://m.media-amazon.com/images/I/311xovmvm3L.jpg",
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-08-07/6546823e-d3db-467c-9000-fd4f295c5909.jpg"
@@ -159,7 +159,7 @@
     "packageType": "",
     "itemWeight": 290,
     "productImage": "https://m.media-amazon.com/images/I/41h-SQc5eiL.jpg",
-    "fnsku": "",
+    "fnsku": "X004WAE2R7",
     "productImages": [
       "https://m.media-amazon.com/images/I/41h-SQc5eiL.jpg"
     ],
@@ -223,7 +223,7 @@
     "packageType": "",
     "itemWeight": 1050,
     "productImage": "https://m.media-amazon.com/images/I/31Dm+iWZIhL.jpg",
-    "fnsku": "",
+    "fnsku": "X004WJDIRN",
     "productImages": [
       "https://m.media-amazon.com/images/I/31Dm+iWZIhL.jpg"
     ],
@@ -256,7 +256,7 @@
     "packageType": "",
     "itemWeight": 1999,
     "productImage": "https://m.media-amazon.com/images/I/413W8koN0oL.jpg",
-    "fnsku": "",
+    "fnsku": "X004WJSC9R",
     "productImages": [
       "https://m.media-amazon.com/images/I/413W8koN0oL.jpg"
     ],
@@ -340,7 +340,7 @@
     "inbound": 240,
     "unsellable": 0,
     "reserved": 20,
-    "localWarehouse": 240,
+    "localWarehouse": 0,
     "orderedQty": 0,
     "monthSales": 244,
     "monthRevenue": 4837.58,
@@ -351,7 +351,7 @@
     "packageType": "",
     "itemWeight": 530,
     "productImage": "https://m.media-amazon.com/images/I/318OXMyr+uL.jpg",
-    "fnsku": "",
+    "fnsku": "X004WY8HPV",
     "productImages": [
       "https://m.media-amazon.com/images/I/318OXMyr+uL.jpg",
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-01-17/b1d51c2a-e339-4961-81fb-28d5b244aa6c.jpg"
@@ -387,7 +387,7 @@
     "packageType": "飞机盒",
     "itemWeight": 500,
     "productImage": "https://m.media-amazon.com/images/I/31OmEvHSEcL.jpg",
-    "fnsku": "",
+    "fnsku": "X004WY2SVP",
     "productImages": [
       "https://m.media-amazon.com/images/I/31OmEvHSEcL.jpg",
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-08-07/7526664e-7839-49da-92dc-6308380f3741.jpg"
@@ -423,7 +423,7 @@
     "packageType": "",
     "itemWeight": 55,
     "productImage": "https://m.media-amazon.com/images/I/515bLf7A03L.jpg",
-    "fnsku": "",
+    "fnsku": "X004XOC85P",
     "productImages": [
       "https://m.media-amazon.com/images/I/515bLf7A03L.jpg"
     ],
@@ -456,7 +456,7 @@
     "packageType": "",
     "itemWeight": 55,
     "productImage": "https://m.media-amazon.com/images/I/415n-aPQgCL.jpg",
-    "fnsku": "",
+    "fnsku": "X004XOC84L",
     "productImages": [
       "https://m.media-amazon.com/images/I/415n-aPQgCL.jpg"
     ],
@@ -489,7 +489,7 @@
     "packageType": "",
     "itemWeight": 152.5,
     "productImage": "https://m.media-amazon.com/images/I/31vNhwbG3XL.jpg",
-    "fnsku": "",
+    "fnsku": "X004XP9O97",
     "productImages": [
       "https://m.media-amazon.com/images/I/31vNhwbG3XL.jpg",
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-01-17/6d96dc45-074a-486b-8241-f8ef4f1fca1b.jpg"
@@ -525,7 +525,7 @@
     "packageType": "飞机盒",
     "itemWeight": 210,
     "productImage": "https://m.media-amazon.com/images/I/41HHLl4w2nL.jpg",
-    "fnsku": "",
+    "fnsku": "X004XQTOEV",
     "productImages": [
       "https://m.media-amazon.com/images/I/41HHLl4w2nL.jpg",
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-08-07/ec6934b2-87c5-474f-9bbf-7f9f7cc3c71a.png",
@@ -563,7 +563,7 @@
     "packageType": "",
     "itemWeight": 60,
     "productImage": "https://m.media-amazon.com/images/I/41YMj1B6E+L.jpg",
-    "fnsku": "",
+    "fnsku": "X004XQZAYT",
     "productImages": [
       "https://m.media-amazon.com/images/I/41YMj1B6E+L.jpg"
     ],
@@ -596,7 +596,7 @@
     "packageType": "",
     "itemWeight": 80,
     "productImage": "https://m.media-amazon.com/images/I/41S4pkyNAEL.jpg",
-    "fnsku": "",
+    "fnsku": "X004Y8FV6D",
     "productImages": [
       "https://m.media-amazon.com/images/I/41S4pkyNAEL.jpg"
     ],
@@ -629,7 +629,7 @@
     "packageType": "",
     "itemWeight": 345,
     "productImage": "https://m.media-amazon.com/images/I/418EaP+np8L.jpg",
-    "fnsku": "",
+    "fnsku": "X004YA8YZ1",
     "productImages": [
       "https://m.media-amazon.com/images/I/418EaP+np8L.jpg"
     ],
@@ -662,7 +662,7 @@
     "packageType": "瓦楞扣底盒",
     "itemWeight": 190,
     "productImage": "https://m.media-amazon.com/images/I/41RKX5WlHQL.jpg",
-    "fnsku": "",
+    "fnsku": "X004YJ4MMV",
     "productImages": [
       "https://m.media-amazon.com/images/I/41RKX5WlHQL.jpg",
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-08-07/b5fa8bfa-1547-4f8d-a174-c2ab07d42083.jpg"
@@ -678,7 +678,7 @@
     "parentAsin": "B0GCCRNMHK",
     "name": "4pcs手柄绳",
     "category": "正常",
-    "restockCycle": 2,
+    "restockCycle": 4,
     "stock": 404,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
     "lastSeenWeek": "33周",
@@ -698,7 +698,7 @@
     "packageType": "透明珠光袋",
     "itemWeight": 10,
     "productImage": "https://m.media-amazon.com/images/I/41cKVtT4bRL.jpg",
-    "fnsku": "",
+    "fnsku": "X004YG59XF",
     "productImages": [
       "https://m.media-amazon.com/images/I/41cKVtT4bRL.jpg",
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-08-07/89af37b5-4ffe-48b7-9994-64ff6e5b850d.jpg"
@@ -734,7 +734,7 @@
     "packageType": "",
     "itemWeight": 20,
     "productImage": "https://m.media-amazon.com/images/I/41GGuEGRK9L.jpg",
-    "fnsku": "",
+    "fnsku": "X004YLRNI9",
     "productImages": [
       "https://m.media-amazon.com/images/I/41GGuEGRK9L.jpg"
     ],
@@ -767,7 +767,7 @@
     "packageType": "",
     "itemWeight": 20,
     "productImage": "https://m.media-amazon.com/images/I/416G9PTugGL.jpg",
-    "fnsku": "",
+    "fnsku": "X004YLRN57",
     "productImages": [
       "https://m.media-amazon.com/images/I/416G9PTugGL.jpg"
     ],
@@ -789,8 +789,8 @@
     "inbound": 60,
     "unsellable": 0,
     "reserved": 25,
-    "localWarehouse": 0,
-    "orderedQty": 50,
+    "localWarehouse": 50,
+    "orderedQty": 0,
     "monthSales": 50,
     "monthRevenue": 783.51,
     "monthOrders": 50,
@@ -800,7 +800,7 @@
     "packageType": "",
     "itemWeight": 250,
     "productImage": "https://m.media-amazon.com/images/I/41f0pCGwzaL.jpg",
-    "fnsku": "",
+    "fnsku": "X004Z4EZN1",
     "productImages": [
       "https://m.media-amazon.com/images/I/41f0pCGwzaL.jpg"
     ],
@@ -822,8 +822,8 @@
     "inbound": 61,
     "unsellable": 0,
     "reserved": 27,
-    "localWarehouse": 0,
-    "orderedQty": 50,
+    "localWarehouse": 50,
+    "orderedQty": 0,
     "monthSales": 43,
     "monthRevenue": 671.58,
     "monthOrders": 42,
@@ -833,7 +833,7 @@
     "packageType": "",
     "itemWeight": 250,
     "productImage": "https://m.media-amazon.com/images/I/41IeLlUiwVL.jpg",
-    "fnsku": "",
+    "fnsku": "X004Z4GWBJ",
     "productImages": [
       "https://m.media-amazon.com/images/I/41IeLlUiwVL.jpg"
     ],
@@ -866,7 +866,7 @@
     "packageType": "飞机盒",
     "itemWeight": 393,
     "productImage": "https://m.media-amazon.com/images/I/51JXIRP+XoL.jpg",
-    "fnsku": "",
+    "fnsku": "X004Z618J3",
     "productImages": [
       "https://m.media-amazon.com/images/I/51JXIRP+XoL.jpg"
     ],
@@ -899,7 +899,7 @@
     "packageType": "",
     "itemWeight": 145,
     "productImage": "https://m.media-amazon.com/images/I/4101My1PkML.jpg",
-    "fnsku": "",
+    "fnsku": "X004Z5Z07Z",
     "productImages": [
       "https://m.media-amazon.com/images/I/4101My1PkML.jpg"
     ],
@@ -932,7 +932,7 @@
     "packageType": "",
     "itemWeight": 76,
     "productImage": "https://m.media-amazon.com/images/I/41io7TEVo7L.jpg",
-    "fnsku": "",
+    "fnsku": "X004Z7MWXX",
     "productImages": [
       "https://m.media-amazon.com/images/I/41io7TEVo7L.jpg"
     ],
@@ -965,7 +965,7 @@
     "packageType": "",
     "itemWeight": 550,
     "productImage": "https://m.media-amazon.com/images/I/512f-rE460L.jpg",
-    "fnsku": "",
+    "fnsku": "X004ZAZVFB",
     "productImages": [
       "https://m.media-amazon.com/images/I/512f-rE460L.jpg"
     ],
@@ -998,7 +998,7 @@
     "packageType": "",
     "itemWeight": 134,
     "productImage": "https://m.media-amazon.com/images/I/31HsiONnhwL.jpg",
-    "fnsku": "",
+    "fnsku": "X004ZFU8UJ",
     "productImages": [
       "https://m.media-amazon.com/images/I/31HsiONnhwL.jpg"
     ],
@@ -1061,7 +1061,7 @@
     "packageType": "",
     "itemWeight": 31,
     "productImage": "https://m.media-amazon.com/images/I/41oE4sZeu8L.jpg",
-    "fnsku": "",
+    "fnsku": "X004ZTY1JJ",
     "productImages": [
       "https://m.media-amazon.com/images/I/41oE4sZeu8L.jpg",
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/aa507b44-2556-4e09-bf76-88d4e716b41d/uploads/2026-01-30/605b7fef-be15-4647-a3da-b6f3de669e73.jpg"
@@ -1097,7 +1097,7 @@
     "packageType": "",
     "itemWeight": 31,
     "productImage": "https://m.media-amazon.com/images/I/41EPOk6wngL.jpg",
-    "fnsku": "",
+    "fnsku": "X004ZTW8RL",
     "productImages": [
       "https://m.media-amazon.com/images/I/41EPOk6wngL.jpg",
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/aa507b44-2556-4e09-bf76-88d4e716b41d/uploads/2026-01-30/5e4e0a54-3bc3-4f44-8718-35f770a9f41f.jpg"
@@ -1133,7 +1133,7 @@
     "packageType": "",
     "itemWeight": 20,
     "productImage": "https://m.media-amazon.com/images/I/41MKi2DOSXL.jpg",
-    "fnsku": "",
+    "fnsku": "X004YLTUZX",
     "productImages": [
       "https://m.media-amazon.com/images/I/41MKi2DOSXL.jpg"
     ],
@@ -1166,7 +1166,7 @@
     "packageType": "",
     "itemWeight": 168.6,
     "productImage": "https://m.media-amazon.com/images/I/41gr+aBoXbL.jpg",
-    "fnsku": "",
+    "fnsku": "X0053C90TX",
     "productImages": [
       "https://m.media-amazon.com/images/I/41gr+aBoXbL.jpg"
     ],
@@ -1199,7 +1199,7 @@
     "packageType": "",
     "itemWeight": 333,
     "productImage": "https://m.media-amazon.com/images/I/41GtfMpEFML.jpg",
-    "fnsku": "",
+    "fnsku": "X0053CDMYH",
     "productImages": [
       "https://m.media-amazon.com/images/I/41GtfMpEFML.jpg"
     ],
@@ -1232,7 +1232,7 @@
     "packageType": "",
     "itemWeight": 150,
     "productImage": "https://m.media-amazon.com/images/I/41CO9a9mKrL.jpg",
-    "fnsku": "",
+    "fnsku": "X0053C7RJX",
     "productImages": [
       "https://m.media-amazon.com/images/I/41CO9a9mKrL.jpg"
     ],
@@ -1265,7 +1265,7 @@
     "packageType": "",
     "itemWeight": 90,
     "productImage": "https://m.media-amazon.com/images/I/41ZiFokeTRL.jpg",
-    "fnsku": "",
+    "fnsku": "X0053CEOFD",
     "productImages": [
       "https://m.media-amazon.com/images/I/41ZiFokeTRL.jpg"
     ],
@@ -1298,7 +1298,7 @@
     "packageType": "",
     "itemWeight": 1000,
     "productImage": "https://m.media-amazon.com/images/I/31OjMDodaIL.jpg",
-    "fnsku": "",
+    "fnsku": "X0055NIQLN",
     "productImages": [
       "https://m.media-amazon.com/images/I/31OjMDodaIL.jpg"
     ],
@@ -1309,7 +1309,7 @@
   {
     "asin": "B0FSXJQ73Q",
     "parentAsin": "B0FSXJQ73Q",
-    "fnsku": "",
+    "fnsku": "X004USZCH5",
     "name": "MANS马桶冲水开关",
     "category": "放弃",
     "restockCycle": 2,
@@ -1341,7 +1341,7 @@
   {
     "asin": "B0FWKD1L3W",
     "parentAsin": "B0FWKD1L3W",
-    "fnsku": "",
+    "fnsku": "X004VMSKU1",
     "name": "4Pcs吊牌保护套",
     "category": "放弃",
     "restockCycle": 2,
@@ -1373,7 +1373,7 @@
   {
     "asin": "B0FWKFH1H8",
     "parentAsin": "B0FWKFH1H8",
-    "fnsku": "",
+    "fnsku": "X004VMRLZL",
     "name": "货梯包",
     "category": "放弃",
     "restockCycle": 2,
@@ -1405,7 +1405,7 @@
   {
     "asin": "B0FY2XXG9F",
     "parentAsin": "B0FY2XXG9F",
-    "fnsku": "",
+    "fnsku": "X004W8JFIF",
     "name": "3Pcs浅蓝色O饭盒密封垫",
     "category": "放弃",
     "restockCycle": 2,
@@ -1437,7 +1437,7 @@
   {
     "asin": "B0FY31HN9D",
     "parentAsin": "B0FY31HN9D",
-    "fnsku": "",
+    "fnsku": "X004W8K4XF",
     "name": "3Pcs紫色O饭盒密封垫",
     "category": "放弃",
     "restockCycle": 2,
@@ -1469,7 +1469,7 @@
   {
     "asin": "B0FY31WV9L",
     "parentAsin": "B0FY31WV9L",
-    "fnsku": "",
+    "fnsku": "X004W8K4XP",
     "name": "3Pcs蓝色O饭盒密封垫",
     "category": "放弃",
     "restockCycle": 2,
@@ -1501,7 +1501,7 @@
   {
     "asin": "B0FY32B4PW",
     "parentAsin": "B0FY32B4PW",
-    "fnsku": "",
+    "fnsku": "X004W8NBU3",
     "name": "3Pcs白色O饭盒密封垫",
     "category": "放弃",
     "restockCycle": 2,
@@ -1533,7 +1533,7 @@
   {
     "asin": "B0FY32P4CL",
     "parentAsin": "B0FY32P4CL",
-    "fnsku": "",
+    "fnsku": "X004W8N6ZD",
     "name": "3Pcs橙色O饭盒密封垫",
     "category": "放弃",
     "restockCycle": 2,
@@ -1565,7 +1565,7 @@
   {
     "asin": "B0FY34NY1V",
     "parentAsin": "B0FY34NY1V",
-    "fnsku": "",
+    "fnsku": "X004W8MG5J",
     "name": "3Pcs萝卜色O饭盒密封垫",
     "category": "放弃",
     "restockCycle": 2,
@@ -1597,7 +1597,7 @@
   {
     "asin": "B0FZSM95JC",
     "parentAsin": "B0FZSM95JC",
-    "fnsku": "",
+    "fnsku": "X004WJO4F3",
     "name": "Nu婴儿车罩",
     "category": "放弃",
     "restockCycle": 2,
@@ -1663,7 +1663,7 @@
   {
     "asin": "B0G2BYPP3C",
     "parentAsin": "B0G2BYPP3C",
-    "fnsku": "",
+    "fnsku": "X004WYA1NH",
     "name": "2Pcs充气泵",
     "category": "放弃",
     "restockCycle": 2,
@@ -1695,7 +1695,7 @@
   {
     "asin": "B0G2C7D1SM",
     "parentAsin": "B0G2C7D1SM",
-    "fnsku": "",
+    "fnsku": "X004WYAELL",
     "name": "R20把手",
     "category": "放弃",
     "restockCycle": 2,
@@ -1730,7 +1730,7 @@
   {
     "asin": "B0G4X9DYRD",
     "parentAsin": "B0G4X9DYRD",
-    "fnsku": "",
+    "fnsku": "X004XNN021",
     "name": "Ama表带灰色",
     "category": "放弃",
     "restockCycle": 2,
@@ -1762,7 +1762,7 @@
   {
     "asin": "B0G4ZW7HLD",
     "parentAsin": "B0G4ZW7HLD",
-    "fnsku": "",
+    "fnsku": "X004XOJO2F",
     "name": "Ama表带蓝色",
     "category": "放弃",
     "restockCycle": 2,
@@ -1794,7 +1794,7 @@
   {
     "asin": "B0G5132KBX",
     "parentAsin": "B0G5132KBX",
-    "fnsku": "",
+    "fnsku": "X004XOI593",
     "name": "Ama表带深蓝色",
     "category": "放弃",
     "restockCycle": 2,
@@ -1826,7 +1826,7 @@
   {
     "asin": "B0G517WLDZ",
     "parentAsin": "B0G517WLDZ",
-    "fnsku": "",
+    "fnsku": "X004XOKS39",
     "name": "Ama表带橙色",
     "category": "放弃",
     "restockCycle": 2,
@@ -1858,7 +1858,7 @@
   {
     "asin": "B0G52D3YWJ",
     "parentAsin": "B0G52D3YWJ",
-    "fnsku": "",
+    "fnsku": "X004XPAS9H",
     "name": "klee纸巾套长方形",
     "category": "放弃",
     "restockCycle": 2,
@@ -1893,7 +1893,7 @@
   {
     "asin": "B0G52H2CL5",
     "parentAsin": "B0G52H2CL5",
-    "fnsku": "",
+    "fnsku": "X004XPBHKV",
     "name": "klee纸巾套套装",
     "category": "放弃",
     "restockCycle": 2,
@@ -1925,7 +1925,7 @@
   {
     "asin": "B0GGH41FDJ",
     "parentAsin": "B0GGH41FDJ",
-    "fnsku": "",
+    "fnsku": "X004Z43WAX",
     "name": "新2pcs黑板磁铁",
     "category": "放弃",
     "restockCycle": 2,
@@ -1960,7 +1960,7 @@
   {
     "asin": "B0GGYSVPSX",
     "parentAsin": "B0GGYSVPSX",
-    "fnsku": "",
+    "fnsku": "X004Z7W3TL",
     "name": "GOVEE线1母2公",
     "category": "放弃",
     "restockCycle": 2,
@@ -1992,7 +1992,7 @@
   {
     "asin": "B0GHQRM96K",
     "parentAsin": "B0GHQRM96K",
-    "fnsku": "",
+    "fnsku": "X004ZEFGPR",
     "name": "",
     "category": "放弃",
     "restockCycle": 2,
@@ -2024,7 +2024,7 @@
   {
     "asin": "B0GHYCGQ4C",
     "parentAsin": "B0GHYCGQ4C",
-    "fnsku": "",
+    "fnsku": "X004ZI0OUP",
     "name": "墨水补充剂",
     "category": "放弃",
     "restockCycle": 2,
@@ -2056,7 +2056,7 @@
   {
     "asin": "B0GJ3M3G9D",
     "parentAsin": "B0GJ3M3G9D",
-    "fnsku": "",
+    "fnsku": "X004ZHNDPT",
     "name": "透明款耳机保护套",
     "category": "放弃",
     "restockCycle": 2,
@@ -2091,7 +2091,7 @@
   {
     "asin": "B0GJDG4Q7C",
     "parentAsin": "B0GJDG4Q7C",
-    "fnsku": "",
+    "fnsku": "X004ZJWEEN",
     "name": "灰色款耳机保护套",
     "category": "放弃",
     "restockCycle": 2,
@@ -2126,7 +2126,7 @@
   {
     "asin": "B0GJDHSSVY",
     "parentAsin": "B0GJDHSSVY",
-    "fnsku": "",
+    "fnsku": "X004ZJQZNJ",
     "name": "橙色款耳机保护套",
     "category": "放弃",
     "restockCycle": 2,
@@ -2161,7 +2161,7 @@
   {
     "asin": "B0GKM2W6NK",
     "parentAsin": "B0GKM2W6NK",
-    "fnsku": "",
+    "fnsku": "X004ZTLFAH",
     "name": "新HB手环橙色",
     "category": "放弃",
     "restockCycle": 2,
@@ -2196,7 +2196,7 @@
   {
     "asin": "B0GQ9CDWCP",
     "parentAsin": "B0GQ9CDWCP",
-    "fnsku": "",
+    "fnsku": "X0050UHWAH",
     "name": "",
     "category": "放弃",
     "restockCycle": 2,
@@ -2258,7 +2258,7 @@
   {
     "asin": "B0GQGQ8Z8F",
     "parentAsin": "B0GQGQ8Z8F",
-    "fnsku": "",
+    "fnsku": "X0050OQRNB",
     "name": "",
     "category": "放弃",
     "restockCycle": 2,
@@ -2290,7 +2290,7 @@
   {
     "asin": "B0GQSP988T",
     "parentAsin": "B0GQSP988T",
-    "fnsku": "",
+    "fnsku": "X0050S93H9",
     "name": "",
     "category": "放弃",
     "restockCycle": 2,

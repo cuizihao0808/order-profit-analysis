@@ -888,6 +888,7 @@ function buildLocalWarehousePdfPayload() {
     packageSize: String(productField(row, 'packageSize') || productField(row, 'packageSize1') || productField(row, 'packageSize2') || '').trim(),
     packageType: String(productField(row, 'packageType') || productField(row, 'packageType1') || productField(row, 'packageType2') || '').trim(),
     itemWeight: String(productField(row, 'itemWeight') || '').trim(),
+    weightType: weightTypeText(row),
     images: productImageUrls(row),
   }))
   return {

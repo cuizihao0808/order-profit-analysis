@@ -152,7 +152,7 @@
     "packageType": "",
     "itemWeight": 150,
     "productImage": "https://m.media-amazon.com/images/I/41fJzzX5QOL.jpg",
-    "fnsku": "",
+    "fnsku": "X004QS94MD",
     "productImages": [
       "https://m.media-amazon.com/images/I/41fJzzX5QOL.jpg"
     ],
@@ -386,7 +386,7 @@
     "packageType": "",
     "itemWeight": 140,
     "productImage": "https://m.media-amazon.com/images/I/319FFwQ9yTL.jpg",
-    "fnsku": "",
+    "fnsku": "X004SD22LB",
     "productImages": [
       "https://m.media-amazon.com/images/I/319FFwQ9yTL.jpg"
     ],
@@ -408,7 +408,7 @@
     "inbound": 40,
     "unsellable": 0,
     "reserved": 129,
-    "localWarehouse": 450,
+    "localWarehouse": 0,
     "orderedQty": 0,
     "monthSales": 450,
     "monthRevenue": 5793.54,
@@ -419,7 +419,7 @@
     "packageType": "",
     "itemWeight": 188.6,
     "productImage": "https://m.media-amazon.com/images/I/319FFwQ9yTL.jpg",
-    "fnsku": "",
+    "fnsku": "X004SDDFTJ",
     "productImages": [
       "https://m.media-amazon.com/images/I/319FFwQ9yTL.jpg"
     ],
@@ -484,7 +484,7 @@
     "packageType": "",
     "itemWeight": 400,
     "productImage": "https://m.media-amazon.com/images/I/41HUbKSVZkL.jpg",
-    "fnsku": "",
+    "fnsku": "X004TR4Z1V",
     "productImages": [
       "https://m.media-amazon.com/images/I/41HUbKSVZkL.jpg"
     ],
@@ -780,7 +780,7 @@
     "inbound": 100,
     "unsellable": 1,
     "reserved": 4,
-    "localWarehouse": 100,
+    "localWarehouse": 0,
     "orderedQty": 0,
     "monthSales": 91,
     "monthRevenue": 899.1,
@@ -791,7 +791,7 @@
     "packageType": "飞机盒",
     "itemWeight": 120,
     "productImage": "https://m.media-amazon.com/images/I/31emn58XspL.jpg",
-    "fnsku": "",
+    "fnsku": "X004U1XJ1X",
     "productImages": [
       "https://m.media-amazon.com/images/I/31emn58XspL.jpg"
     ],
@@ -824,7 +824,7 @@
     "packageType": "",
     "itemWeight": 240,
     "productImage": "https://m.media-amazon.com/images/I/41RCYgYyKgL.jpg",
-    "fnsku": "",
+    "fnsku": "X004UBMFGX",
     "productImages": [
       "https://m.media-amazon.com/images/I/41RCYgYyKgL.jpg"
     ],
@@ -889,7 +889,7 @@
     "packageType": "",
     "itemWeight": 10,
     "productImage": "https://m.media-amazon.com/images/I/512OUzE4OzL.jpg",
-    "fnsku": "",
+    "fnsku": "X0051PSIEF",
     "productImages": [
       "https://m.media-amazon.com/images/I/512OUzE4OzL.jpg"
     ],
@@ -922,7 +922,7 @@
     "packageType": "",
     "itemWeight": 67,
     "productImage": "https://m.media-amazon.com/images/I/31saJr94ghL.jpg",
-    "fnsku": "",
+    "fnsku": "X00528GGEZ",
     "productImages": [
       "https://m.media-amazon.com/images/I/31saJr94ghL.jpg"
     ],
@@ -933,7 +933,7 @@
   {
     "asin": "B0GVWF66T8",
     "parentAsin": "B0GVWF66T8",
-    "fnsku": "",
+    "fnsku": "X00528QE65",
     "name": "",
     "category": "放弃",
     "restockCycle": 2,
@@ -965,7 +965,7 @@
   {
     "asin": "B0GVWKW4Y1",
     "parentAsin": "B0GVWKW4Y1",
-    "fnsku": "",
+    "fnsku": "X00528NAWV",
     "name": "",
     "category": "放弃",
     "restockCycle": 2,
@@ -1019,7 +1019,7 @@
     "packageType": "",
     "itemWeight": 67,
     "productImage": "https://m.media-amazon.com/images/I/31w3IV3V8jL.jpg",
-    "fnsku": "",
+    "fnsku": "X00528NGCP",
     "productImages": [
       "https://m.media-amazon.com/images/I/31w3IV3V8jL.jpg"
     ],
@@ -1030,7 +1030,7 @@
   {
     "asin": "B0GVWQK5BT",
     "parentAsin": "B0GVWQK5BT",
-    "fnsku": "",
+    "fnsku": "X00528HXQZ",
     "name": "",
     "category": "放弃",
     "restockCycle": 2,
@@ -1084,7 +1084,7 @@
     "packageType": "",
     "itemWeight": 67,
     "productImage": "https://m.media-amazon.com/images/I/31iQPOfKJHL.jpg",
-    "fnsku": "",
+    "fnsku": "X00528GTSX",
     "productImages": [
       "https://m.media-amazon.com/images/I/31iQPOfKJHL.jpg"
     ],
@@ -1117,7 +1117,7 @@
     "packageType": "",
     "itemWeight": 95,
     "productImage": "https://m.media-amazon.com/images/I/31TQze95JwL.jpg",
-    "fnsku": "",
+    "fnsku": "X005290VEP",
     "productImages": [
       "https://m.media-amazon.com/images/I/31TQze95JwL.jpg"
     ],
@@ -1128,7 +1128,7 @@
   {
     "asin": "B0GVY4B31K",
     "parentAsin": "B0GVY4B31K",
-    "fnsku": "",
+    "fnsku": "X00529923B",
     "name": "",
     "category": "放弃",
     "restockCycle": 2,
@@ -1160,7 +1160,7 @@
   {
     "asin": "B0GVY4DFMJ",
     "parentAsin": "B0GVY4DFMJ",
-    "fnsku": "",
+    "fnsku": "X00529922R",
     "name": "",
     "category": "放弃",
     "restockCycle": 2,
@@ -1214,7 +1214,7 @@
     "packageType": "",
     "itemWeight": 95,
     "productImage": "https://m.media-amazon.com/images/I/31Rhw8tVQiL.jpg",
-    "fnsku": "",
+    "fnsku": "X005293F6B",
     "productImages": [
       "https://m.media-amazon.com/images/I/31Rhw8tVQiL.jpg"
     ],
@@ -1225,7 +1225,7 @@
   {
     "asin": "B0GVYB51LC",
     "parentAsin": "B0GVYB51LC",
-    "fnsku": "",
+    "fnsku": "X005298ZV1",
     "name": "",
     "category": "放弃",
     "restockCycle": 2,
@@ -1279,7 +1279,7 @@
     "packageType": "",
     "itemWeight": 95,
     "productImage": "https://m.media-amazon.com/images/I/41Vg1ysYlEL.jpg",
-    "fnsku": "",
+    "fnsku": "X005293CFZ",
     "productImages": [
       "https://m.media-amazon.com/images/I/41Vg1ysYlEL.jpg"
     ],
@@ -1312,7 +1312,7 @@
     "packageType": "",
     "itemWeight": 120,
     "productImage": "https://m.media-amazon.com/images/I/41vPGERAwTL.jpg",
-    "fnsku": "",
+    "fnsku": "X0052C7LNB",
     "productImages": [
       "https://m.media-amazon.com/images/I/41vPGERAwTL.jpg"
     ],
@@ -1345,7 +1345,7 @@
     "packageType": "",
     "itemWeight": 340,
     "productImage": "https://m.media-amazon.com/images/I/31F-WbY9X9L.jpg",
-    "fnsku": "",
+    "fnsku": "X0052FWHR3",
     "productImages": [
       "https://m.media-amazon.com/images/I/31F-WbY9X9L.jpg"
     ],
@@ -1378,7 +1378,7 @@
     "packageType": "瓦楞盒",
     "itemWeight": 550,
     "productImage": "https://m.media-amazon.com/images/I/31FDnrjImKL.jpg",
-    "fnsku": "",
+    "fnsku": "X0052FXRQN",
     "productImages": [
       "https://m.media-amazon.com/images/I/31FDnrjImKL.jpg",
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-08-07/e00e8a28-8f25-448b-adc5-056522e1e41d.jpg"
@@ -1414,7 +1414,7 @@
     "packageType": "",
     "itemWeight": 122,
     "productImage": "https://m.media-amazon.com/images/I/41TBBuQsjCL.jpg",
-    "fnsku": "",
+    "fnsku": "X0052GBZ1L",
     "productImages": [
       "https://m.media-amazon.com/images/I/41TBBuQsjCL.jpg"
     ],
@@ -1447,7 +1447,7 @@
     "packageType": "",
     "itemWeight": 122,
     "productImage": "https://m.media-amazon.com/images/I/41XMpvUbjfL.jpg",
-    "fnsku": "",
+    "fnsku": "X0052G8FHN",
     "productImages": [
       "https://m.media-amazon.com/images/I/41XMpvUbjfL.jpg"
     ],
@@ -1480,7 +1480,7 @@
     "packageType": "",
     "itemWeight": 122,
     "productImage": "https://m.media-amazon.com/images/I/41I6YzkMpjL.jpg",
-    "fnsku": "",
+    "fnsku": "X0052JAGOF",
     "productImages": [
       "https://m.media-amazon.com/images/I/41I6YzkMpjL.jpg"
     ],
@@ -1513,7 +1513,7 @@
     "packageType": "",
     "itemWeight": 122,
     "productImage": "https://m.media-amazon.com/images/I/41q+ZTYGKzL.jpg",
-    "fnsku": "",
+    "fnsku": "X0052NZQ8R",
     "productImages": [
       "https://m.media-amazon.com/images/I/41q+ZTYGKzL.jpg"
     ],
@@ -1546,7 +1546,7 @@
     "packageType": "",
     "itemWeight": 87,
     "productImage": "https://m.media-amazon.com/images/I/21KVaIoWJxL.jpg",
-    "fnsku": "",
+    "fnsku": "X0052YNV7T",
     "productImages": [
       "https://m.media-amazon.com/images/I/21KVaIoWJxL.jpg",
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-04-17/3c2eed62-0463-4e11-903e-25522ee6fc30.png"
@@ -1582,7 +1582,7 @@
     "packageType": "",
     "itemWeight": 112,
     "productImage": "https://m.media-amazon.com/images/I/31ABFzcgpKL.jpg",
-    "fnsku": "",
+    "fnsku": "X0052YAT2J",
     "productImages": [
       "https://m.media-amazon.com/images/I/31ABFzcgpKL.jpg",
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-04-17/5a9b2ae7-260e-45bf-9364-3189d396711a.png"
@@ -1608,7 +1608,7 @@
     "unsellable": 0,
     "reserved": 2,
     "localWarehouse": 0,
-    "orderedQty": 80,
+    "orderedQty": 0,
     "monthSales": 76,
     "monthRevenue": 1897.27,
     "monthOrders": 76,
@@ -1618,7 +1618,7 @@
     "packageType": "瓦楞盒",
     "itemWeight": 700,
     "productImage": "https://m.media-amazon.com/images/I/31JYhvIWCiL.jpg",
-    "fnsku": "",
+    "fnsku": "X00539UWW5",
     "productImages": [
       "https://m.media-amazon.com/images/I/31JYhvIWCiL.jpg",
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-08-07/523076f6-c01a-45df-94d6-269e0e6aea1b.jpg"
@@ -1654,7 +1654,7 @@
     "packageType": "",
     "itemWeight": 120,
     "productImage": "https://m.media-amazon.com/images/I/51+85GJ-kPL.jpg",
-    "fnsku": "",
+    "fnsku": "X0053C1S9X",
     "productImages": [
       "https://m.media-amazon.com/images/I/51+85GJ-kPL.jpg"
     ],
@@ -1687,7 +1687,7 @@
     "packageType": "瓦楞盒",
     "itemWeight": 456,
     "productImage": "https://m.media-amazon.com/images/I/41ScUXPF+uL.jpg",
-    "fnsku": "",
+    "fnsku": "X0053EDTOD",
     "productImages": [
       "https://m.media-amazon.com/images/I/41ScUXPF+uL.jpg",
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-08-07/95284ceb-8f31-4a58-b62f-1a0227f85e2a.jpg",
@@ -1714,7 +1714,7 @@
     "inbound": 160,
     "unsellable": 0,
     "reserved": 50,
-    "localWarehouse": 80,
+    "localWarehouse": 0,
     "orderedQty": 0,
     "monthSales": 37,
     "monthRevenue": 719.64,
@@ -1725,7 +1725,7 @@
     "packageType": "白卡扣底盒",
     "itemWeight": 200,
     "productImage": "https://m.media-amazon.com/images/I/41B5ztFXA8L.jpg",
-    "fnsku": "",
+    "fnsku": "X0053ZHYD9",
     "productImages": [
       "https://m.media-amazon.com/images/I/41B5ztFXA8L.jpg",
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-08-07/8c38391e-ab1e-483d-b40a-d453de15201c.jpg"
@@ -1761,7 +1761,7 @@
     "packageType": "",
     "itemWeight": 122,
     "productImage": "https://m.media-amazon.com/images/I/41dDjUKGLpL.jpg",
-    "fnsku": "",
+    "fnsku": "X0054DI2EP",
     "productImages": [
       "https://m.media-amazon.com/images/I/41dDjUKGLpL.jpg"
     ],
@@ -1784,7 +1784,7 @@
     "unsellable": 0,
     "reserved": 18,
     "localWarehouse": 0,
-    "orderedQty": 150,
+    "orderedQty": 0,
     "monthSales": 211,
     "monthRevenue": 1988.01,
     "monthOrders": 174,
@@ -1794,7 +1794,7 @@
     "packageType": "自封PP袋",
     "itemWeight": 185,
     "productImage": "https://m.media-amazon.com/images/I/31wnZiFFW9L.jpg",
-    "fnsku": "",
+    "fnsku": "X0054XFGDZ",
     "productImages": [
       "https://m.media-amazon.com/images/I/31wnZiFFW9L.jpg",
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-08-07/7f62d04a-6097-42e8-9ad4-02de329b6ef1.jpg"
@@ -1830,7 +1830,7 @@
     "packageType": "",
     "itemWeight": 40,
     "productImage": "https://m.media-amazon.com/images/I/41aYSxkrh2L.jpg",
-    "fnsku": "",
+    "fnsku": "X0054XIHZT",
     "productImages": [
       "https://m.media-amazon.com/images/I/41aYSxkrh2L.jpg"
     ],
@@ -1852,7 +1852,7 @@
     "inbound": 260,
     "unsellable": 0,
     "reserved": 118,
-    "localWarehouse": 450,
+    "localWarehouse": 0,
     "orderedQty": 0,
     "monthSales": 168,
     "monthRevenue": 969.03,
@@ -1863,7 +1863,7 @@
     "packageType": "白卡盒",
     "itemWeight": 100,
     "productImage": "https://m.media-amazon.com/images/I/31UCP+u4DSL.jpg",
-    "fnsku": "",
+    "fnsku": "X0054XU4AF",
     "productImages": [
       "https://m.media-amazon.com/images/I/31UCP+u4DSL.jpg"
     ],
@@ -1896,7 +1896,7 @@
     "packageType": "塑料盒",
     "itemWeight": 195,
     "productImage": "https://m.media-amazon.com/images/I/41weYSmFiaL.jpg",
-    "fnsku": "",
+    "fnsku": "X00552QZH1",
     "productImages": [
       "https://m.media-amazon.com/images/I/41weYSmFiaL.jpg"
     ],
@@ -1929,7 +1929,7 @@
     "packageType": "",
     "itemWeight": 181,
     "productImage": "https://m.media-amazon.com/images/I/31PhzghMXQL.jpg",
-    "fnsku": "",
+    "fnsku": "X0054XY56T",
     "productImages": [
       "https://m.media-amazon.com/images/I/31PhzghMXQL.jpg"
     ],
@@ -1962,7 +1962,7 @@
     "packageType": "",
     "itemWeight": 122,
     "productImage": "https://m.media-amazon.com/images/I/41RgX7VvLpL.jpg",
-    "fnsku": "",
+    "fnsku": "X0055BKJUB",
     "productImages": [
       "https://m.media-amazon.com/images/I/41RgX7VvLpL.jpg"
     ],
@@ -1995,7 +1995,7 @@
     "packageType": "",
     "itemWeight": 122,
     "productImage": "https://m.media-amazon.com/images/I/41+0LEpGFyL.jpg",
-    "fnsku": "",
+    "fnsku": "X0055BN6MJ",
     "productImages": [
       "https://m.media-amazon.com/images/I/41+0LEpGFyL.jpg"
     ],
@@ -2028,7 +2028,7 @@
     "packageType": "",
     "itemWeight": 122,
     "productImage": "https://m.media-amazon.com/images/I/41XMpvUbjfL.jpg",
-    "fnsku": "",
+    "fnsku": "X0055BLPSV",
     "productImages": [
       "https://m.media-amazon.com/images/I/41XMpvUbjfL.jpg"
     ],
@@ -2061,7 +2061,7 @@
     "packageType": "",
     "itemWeight": 122,
     "productImage": "https://m.media-amazon.com/images/I/41lP5fxCLgL.jpg",
-    "fnsku": "",
+    "fnsku": "X0055BK6HR",
     "productImages": [
       "https://m.media-amazon.com/images/I/41lP5fxCLgL.jpg"
     ],
@@ -2094,7 +2094,7 @@
     "packageType": "",
     "itemWeight": 50,
     "productImage": "https://m.media-amazon.com/images/I/41JCqalCxKL.jpg",
-    "fnsku": "",
+    "fnsku": "X0055CF7O3",
     "productImages": [
       "https://m.media-amazon.com/images/I/41JCqalCxKL.jpg"
     ],
@@ -2127,7 +2127,7 @@
     "packageType": "飞机盒",
     "itemWeight": 230,
     "productImage": "https://m.media-amazon.com/images/I/41lPkbBauML.jpg",
-    "fnsku": "",
+    "fnsku": "X0055CFEOB",
     "productImages": [
       "https://m.media-amazon.com/images/I/41lPkbBauML.jpg"
     ],
@@ -2160,7 +2160,7 @@
     "packageType": "白卡盒",
     "itemWeight": 240,
     "productImage": "https://m.media-amazon.com/images/I/41u4iOXIoKL.jpg",
-    "fnsku": "",
+    "fnsku": "X0055EJNKZ",
     "productImages": [
       "https://m.media-amazon.com/images/I/41u4iOXIoKL.jpg"
     ],
@@ -2182,8 +2182,8 @@
     "inbound": 410,
     "unsellable": 0,
     "reserved": 7,
-    "localWarehouse": 0,
-    "orderedQty": 120,
+    "localWarehouse": 120,
+    "orderedQty": 0,
     "monthSales": 82,
     "monthRevenue": 930.18,
     "monthOrders": 82,
@@ -2193,7 +2193,7 @@
     "packageType": "",
     "itemWeight": 180,
     "productImage": "https://m.media-amazon.com/images/I/51Zr1e86WOL.jpg",
-    "fnsku": "",
+    "fnsku": "X0055EOWK1",
     "productImages": [
       "https://m.media-amazon.com/images/I/51Zr1e86WOL.jpg"
     ],
@@ -2226,7 +2226,7 @@
     "packageType": "瓦楞盒",
     "itemWeight": 360,
     "productImage": "https://m.media-amazon.com/images/I/51tEkv4GklL.jpg",
-    "fnsku": "",
+    "fnsku": "X0055ER61N",
     "productImages": [
       "https://m.media-amazon.com/images/I/51tEkv4GklL.jpg"
     ],
@@ -2259,7 +2259,7 @@
     "packageType": "瓦楞盒",
     "itemWeight": 406,
     "productImage": "https://m.media-amazon.com/images/I/51ggJ0saAlL.jpg",
-    "fnsku": "",
+    "fnsku": "X0055EK1VZ",
     "productImages": [
       "https://m.media-amazon.com/images/I/51ggJ0saAlL.jpg"
     ],
@@ -2292,7 +2292,7 @@
     "packageType": "",
     "itemWeight": 200,
     "productImage": "https://m.media-amazon.com/images/I/51u8ZH2fnOL.jpg",
-    "fnsku": "",
+    "fnsku": "X0055NBKFR",
     "productImages": [
       "https://m.media-amazon.com/images/I/51u8ZH2fnOL.jpg"
     ],
@@ -2314,7 +2314,7 @@
     "inbound": 320,
     "unsellable": 0,
     "reserved": 1,
-    "localWarehouse": 60,
+    "localWarehouse": 0,
     "orderedQty": 0,
     "monthSales": 69,
     "monthRevenue": 761.31,
@@ -2325,7 +2325,7 @@
     "packageType": "飞机盒",
     "itemWeight": 370,
     "productImage": "https://m.media-amazon.com/images/I/51u8ZH2fnOL.jpg",
-    "fnsku": "",
+    "fnsku": "X0055ET2KB",
     "productImages": [
       "https://m.media-amazon.com/images/I/51u8ZH2fnOL.jpg"
     ],
@@ -2358,7 +2358,7 @@
     "packageType": "",
     "itemWeight": 460,
     "productImage": "https://m.media-amazon.com/images/I/41uhu0NW8-L.jpg",
-    "fnsku": "",
+    "fnsku": "X0055VG1XZ",
     "productImages": [
       "https://m.media-amazon.com/images/I/41uhu0NW8-L.jpg"
     ],
@@ -2370,7 +2370,7 @@
     "asin": "B0H5QB58R6",
     "parentAsin": "B0H4B7HPX4",
     "name": "2Pcs深蓝HDJ瓶盖",
-    "fnsku": "",
+    "fnsku": "X0055VK5QJ",
     "category": "正常",
     "restockCycle": 2,
     "sellable": 58,
@@ -2423,7 +2423,7 @@
     "packageType": "",
     "itemWeight": 230,
     "productImage": "https://m.media-amazon.com/images/I/41WmpfPDmYL.jpg",
-    "fnsku": "",
+    "fnsku": "X0055VGZ4Z",
     "productImages": [
       "https://m.media-amazon.com/images/I/41WmpfPDmYL.jpg",
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-08-07/f8d4abf4-dd78-4e6f-887b-c62809f3c02a.jpg"
@@ -2459,7 +2459,7 @@
     "packageType": "白卡盒",
     "itemWeight": 100,
     "productImage": "https://m.media-amazon.com/images/I/31XXzolbPNL.jpg",
-    "fnsku": "",
+    "fnsku": "X0055WC4Z3",
     "productImages": [
       "https://m.media-amazon.com/images/I/31XXzolbPNL.jpg",
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-08-07/76edddd7-093f-4e99-b12e-6372901f621c.jpg"
@@ -2484,7 +2484,7 @@
     "inbound": 240,
     "unsellable": 0,
     "reserved": 0,
-    "localWarehouse": 100,
+    "localWarehouse": 0,
     "orderedQty": 0,
     "monthSales": 44,
     "monthRevenue": 571.56,
@@ -2495,7 +2495,7 @@
     "packageType": "飞机盒",
     "itemWeight": 230,
     "productImage": "https://m.media-amazon.com/images/I/41lx+GbRIrL.jpg",
-    "fnsku": "",
+    "fnsku": "X0055Y7GO5",
     "productImages": [
       "https://m.media-amazon.com/images/I/41lx+GbRIrL.jpg",
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-08-07/54353c83-f8ca-4bd3-8731-f0ec952ff69b.jpg"
@@ -2509,7 +2509,7 @@
   {
     "asin": "B0H6TTFPPQ",
     "parentAsin": "B0H6TTFPPQ",
-    "fnsku": "",
+    "fnsku": "X0056ET3IL",
     "name": "Baby Jogger 餐盘",
     "category": "新品",
     "restockCycle": 2,
@@ -2553,7 +2553,7 @@
     "unsellable": 0,
     "reserved": 8,
     "localWarehouse": 0,
-    "orderedQty": 240,
+    "orderedQty": 120,
     "monthSales": 34,
     "monthRevenue": 479.68,
     "monthOrders": 34,
@@ -2563,7 +2563,7 @@
     "packageType": "飞机盒",
     "itemWeight": 250,
     "productImage": "https://m.media-amazon.com/images/I/41bCuTFIJ+L.jpg",
-    "fnsku": "",
+    "fnsku": "X0056F07RB",
     "productImages": [
       "https://m.media-amazon.com/images/I/41bCuTFIJ+L.jpg",
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-08-07/6415db66-8d42-4b1d-a208-427be1173f6e.jpg"
@@ -2599,7 +2599,7 @@
     "packageType": "",
     "itemWeight": "",
     "productImage": "https://m.media-amazon.com/images/I/41sHtN+P3uL.jpg",
-    "fnsku": "",
+    "fnsku": "X0056GE8HP",
     "productImages": [
       "https://m.media-amazon.com/images/I/41sHtN+P3uL.jpg"
     ],
@@ -2632,7 +2632,7 @@
     "packageType": "",
     "itemWeight": "",
     "productImage": "https://m.media-amazon.com/images/I/41m39jHFTsL.jpg",
-    "fnsku": "",
+    "fnsku": "X0056GDUU1",
     "productImages": [
       "https://m.media-amazon.com/images/I/41m39jHFTsL.jpg"
     ],
@@ -2643,7 +2643,7 @@
   {
     "asin": "B0H714P11S",
     "parentAsin": "B0H714P11S",
-    "fnsku": "",
+    "fnsku": "X0056IC0OB",
     "name": "",
     "category": "放弃",
     "restockCycle": 2,
@@ -2697,7 +2697,7 @@
     "packageType": "",
     "itemWeight": 900,
     "productImage": "https://m.media-amazon.com/images/I/31IFPVW9qGL.jpg",
-    "fnsku": "",
+    "fnsku": "X0056P5XZ7",
     "productImages": [
       "https://m.media-amazon.com/images/I/31IFPVW9qGL.jpg"
     ],
@@ -2730,7 +2730,7 @@
     "packageType": "",
     "itemWeight": 500,
     "productImage": "https://m.media-amazon.com/images/I/31FH-eK-NFL.jpg",
-    "fnsku": "",
+    "fnsku": "X0056ZP6X1",
     "productImages": [
       "https://m.media-amazon.com/images/I/31FH-eK-NFL.jpg"
     ],
@@ -2762,7 +2762,7 @@
     "productImage": "https://m.media-amazon.com/images/I/51XFyP5SiXL.jpg",
     "firstSeenWeek": "31周",
     "lastSeenWeek": "33周",
-    "fnsku": "",
+    "fnsku": "X0056S5JYJ",
     "productImages": [
       "https://m.media-amazon.com/images/I/51XFyP5SiXL.jpg",
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-08-07/c67417ee-9dff-4f21-8051-ddb186f4da21.jpg"
@@ -2776,7 +2776,7 @@
   {
     "asin": "B0H8LNWM5P",
     "parentAsin": "B0H8LNWM5P",
-    "fnsku": "",
+    "fnsku": "X00572WYLZ",
     "name": "喂猫瓶",
     "category": "新品",
     "restockCycle": 2,
@@ -2808,7 +2808,7 @@
   {
     "asin": "B0H8M2M3PP",
     "parentAsin": "B0H8M2M3PP",
-    "fnsku": "",
+    "fnsku": "X00572WBR7",
     "name": "ebike链条",
     "category": "新品",
     "restockCycle": 2,
@@ -2840,7 +2840,7 @@
   {
     "asin": "B0H8RZQPVK",
     "parentAsin": "B0H8RZQPVK",
-    "fnsku": "",
+    "fnsku": "X00575XM6D",
     "name": "酸面包架",
     "category": "新品",
     "restockCycle": 2,
@@ -2872,7 +2872,7 @@
   {
     "asin": "B0HCZT8BMB",
     "parentAsin": "B0HCZT8BMB",
-    "fnsku": "",
+    "fnsku": "X00588XCZF",
     "name": "新-Aroma 2L",
     "category": "新品",
     "restockCycle": 2,
@@ -2904,7 +2904,7 @@
   {
     "asin": "B0HD6C9GT9",
     "parentAsin": "B0HD6C9GT9",
-    "fnsku": "",
+    "fnsku": "X0058B42CT",
     "name": "新-Aroma 5L",
     "category": "新品",
     "restockCycle": 2,
