@@ -195,7 +195,7 @@ describe('import api integration', () => {
     ])
     await writeJson(path.join(tmpRoot, 'src/data/products/shop-3.json'), [])
 
-    const folder = path.join(tmpRoot, 'public/data/32周(8:2~8:8)')
+    const folder = path.join(tmpRoot, 'public/data/32周(8-2~8-8)')
     await writeOrderWorkbook(path.join(folder, '订单利润-ASIN-2026-08-02~2026-08-08-test.xlsx'))
     await writeListingWorkbook(path.join(folder, 'Listing销售库存_2026-07-11_2026-08-09.xlsx'))
 
