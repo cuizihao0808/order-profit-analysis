@@ -5,8 +5,6 @@ describe('restockRules: computeRestockQty', () => {
   const cfg = {
     restockMonths: 12,
     restockMultiplier: 4,
-    monthlyThreshold: 1,
-    doubleRestockMultiplier: 8,
     quantityDiscount: 0.8,
   }
 
@@ -23,15 +21,15 @@ describe('restockRules: computeRestockQty', () => {
     expect(computeRestockQty({ fbaTotal: 200, sales: 10, cycle: 2, config: cfg })).toBe('无需补货')
   })
 
-  it('uses normal multiplier when below threshold but not monthly shortage', () => {
+  it('adds one month when stock is below the three-month threshold', () => {
     expect(computeRestockQty({ fbaTotal: 60, sales: 10, cycle: 2, config: cfg })).toBe('32')
   })
 
-  it('uses double multiplier when monthly shortage is severe', () => {
-    expect(computeRestockQty({ fbaTotal: 20, sales: 10, cycle: 2, config: cfg })).toBe('64')
+  it('still adds one month when stock is very low', () => {
+    expect(computeRestockQty({ fbaTotal: 20, sales: 10, cycle: 2, config: cfg })).toBe('32')
   })
 
   it('works with default config fallback', () => {
-    expect(computeRestockQty({ fbaTotal: 20, sales: 10, cycle: 2, config: undefined })).toBe('64')
+    expect(computeRestockQty({ fbaTotal: 20, sales: 10, cycle: 2, config: undefined })).toBe('32')
   })
 })

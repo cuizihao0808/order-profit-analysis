@@ -7,18 +7,18 @@
     "restockCycle": 2,
     "stock": 695,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "33周",
-    "fbaTotal": 654,
-    "sellable": 648,
+    "lastSeenWeek": "34周",
+    "fbaTotal": 633,
+    "sellable": 622,
     "inbound": 0,
     "unsellable": 1,
-    "reserved": 5,
+    "reserved": 10,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 114,
-    "monthRevenue": 894.88,
-    "monthOrders": 112,
-    "dailySales": 3.8,
+    "monthSales": 101,
+    "monthRevenue": 791.01,
+    "monthOrders": 100,
+    "dailySales": 3.37,
     "vineGiftSales": 0,
     "packageSize": "23×16×3",
     "packageType": "",
@@ -30,28 +30,28 @@
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/41lrLThQWvL.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "On-The-Go Storage Bag Compatible with Salad Pod 4.5 Cups, Durable Bag Only"
   },
   {
     "asin": "B0FWJ6BW9K",
     "parentAsin": "B0FWJ6BW9K",
     "name": "戒指展示柜",
-    "category": "新品",
+    "category": "放弃",
     "restockCycle": 2,
     "stock": "",
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "33周",
-    "fbaTotal": 21,
-    "sellable": 19,
+    "lastSeenWeek": "34周",
+    "fbaTotal": 17,
+    "sellable": 15,
     "inbound": 0,
     "unsellable": 0,
     "reserved": 2,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 18,
-    "monthRevenue": 359.82,
+    "monthSales": 19,
+    "monthRevenue": 379.81,
     "monthOrders": 18,
-    "dailySales": 0.6,
+    "dailySales": 0.63,
     "vineGiftSales": 0,
     "packageSize": "1×1×1",
     "packageType": "",
@@ -63,7 +63,7 @@
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/51Nbj8F8NVL.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "24-Slot Wooden Championship Ring Display Case - Personalized Name Wall Mount Sports Ring Holder for Baseball, Softball, Basketball Medals, Sports Memorabilia Shelf Decor for Men, Boys & Coaches Gifts"
   },
   {
     "asin": "B0FWKCXWY6",
@@ -73,18 +73,18 @@
     "restockCycle": 2,
     "stock": 259,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "33周",
-    "fbaTotal": 316,
-    "sellable": 193,
+    "lastSeenWeek": "34周",
+    "fbaTotal": 289,
+    "sellable": 162,
     "inbound": 120,
     "unsellable": 0,
-    "reserved": 3,
+    "reserved": 7,
     "localWarehouse": 100,
     "orderedQty": 0,
-    "monthSales": 98,
-    "monthRevenue": 1631.04,
-    "monthOrders": 86,
-    "dailySales": 3.27,
+    "monthSales": 100,
+    "monthRevenue": 1665.02,
+    "monthOrders": 90,
+    "dailySales": 3.33,
     "vineGiftSales": 0,
     "packageSize": "19×10×8",
     "packageType": "",
@@ -96,7 +96,7 @@
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/515rTJpD3IL.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "Dollform 12 PCS Hand Sanitizer Holder Keychain Set, Leak-Proof Travel Size Empty Hand Sanitizer Bottles (1oz/30ml), Portable Refillable Liquid Dispenser for Backpack, Purse & Diaper Bag (12 Colors)"
   },
   {
     "asin": "B0FY2WZLGG",
@@ -106,18 +106,18 @@
     "restockCycle": 2,
     "stock": 705,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "33周",
-    "fbaTotal": 914,
-    "sellable": 351,
-    "inbound": 460,
+    "lastSeenWeek": "34周",
+    "fbaTotal": 845,
+    "sellable": 413,
+    "inbound": 300,
     "unsellable": 0,
-    "reserved": 103,
+    "reserved": 132,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 253,
-    "monthRevenue": 2467.53,
-    "monthOrders": 248,
-    "dailySales": 8.43,
+    "monthSales": 263,
+    "monthRevenue": 2577.42,
+    "monthOrders": 256,
+    "dailySales": 8.77,
     "vineGiftSales": 0,
     "packageSize": "13×8×4",
     "packageType": "飞机盒",
@@ -132,7 +132,7 @@
     "listingDetailImages": [
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-08-07/6546823e-d3db-467c-9000-fd4f295c5909.jpg"
     ],
-    "productTitle": ""
+    "productTitle": "10 Pack Silicone Mouthpiece Replacement Compatible with Brita Water Bottle"
   },
   {
     "asin": "B0FYF131Z1",
@@ -142,18 +142,18 @@
     "restockCycle": 2,
     "stock": 787,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "33周",
-    "fbaTotal": 757,
-    "sellable": 538,
-    "inbound": 138,
+    "lastSeenWeek": "34周",
+    "fbaTotal": 727,
+    "sellable": 593,
+    "inbound": 40,
     "unsellable": 0,
-    "reserved": 81,
+    "reserved": 94,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 134,
-    "monthRevenue": 2110.68,
-    "monthOrders": 104,
-    "dailySales": 4.47,
+    "monthSales": 119,
+    "monthRevenue": 1886.82,
+    "monthOrders": 97,
+    "dailySales": 3.97,
     "vineGiftSales": 0,
     "packageSize": "20×20×4.5",
     "packageType": "",
@@ -165,7 +165,7 @@
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/41h-SQc5eiL.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "2 Pack Golf Ball Cleaner Pouch, Waterproof Golf Club Washer with Carabiner"
   },
   {
     "asin": "B0FYFXX385",
@@ -206,18 +206,18 @@
     "restockCycle": 2,
     "stock": 202,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "33周",
-    "fbaTotal": 191,
-    "sellable": 164,
-    "inbound": 12,
+    "lastSeenWeek": "34周",
+    "fbaTotal": 173,
+    "sellable": 150,
+    "inbound": 8,
     "unsellable": 0,
     "reserved": 15,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 38,
-    "monthRevenue": 759.62,
-    "monthOrders": 38,
-    "dailySales": 1.27,
+    "monthSales": 50,
+    "monthRevenue": 919.54,
+    "monthOrders": 50,
+    "dailySales": 1.67,
     "vineGiftSales": 0,
     "packageSize": "26.5×26×3",
     "packageType": "",
@@ -229,28 +229,28 @@
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/31Dm+iWZIhL.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "400 Pack Butter Wrapping Paper Set, 200 Pcs Aluminum Packaging Wrapping Sheets and 200 Pcs Silicone Oil Sheets, 9.84 x 9.84 and 8.66 x 8.66 Inches, for Homemade Butter Storage and Chocolate Packaging"
   },
   {
     "asin": "B0FZT4JBTF",
     "parentAsin": "B0FZT4JBTF",
     "name": "180Pcs猫砂袋",
-    "category": "观望",
+    "category": "放弃",
     "restockCycle": 2,
     "stock": 86,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "33周",
-    "fbaTotal": 53,
-    "sellable": 52,
+    "lastSeenWeek": "34周",
+    "fbaTotal": 39,
+    "sellable": 37,
     "inbound": 0,
     "unsellable": 0,
-    "reserved": 1,
+    "reserved": 2,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 37,
-    "monthRevenue": 739.63,
-    "monthOrders": 36,
-    "dailySales": 1.23,
+    "monthSales": 42,
+    "monthRevenue": 819.59,
+    "monthOrders": 41,
+    "dailySales": 1.4,
     "vineGiftSales": 0,
     "packageSize": "29×16×9",
     "packageType": "",
@@ -262,7 +262,7 @@
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/413W8koN0oL.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "180 Count Cat Litter Box Liners Compatible with Petcove & Ducksky Automatic Self-Cleaning Cat Litter Box Bags - Drawstring Cat Litter Bags - Heavy Duty Tear-Resistant & Leak-Proof Refills"
   },
   {
     "asin": "B0G1474PZP",
@@ -334,18 +334,18 @@
     "restockCycle": 2,
     "stock": 658,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "33周",
-    "fbaTotal": 546,
-    "sellable": 286,
-    "inbound": 240,
+    "lastSeenWeek": "34周",
+    "fbaTotal": 726,
+    "sellable": 231,
+    "inbound": 480,
     "unsellable": 0,
-    "reserved": 20,
+    "reserved": 15,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 244,
-    "monthRevenue": 4837.58,
-    "monthOrders": 241,
-    "dailySales": 8.13,
+    "monthSales": 248,
+    "monthRevenue": 4797.6,
+    "monthOrders": 245,
+    "dailySales": 8.27,
     "vineGiftSales": 0,
     "packageSize": "34×20×4",
     "packageType": "",
@@ -360,7 +360,7 @@
     "listingDetailImages": [
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-01-17/b1d51c2a-e339-4961-81fb-28d5b244aa6c.jpg"
     ],
-    "productTitle": ""
+    "productTitle": "6 Pcs Changing Pad Liners Compatible with Keekaroo Peanut Changer, White"
   },
   {
     "asin": "B0G2BR58FK",
@@ -370,18 +370,18 @@
     "restockCycle": 2,
     "stock": 1417,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "33周",
-    "fbaTotal": 1863,
-    "sellable": 637,
-    "inbound": 1100,
-    "unsellable": 6,
-    "reserved": 120,
+    "lastSeenWeek": "34周",
+    "fbaTotal": 1745,
+    "sellable": 612,
+    "inbound": 1060,
+    "unsellable": 8,
+    "reserved": 65,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 549,
-    "monthRevenue": 8538.66,
-    "monthOrders": 533,
-    "dailySales": 18.3,
+    "monthSales": 531,
+    "monthRevenue": 8378.76,
+    "monthOrders": 517,
+    "dailySales": 17.7,
     "vineGiftSales": 0,
     "packageSize": "24×20×4",
     "packageType": "飞机盒",
@@ -396,7 +396,7 @@
     "listingDetailImages": [
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-08-07/7526664e-7839-49da-92dc-6308380f3741.jpg"
     ],
-    "productTitle": ""
+    "productTitle": "Carrying Bag Compatible with Graco Pack n Play, Lightweight & Waterproof"
   },
   {
     "asin": "B0G5131JKM",
@@ -406,18 +406,18 @@
     "restockCycle": 2,
     "stock": "",
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "fbaTotal": 1,
-    "sellable": 1,
+    "sellable": 0,
     "inbound": 0,
     "unsellable": 0,
-    "reserved": 0,
+    "reserved": 1,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 8,
-    "monthRevenue": 31.92,
-    "monthOrders": 8,
-    "dailySales": 0.27,
+    "monthSales": 6,
+    "monthRevenue": 23.94,
+    "monthOrders": 6,
+    "dailySales": 0.2,
     "vineGiftSales": 0,
     "packageSize": "",
     "packageType": "",
@@ -429,7 +429,7 @@
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/515bLf7A03L.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "Dollform Nylon Sport Replacement Strap Compatible with Amazfit Helio Band, Adjustable Loop Arm Strap - Breathable & Sweatproof Wristband for Fitness Tracker (Black)"
   },
   {
     "asin": "B0G51DK4YX",
@@ -439,7 +439,7 @@
     "restockCycle": 2,
     "stock": "",
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "fbaTotal": 1,
     "sellable": 0,
     "inbound": 0,
@@ -447,10 +447,10 @@
     "reserved": 1,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 3,
-    "monthRevenue": 7.98,
-    "monthOrders": 3,
-    "dailySales": 0.1,
+    "monthSales": 2,
+    "monthRevenue": 3.99,
+    "monthOrders": 2,
+    "dailySales": 0.07,
     "vineGiftSales": 0,
     "packageSize": "",
     "packageType": "",
@@ -462,7 +462,7 @@
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/415n-aPQgCL.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "Dollform Nylon Sport Replacement Strap Compatible with Amazfit Helio Band, Adjustable Loop Arm Strap - Breathable & Sweatproof Wristband for Fitness Tracker (Beige)"
   },
   {
     "asin": "B0G52GF51W",
@@ -472,7 +472,7 @@
     "restockCycle": 2,
     "stock": "",
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "fbaTotal": 0,
     "sellable": 0,
     "inbound": 0,
@@ -498,7 +498,7 @@
     "listingDetailImages": [
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-01-17/6d96dc45-074a-486b-8241-f8ef4f1fca1b.jpg"
     ],
-    "productTitle": ""
+    "productTitle": "Tissue Box Cover Compatible with Kleenex Tissue - Soft PU Leather Tissue Box Holder Fits Most Tissues for Living Room, Bathroom, Bedroom, Office & Home Decor (4.5''×4.5''×5.2'' Upright Box)"
   },
   {
     "asin": "B0G57JYVXN",
@@ -508,18 +508,18 @@
     "restockCycle": 2,
     "stock": 467,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "33周",
-    "fbaTotal": 398,
-    "sellable": 98,
+    "lastSeenWeek": "34周",
+    "fbaTotal": 330,
+    "sellable": 26,
     "inbound": 275,
-    "unsellable": 0,
-    "reserved": 25,
+    "unsellable": 1,
+    "reserved": 28,
     "localWarehouse": 125,
     "orderedQty": 0,
-    "monthSales": 301,
-    "monthRevenue": 2927.07,
-    "monthOrders": 293,
-    "dailySales": 10.03,
+    "monthSales": 303,
+    "monthRevenue": 2897.1,
+    "monthOrders": 295,
+    "dailySales": 10.1,
     "vineGiftSales": 0,
     "packageSize": "27×8×5",
     "packageType": "飞机盒",
@@ -536,7 +536,7 @@
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-08-07/ec6934b2-87c5-474f-9bbf-7f9f7cc3c71a.png",
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-08-07/f94205a0-9d22-42a3-b897-2401e01767aa.jpg"
     ],
-    "productTitle": ""
+    "productTitle": "3 Pcs Replacement Straw Lid Set Compatible with Hydro Flask Bottle Only"
   },
   {
     "asin": "B0G58J9G7P",
@@ -546,18 +546,18 @@
     "restockCycle": 2,
     "stock": "",
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "33周",
-    "fbaTotal": 18,
-    "sellable": 11,
+    "lastSeenWeek": "34周",
+    "fbaTotal": 13,
+    "sellable": 3,
     "inbound": 0,
     "unsellable": 0,
-    "reserved": 7,
+    "reserved": 10,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 4,
+    "monthSales": 3,
     "monthRevenue": 26.97,
-    "monthOrders": 4,
-    "dailySales": 0.13,
+    "monthOrders": 3,
+    "dailySales": 0.1,
     "vineGiftSales": 0,
     "packageSize": "6.5×5×5",
     "packageType": "",
@@ -569,7 +569,7 @@
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/41YMj1B6E+L.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "Dollform 12 Pcs Replacement Leak Stopper Compatible with Thermos Funtainer 16oz Stainless Steel Bottle, Silicone Lid Gaskets and Straw Seals for Water Bottle Replacement Parts (6+6)"
   },
   {
     "asin": "B0G8HN1Y93",
@@ -579,7 +579,7 @@
     "restockCycle": 2,
     "stock": "",
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "fbaTotal": 1,
     "sellable": 1,
     "inbound": 0,
@@ -602,7 +602,7 @@
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/41S4pkyNAEL.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "Dollform Replacement Zipper Pulls Compatible with RTIC and Other Soft Coolers - Heavy Duty T-Latch & Clippable Zipper Pull Fit for Day Cooler, Tumbler, Backpack, Lunch Bag & Universal - 4 Pack"
   },
   {
     "asin": "B0G8XXCJ2X",
@@ -612,18 +612,18 @@
     "restockCycle": 2,
     "stock": 419,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "33周",
-    "fbaTotal": 398,
-    "sellable": 213,
+    "lastSeenWeek": "34周",
+    "fbaTotal": 379,
+    "sellable": 193,
     "inbound": 180,
     "unsellable": 0,
-    "reserved": 5,
+    "reserved": 6,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 86,
-    "monthRevenue": 1104.15,
-    "monthOrders": 82,
-    "dailySales": 2.87,
+    "monthSales": 79,
+    "monthRevenue": 987.24,
+    "monthOrders": 74,
+    "dailySales": 2.63,
     "vineGiftSales": 0,
     "packageSize": "23×16×5",
     "packageType": "",
@@ -635,7 +635,7 @@
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/418EaP+np8L.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "2 PCS Storage Bag Compatible with Salad Pod 4.5 Cups, Bag Only Protective"
   },
   {
     "asin": "B0G91V37GH",
@@ -645,18 +645,18 @@
     "restockCycle": 2,
     "stock": 496,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "33周",
-    "fbaTotal": 493,
-    "sellable": 84,
-    "inbound": 359,
+    "lastSeenWeek": "34周",
+    "fbaTotal": 395,
+    "sellable": 31,
+    "inbound": 312,
     "unsellable": 0,
-    "reserved": 50,
-    "localWarehouse": 0,
-    "orderedQty": 200,
-    "monthSales": 181,
-    "monthRevenue": 4678.2,
-    "monthOrders": 180,
-    "dailySales": 6.03,
+    "reserved": 52,
+    "localWarehouse": 200,
+    "orderedQty": 0,
+    "monthSales": 256,
+    "monthRevenue": 6471.51,
+    "monthOrders": 255,
+    "dailySales": 8.53,
     "vineGiftSales": 0,
     "packageSize": "12.5×8×12.5",
     "packageType": "瓦楞扣底盒",
@@ -671,28 +671,28 @@
     "listingDetailImages": [
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-08-07/b5fa8bfa-1547-4f8d-a174-c2ab07d42083.jpg"
     ],
-    "productTitle": ""
+    "productTitle": "12 Pack Replacement Filters Compatible with Momcozy KleanPal Pro Washer"
   },
   {
     "asin": "B0GCCRNMHK",
     "parentAsin": "B0GCCRNMHK",
     "name": "4pcs手柄绳",
     "category": "正常",
-    "restockCycle": 4,
+    "restockCycle": 2,
     "stock": 404,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "33周",
-    "fbaTotal": 841,
-    "sellable": 83,
-    "inbound": 657,
+    "lastSeenWeek": "34周",
+    "fbaTotal": 769,
+    "sellable": 128,
+    "inbound": 500,
     "unsellable": 0,
-    "reserved": 101,
+    "reserved": 141,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 185,
-    "monthRevenue": 1798.2,
-    "monthOrders": 176,
-    "dailySales": 6.17,
+    "monthSales": 172,
+    "monthRevenue": 1638.36,
+    "monthOrders": 158,
+    "dailySales": 5.73,
     "vineGiftSales": 0,
     "packageSize": "20.5×12.5×0.5",
     "packageType": "透明珠光袋",
@@ -707,7 +707,7 @@
     "listingDetailImages": [
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-08-07/89af37b5-4ffe-48b7-9994-64ff6e5b850d.jpg"
     ],
-    "productTitle": ""
+    "productTitle": "Replacement Wrist Straps for Meta Quest 3 & 3S Controller, 4PCS"
   },
   {
     "asin": "B0GD6G5L61",
@@ -717,18 +717,18 @@
     "restockCycle": 2,
     "stock": "",
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "33周",
-    "fbaTotal": 16,
-    "sellable": 7,
+    "lastSeenWeek": "34周",
+    "fbaTotal": 12,
+    "sellable": 5,
     "inbound": 0,
     "unsellable": 0,
-    "reserved": 9,
+    "reserved": 7,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 2,
-    "monthRevenue": 5.98,
-    "monthOrders": 2,
-    "dailySales": 0.07,
+    "monthSales": 0,
+    "monthRevenue": 0,
+    "monthOrders": 0,
+    "dailySales": 0,
     "vineGiftSales": 0,
     "packageSize": "6×19×1",
     "packageType": "",
@@ -740,7 +740,7 @@
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/41GGuEGRK9L.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "Nylon Replacement Strap Compatible with Hume Band - Breathable & Sweatproof Sport Loop for Hume Health Band - Metal Buckle & Loop Closure for Secure - Adjustable Wristband Strap for Fitness Tracker (Light Gray)"
   },
   {
     "asin": "B0GD6WFV99",
@@ -750,18 +750,18 @@
     "restockCycle": 2,
     "stock": "",
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "fbaTotal": 2,
-    "sellable": 2,
+    "sellable": 0,
     "inbound": 0,
     "unsellable": 0,
-    "reserved": 0,
+    "reserved": 2,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 3,
-    "monthRevenue": 8.97,
-    "monthOrders": 3,
-    "dailySales": 0.1,
+    "monthSales": 2,
+    "monthRevenue": 5.98,
+    "monthOrders": 2,
+    "dailySales": 0.07,
     "vineGiftSales": 0,
     "packageSize": "6×19×1",
     "packageType": "",
@@ -773,7 +773,7 @@
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/416G9PTugGL.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "Nylon Replacement Strap Compatible with Hume Band - Breathable & Sweatproof Sport Loop for Hume Health Band - Metal Buckle & Loop Closure for Secure - Adjustable Wristband Strap for Fitness Tracker (Deep Blue)"
   },
   {
     "asin": "B0GGHCPDV3",
@@ -783,18 +783,18 @@
     "restockCycle": 2,
     "stock": 138,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "33周",
-    "fbaTotal": 116,
-    "sellable": 31,
+    "lastSeenWeek": "34周",
+    "fbaTotal": 111,
+    "sellable": 38,
     "inbound": 60,
     "unsellable": 0,
-    "reserved": 25,
+    "reserved": 13,
     "localWarehouse": 50,
     "orderedQty": 0,
-    "monthSales": 50,
-    "monthRevenue": 783.51,
-    "monthOrders": 50,
-    "dailySales": 1.67,
+    "monthSales": 57,
+    "monthRevenue": 815.49,
+    "monthOrders": 57,
+    "dailySales": 1.9,
     "vineGiftSales": 0,
     "packageSize": "14×22×1",
     "packageType": "",
@@ -806,7 +806,7 @@
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/41f0pCGwzaL.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "Replacement Beaters Compatible with Sunbeam Mixmaster, 304 Stainless Steel"
   },
   {
     "asin": "B0GGHJCFHB",
@@ -816,18 +816,18 @@
     "restockCycle": 2,
     "stock": 117,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "33周",
-    "fbaTotal": 112,
-    "sellable": 24,
-    "inbound": 61,
-    "unsellable": 0,
-    "reserved": 27,
+    "lastSeenWeek": "34周",
+    "fbaTotal": 102,
+    "sellable": 35,
+    "inbound": 60,
+    "unsellable": 1,
+    "reserved": 6,
     "localWarehouse": 50,
     "orderedQty": 0,
-    "monthSales": 43,
-    "monthRevenue": 671.58,
-    "monthOrders": 42,
-    "dailySales": 1.43,
+    "monthSales": 45,
+    "monthRevenue": 719.55,
+    "monthOrders": 44,
+    "dailySales": 1.5,
     "vineGiftSales": 0,
     "packageSize": "20×7×6",
     "packageType": "",
@@ -839,7 +839,7 @@
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/41IeLlUiwVL.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "Replacement Mixer Beaters Compatible with Sunbeam Mixmaster 100-86659 & 11C"
   },
   {
     "asin": "B0GGQRSCM1",
@@ -849,18 +849,18 @@
     "restockCycle": 2,
     "stock": 166,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "33周",
-    "fbaTotal": 142,
-    "sellable": 81,
-    "inbound": 24,
-    "unsellable": 0,
-    "reserved": 37,
+    "lastSeenWeek": "34周",
+    "fbaTotal": 128,
+    "sellable": 93,
+    "inbound": 16,
+    "unsellable": 1,
+    "reserved": 18,
     "localWarehouse": 100,
     "orderedQty": 0,
-    "monthSales": 68,
-    "monthRevenue": 1121.34,
-    "monthOrders": 67,
-    "dailySales": 2.27,
+    "monthSales": 72,
+    "monthRevenue": 1172.31,
+    "monthOrders": 69,
+    "dailySales": 2.4,
     "vineGiftSales": 0,
     "packageSize": "10×10×4",
     "packageType": "飞机盒",
@@ -872,7 +872,7 @@
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/51JXIRP+XoL.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "4 Sets 50mm Silent Luggage Wheels Replacement Kit Compatible with Samsonite"
   },
   {
     "asin": "B0GGRLM9Z9",
@@ -882,18 +882,18 @@
     "restockCycle": 2,
     "stock": "",
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "fbaTotal": 4,
-    "sellable": 4,
+    "sellable": 0,
     "inbound": 0,
     "unsellable": 0,
-    "reserved": 0,
+    "reserved": 4,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 12,
-    "monthRevenue": 119.88,
-    "monthOrders": 9,
-    "dailySales": 0.4,
+    "monthSales": 9,
+    "monthRevenue": 89.91,
+    "monthOrders": 6,
+    "dailySales": 0.3,
     "vineGiftSales": 0,
     "packageSize": "17.5×8.5×5",
     "packageType": "",
@@ -905,7 +905,7 @@
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/4101My1PkML.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "Controller & Power Adapter Mounting Bracket Kit Compatible with Govee H706/H705 Permanent Outdoor Lights, Heavy-Duty Screw-Fix Holder, Box Mount for Secure Cable Management & Weather Protection"
   },
   {
     "asin": "B0GGZ1ZN5M",
@@ -915,18 +915,18 @@
     "restockCycle": 2,
     "stock": "",
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "33周",
-    "fbaTotal": 28,
-    "sellable": 28,
+    "lastSeenWeek": "34周",
+    "fbaTotal": 23,
+    "sellable": 0,
     "inbound": 0,
     "unsellable": 0,
-    "reserved": 0,
+    "reserved": 23,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 17,
-    "monthRevenue": 135.83,
-    "monthOrders": 16,
-    "dailySales": 0.57,
+    "monthSales": 14,
+    "monthRevenue": 111.86,
+    "monthOrders": 14,
+    "dailySales": 0.47,
     "vineGiftSales": 0,
     "packageSize": "8×8×6.5",
     "packageType": "",
@@ -938,7 +938,7 @@
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/41io7TEVo7L.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "Vessel Cap & Blade Cover Set Compatible with Ninja Blast Portable Blender BC100 & BC151 Series – Leakproof Sip Spout Cap & Bottom Base Protector for Travel, Gym, and Storage – BPA-Free Accessories"
   },
   {
     "asin": "B0GH74B4RK",
@@ -948,12 +948,12 @@
     "restockCycle": 2,
     "stock": "",
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "fbaTotal": 11,
-    "sellable": 10,
+    "sellable": 11,
     "inbound": 0,
     "unsellable": 0,
-    "reserved": 1,
+    "reserved": 0,
     "localWarehouse": 0,
     "orderedQty": 0,
     "monthSales": 1,
@@ -971,7 +971,7 @@
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/512f-rE460L.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "Champion Ring Display Case - Wooden Personalized Name Ring Holder for Baseball, Softball Medals and Rings Competition Awards - Wall Mounted Sports Memorabilia Shelf Decor - Gifts for Boys, Girls, Men"
   },
   {
     "asin": "B0GHW55JGW",
@@ -981,7 +981,7 @@
     "restockCycle": 2,
     "stock": "",
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "fbaTotal": 1,
     "sellable": 0,
     "inbound": 0,
@@ -990,7 +990,7 @@
     "localWarehouse": 0,
     "orderedQty": 0,
     "monthSales": 1,
-    "monthRevenue": 9.99,
+    "monthRevenue": 0,
     "monthOrders": 1,
     "dailySales": 0.03,
     "vineGiftSales": 0,
@@ -1004,7 +1004,7 @@
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/31HsiONnhwL.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "Cheese Curler Intended for Girolle – Stainless Steel Cheese Shaver & Slicer for Tête de Moine for Making Cheese Flowers – Curler Wheel Cutter for Charcuterie Boards & Chocolate (Base NOT Include)"
   },
   {
     "asin": "B0GHXZ3LWF",
@@ -1031,10 +1031,10 @@
     "productImage": "",
     "productImages": [],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "listingDetailImages": [],
     "amazonMainImage": "",
-    "productTitle": ""
+    "productTitle": "Wipes Container Compatible with Huggies - Portable Reusable Wipes Bag Pouches - Travel Wet Wipes Dispenser - Refillable Wipe Holder Case - Wipe Bags Pouch for Diaper Bag for Outdoor, Bathroom and More"
   },
   {
     "asin": "B0GKM9ZFHW",
@@ -1044,12 +1044,12 @@
     "restockCycle": 2,
     "stock": "",
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "fbaTotal": 8,
-    "sellable": 1,
+    "sellable": 0,
     "inbound": 0,
     "unsellable": 0,
-    "reserved": 7,
+    "reserved": 8,
     "localWarehouse": 0,
     "orderedQty": 0,
     "monthSales": 1,
@@ -1070,7 +1070,7 @@
     "listingDetailImages": [
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/aa507b44-2556-4e09-bf76-88d4e716b41d/uploads/2026-01-30/605b7fef-be15-4647-a3da-b6f3de669e73.jpg"
     ],
-    "productTitle": ""
+    "productTitle": "3 Pack Nylon Replacement Strap Compatible with Hume Band - Breathable & Sweatproof Sport Loop for Hume Health Band - Metal Buckle & Loop Closure - Adjustable Wristband Strap for Fitness Tracker (Black-Navy Green-Orange)"
   },
   {
     "asin": "B0GKMFXBLN",
@@ -1080,18 +1080,18 @@
     "restockCycle": 2,
     "stock": "",
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "33周",
-    "fbaTotal": 5,
-    "sellable": 1,
+    "lastSeenWeek": "34周",
+    "fbaTotal": 4,
+    "sellable": 0,
     "inbound": 0,
     "unsellable": 0,
     "reserved": 4,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 3,
-    "monthRevenue": 23.97,
-    "monthOrders": 3,
-    "dailySales": 0.1,
+    "monthSales": 2,
+    "monthRevenue": 15.98,
+    "monthOrders": 2,
+    "dailySales": 0.07,
     "vineGiftSales": 0,
     "packageSize": "18×10×1",
     "packageType": "",
@@ -1106,7 +1106,7 @@
     "listingDetailImages": [
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/aa507b44-2556-4e09-bf76-88d4e716b41d/uploads/2026-01-30/5e4e0a54-3bc3-4f44-8718-35f770a9f41f.jpg"
     ],
-    "productTitle": ""
+    "productTitle": "3 Pack Nylon Replacement Strap Compatible with Hume Band - Breathable & Sweatproof Sport Loop for Hume Health Band - Metal Buckle & Loop Closure - Adjustable Wristband Strap for Fitness Tracker (Light Gray-Pink-Orange)"
   },
   {
     "asin": "B0GTLMH86Z",
@@ -1116,9 +1116,9 @@
     "restockCycle": 2,
     "stock": 360,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "33周",
-    "fbaTotal": 10,
-    "sellable": 4,
+    "lastSeenWeek": "34周",
+    "fbaTotal": 9,
+    "sellable": 3,
     "inbound": 0,
     "unsellable": 0,
     "reserved": 6,
@@ -1139,7 +1139,7 @@
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/41MKi2DOSXL.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "Nylon Replacement Strap Compatible with Hume Band - Breathable & Sweatproof Sport Loop for Hume Health Band - Metal Buckle & Loop Closure for Secure - Adjustable Wristband Strap for Fitness Tracker (Black)"
   },
   {
     "asin": "B0GYF5796P",
@@ -1149,18 +1149,18 @@
     "restockCycle": 2,
     "stock": 50,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "33周",
-    "fbaTotal": 48,
-    "sellable": 4,
-    "inbound": 20,
+    "lastSeenWeek": "34周",
+    "fbaTotal": 34,
+    "sellable": 3,
+    "inbound": 0,
     "unsellable": 0,
-    "reserved": 24,
+    "reserved": 31,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 9,
-    "monthRevenue": 74.95,
-    "monthOrders": 9,
-    "dailySales": 0.3,
+    "monthSales": 19,
+    "monthRevenue": 224.85,
+    "monthOrders": 18,
+    "dailySales": 0.63,
     "vineGiftSales": 0,
     "packageSize": "",
     "packageType": "",
@@ -1172,7 +1172,7 @@
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/41gr+aBoXbL.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "18 Pack Fountain Charcoal Filter Compatible with Premier Pet Fountain"
   },
   {
     "asin": "B0GYF5YXXG",
@@ -1182,7 +1182,7 @@
     "restockCycle": 2,
     "stock": 120,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "fbaTotal": 120,
     "sellable": 0,
     "inbound": 120,
@@ -1190,22 +1190,22 @@
     "reserved": 0,
     "localWarehouse": 0,
     "orderedQty": 50,
-    "monthSales": 28,
+    "monthSales": 34,
     "monthRevenue": 0,
-    "monthOrders": 28,
-    "dailySales": 0.93,
+    "monthOrders": 35,
+    "dailySales": 1.13,
     "vineGiftSales": 0,
     "packageSize": "20×20×5",
     "packageType": "",
     "itemWeight": 333,
-    "productImage": "https://m.media-amazon.com/images/I/41GtfMpEFML.jpg",
+    "productImage": "https://m.media-amazon.com/images/I/41CO9a9mKrL.jpg",
     "fnsku": "X0053CDMYH",
     "productImages": [
-      "https://m.media-amazon.com/images/I/41GtfMpEFML.jpg"
+      "https://m.media-amazon.com/images/I/41CO9a9mKrL.jpg"
     ],
-    "amazonMainImage": "https://m.media-amazon.com/images/I/41GtfMpEFML.jpg",
+    "amazonMainImage": "https://m.media-amazon.com/images/I/41CO9a9mKrL.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "18 Pack Fountain Foam Filter Compatible with Premier Pet Fountain"
   },
   {
     "asin": "B0GYF7WK58",
@@ -1215,18 +1215,18 @@
     "restockCycle": 2,
     "stock": 390,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "33周",
-    "fbaTotal": 350,
-    "sellable": 58,
-    "inbound": 156,
+    "lastSeenWeek": "34周",
+    "fbaTotal": 297,
+    "sellable": 85,
+    "inbound": 12,
     "unsellable": 0,
-    "reserved": 136,
-    "localWarehouse": 0,
-    "orderedQty": 150,
-    "monthSales": 59,
-    "monthRevenue": 479.52,
-    "monthOrders": 59,
-    "dailySales": 1.97,
+    "reserved": 200,
+    "localWarehouse": 150,
+    "orderedQty": 600,
+    "monthSales": 95,
+    "monthRevenue": 879.12,
+    "monthOrders": 95,
+    "dailySales": 3.17,
     "vineGiftSales": 0,
     "packageSize": "",
     "packageType": "",
@@ -1238,7 +1238,7 @@
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/41CO9a9mKrL.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "12 Pack Fountain Charcoal Filter Compatible with Premier Pet Fountain"
   },
   {
     "asin": "B0GYFDQ2CG",
@@ -1248,19 +1248,19 @@
     "restockCycle": 4,
     "stock": 320,
     "firstSeenWeek": "订单利润-ASIN-2026-07-26~2026-08-01-942789467646570496",
-    "lastSeenWeek": "33周",
-    "fbaTotal": 267,
+    "lastSeenWeek": "34周",
+    "fbaTotal": 184,
     "sellable": 0,
-    "inbound": 128,
+    "inbound": 0,
     "unsellable": 0,
-    "reserved": 139,
-    "localWarehouse": 0,
-    "orderedQty": 420,
-    "monthSales": 64,
-    "monthRevenue": 735.54,
-    "monthOrders": 64,
-    "dailySales": 2.13,
-    "vineGiftSales": 8,
+    "reserved": 184,
+    "localWarehouse": 420,
+    "orderedQty": 600,
+    "monthSales": 178,
+    "monthRevenue": 1934.79,
+    "monthOrders": 173,
+    "dailySales": 5.93,
+    "vineGiftSales": 18,
     "packageSize": "",
     "packageType": "",
     "itemWeight": 90,
@@ -1271,7 +1271,7 @@
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/41ZiFokeTRL.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "18 Pack Water Fountain Filter Combo Compatible with Premier Pet Fountain"
   },
   {
     "asin": "B0H4Z1VCGS",
@@ -1281,18 +1281,18 @@
     "restockCycle": 2,
     "stock": 50,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
-    "lastSeenWeek": "33周",
-    "fbaTotal": 42,
-    "sellable": 42,
+    "lastSeenWeek": "34周",
+    "fbaTotal": 41,
+    "sellable": 40,
     "inbound": 0,
     "unsellable": 0,
-    "reserved": 0,
+    "reserved": 1,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 7,
-    "monthRevenue": 181.93,
-    "monthOrders": 7,
-    "dailySales": 0.23,
+    "monthSales": 6,
+    "monthRevenue": 155.94,
+    "monthOrders": 6,
+    "dailySales": 0.2,
     "vineGiftSales": 0,
     "packageSize": "",
     "packageType": "",
@@ -1304,7 +1304,7 @@
     ],
     "amazonMainImage": "https://m.media-amazon.com/images/I/31OjMDodaIL.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "Carrying Bag Compatible with Graco Pack n Play, Lightweight & Waterproof"
   },
   {
     "asin": "B0FSXJQ73Q",
@@ -1333,10 +1333,10 @@
       "https://m.media-amazon.com/images/I/31t2U-0J5IL.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/31t2U-0J5IL.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "Dollform 2 PCS Toilet Handle Compatible with Mansfield Flush Valve Systems, Replacement Toilet Tank Flush Lever for Mansfield Front Mount, Chrome Finish Handle"
   },
   {
     "asin": "B0FWKD1L3W",
@@ -1365,10 +1365,10 @@
       "https://m.media-amazon.com/images/I/41LZ3aN305L.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/41LZ3aN305L.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "4 Pack Retractable Lanyard with Badge Holders for ID Card Badges & Cruise Ships Cards - Hands-Free & Waterproof Badge Holder with Lanyard and Badge Reel Clip for Commuters, Office ID, Work Badge Reel"
   },
   {
     "asin": "B0FWKFH1H8",
@@ -1397,10 +1397,10 @@
       "https://m.media-amazon.com/images/I/412H1eQnV1L.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/412H1eQnV1L.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "Tool Pouch for Ladder - Oxford Fabric Ladder Tool Bag, Universal for A-Frame Extension Ladder, Ladder Tool Holder Compatible with Little Giant Ladders, Electrician & Contractor Work Belt Accessories"
   },
   {
     "asin": "B0FY2XXG9F",
@@ -1429,10 +1429,10 @@
       "https://m.media-amazon.com/images/I/41YtgJvSAmL.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/41YtgJvSAmL.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "6 Pack Replacement Seal Gaskets Compatible with OmieBox Bento Box Lid, Silicone Lid Seal Gasket for OmieBox, Leak-Proof Seal Ring Accessory, Keep Freshness, BPA-Free Kids Lunch Box Replacement Parts"
   },
   {
     "asin": "B0FY31HN9D",
@@ -1461,10 +1461,10 @@
       "https://m.media-amazon.com/images/I/419oKiQ-W0L.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/419oKiQ-W0L.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "6 Pack Replacement Seal Gaskets Compatible with OmieBox Bento Box Lid, Silicone Lid Seal Gasket for OmieBox, Leak-Proof Seal Ring Accessory, Keep Freshness, BPA-Free Kids Lunch Box Replacement Parts"
   },
   {
     "asin": "B0FY31WV9L",
@@ -1493,10 +1493,10 @@
       "https://m.media-amazon.com/images/I/41tUGi5DcNL.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/41tUGi5DcNL.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "6 Pack Replacement Seal Gaskets Compatible with OmieBox Bento Box Lid, Silicone Lid Seal Gasket for OmieBox, Leak-Proof Seal Ring Accessory, Keep Freshness, BPA-Free Kids Lunch Box Replacement Parts"
   },
   {
     "asin": "B0FY32B4PW",
@@ -1525,10 +1525,10 @@
       "https://m.media-amazon.com/images/I/31eg6M4zGwL.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/31eg6M4zGwL.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "6 Pack Replacement Seal Gaskets Compatible with OmieBox Bento Box Lid, Silicone Lid Seal Gasket for OmieBox, Leak-Proof Seal Ring Accessory, Keep Freshness, BPA-Free Kids Lunch Box Replacement Parts"
   },
   {
     "asin": "B0FY32P4CL",
@@ -1557,10 +1557,10 @@
       "https://m.media-amazon.com/images/I/41wFBIXkDrL.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/41wFBIXkDrL.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "6 Pack Replacement Seal Gaskets Compatible with OmieBox Bento Box Lid, Silicone Lid Seal Gasket for OmieBox, Leak-Proof Seal Ring Accessory, Keep Freshness, BPA-Free Kids Lunch Box Replacement Parts"
   },
   {
     "asin": "B0FY34NY1V",
@@ -1589,10 +1589,10 @@
       "https://m.media-amazon.com/images/I/41nHXFfzAxL.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/41nHXFfzAxL.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "6 Pack Replacement Seal Gaskets Compatible with OmieBox Bento Box Lid, Silicone Lid Seal Gasket for OmieBox, Leak-Proof Seal Ring Accessory, Keep Freshness, BPA-Free Kids Lunch Box Replacement Parts"
   },
   {
     "asin": "B0FZSM95JC",
@@ -1621,10 +1621,10 @@
       "https://m.media-amazon.com/images/I/41xW9y8w8XL.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/41xW9y8w8XL.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "Universal Rain Cover Compatible with Nuna Stroller, Waterproof Weather Shield, Clear Protective Cover with Ventilation, Travel-Ready Stroller Accessory"
   },
   {
     "asin": "B0G2BVWMMP",
@@ -1653,12 +1653,12 @@
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/a4e037ee-6fe5-4428-bb2d-4a981f8b78f2/uploads/2025-11-15/1eb276f8-dd00-4382-82b9-7bb44cb56216.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "amazonMainImage": "",
     "listingDetailImages": [
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/a4e037ee-6fe5-4428-bb2d-4a981f8b78f2/uploads/2025-11-15/1eb276f8-dd00-4382-82b9-7bb44cb56216.jpg"
     ],
-    "productTitle": ""
+    "productTitle": "Universal Stroller Rain Cover Compatible with Graco, Waterproof Stroller Cover - Clear Weather Shield, Breathable Windproof Protection for Travel Strollers"
   },
   {
     "asin": "B0G2BYPP3C",
@@ -1687,10 +1687,10 @@
       "https://m.media-amazon.com/images/I/41mnFh6orJL.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/41mnFh6orJL.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "2 Pack Exercise Ball Pump Compatible with Bosu Balance Trainer, Portable Hand Air Pump for Exercise Ball - Fast Inflation Hand Ball Pump Replacements for Bosu Balls, Yoga Balls, Fitness Equipment"
   },
   {
     "asin": "B0G2C7D1SM",
@@ -1720,12 +1720,12 @@
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/a4e037ee-6fe5-4428-bb2d-4a981f8b78f2/uploads/2025-11-15/ecf66af9-38d6-430a-9950-520a44b10394.png"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/41ZJWfw9qYL.jpg",
     "listingDetailImages": [
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/a4e037ee-6fe5-4428-bb2d-4a981f8b78f2/uploads/2025-11-15/ecf66af9-38d6-430a-9950-520a44b10394.png"
     ],
-    "productTitle": ""
+    "productTitle": "1 Pair eBike Handlebar Grips Compatible with Ridstar Q20-7/8\" 22mm & 24mm Motorcycle Grips Replacement with Non-Slip Design, Soft Rubber Hand Grips for Dirt Bike, Bicycle Accessories"
   },
   {
     "asin": "B0G4X9DYRD",
@@ -1754,10 +1754,10 @@
       "https://m.media-amazon.com/images/I/51zVvE+bLxL.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/51zVvE+bLxL.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "Dollform Nylon Sport Replacement Strap Compatible with Amazfit Helio Band, Adjustable Loop Arm Strap - Breathable & Sweatproof Wristband for Fitness Tracker (Grey)"
   },
   {
     "asin": "B0G4ZW7HLD",
@@ -1786,10 +1786,10 @@
       "https://m.media-amazon.com/images/I/51y0SdHQdcL.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/51y0SdHQdcL.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "Dollform Nylon Sport Replacement Strap Compatible with Amazfit Helio Band, Adjustable Loop Arm Strap - Breathable & Sweatproof Wristband for Fitness Tracker (Midnight-Blue)"
   },
   {
     "asin": "B0G5132KBX",
@@ -1818,10 +1818,10 @@
       "https://m.media-amazon.com/images/I/51HjT65ARpL.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/51HjT65ARpL.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "Dollform Nylon Sport Replacement Strap Compatible with Amazfit Helio Band, Adjustable Loop Arm Strap - Breathable & Sweatproof Wristband for Fitness Tracker (Navy Blue)"
   },
   {
     "asin": "B0G517WLDZ",
@@ -1850,10 +1850,10 @@
       "https://m.media-amazon.com/images/I/519zRqd-ZnL.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/519zRqd-ZnL.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "Dollform Nylon Sport Replacement Strap Compatible with Amazfit Helio Band, Adjustable Loop Arm Strap - Breathable & Sweatproof Wristband for Fitness Tracker (Orange)"
   },
   {
     "asin": "B0G52D3YWJ",
@@ -1862,10 +1862,10 @@
     "name": "klee纸巾套长方形",
     "category": "放弃",
     "restockCycle": 2,
-    "sellable": 1,
+    "sellable": 0,
     "inbound": 0,
     "unsellable": 0,
-    "reserved": 0,
+    "reserved": 1,
     "fbaTotal": 1,
     "localWarehouse": 0,
     "orderedQty": 0,
@@ -1883,12 +1883,12 @@
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-01-17/2b88ffb7-9c53-4e32-aa45-376898c56a2a.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/41+ODTCsygL.jpg",
     "listingDetailImages": [
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-01-17/2b88ffb7-9c53-4e32-aa45-376898c56a2a.jpg"
     ],
-    "productTitle": ""
+    "productTitle": "Tissue Box Cover Compatible with Kleenex Tissue - Soft PU Leather Tissue Box Holder Fits Most Tissues for Living Room, Bathroom, Bedroom, Office & Home Decor (8.8''×4.8''×4.8'' Flat Box)"
   },
   {
     "asin": "B0G52H2CL5",
@@ -1917,10 +1917,10 @@
       "https://m.media-amazon.com/images/I/4120j9rS1-L.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/4120j9rS1-L.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "Tissue Box Cover Compatible with Kleenex Tissue - Soft PU Leather Tissue Box Holder Fits Most Tissues for Living Room, Bathroom, Bedroom, Office & Home Decor (8.8''×4.8''×4.8'' (for 260 Tissues))"
   },
   {
     "asin": "B0GGH41FDJ",
@@ -1950,12 +1950,12 @@
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-01-17/c9839638-5ebe-4d9d-b811-241a74f66ab5.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/41YCQ6HdxoL.jpg",
     "listingDetailImages": [
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/f82eadde-4422-426b-b0ea-29b0ed0c3081/uploads/2026-01-17/c9839638-5ebe-4d9d-b811-241a74f66ab5.jpg"
     ],
-    "productTitle": ""
+    "productTitle": "Dollform 2-Pack Magnetic Rod for Classroom Whiteboard - Adjustable 17-30 Inch Anchor Chart Holder for Teachers - Heavy Duty Magnetic Calendar Holder for Metal Doors, Office, Hanging Posters & Maps"
   },
   {
     "asin": "B0GGYSVPSX",
@@ -1967,14 +1967,14 @@
     "sellable": 1,
     "inbound": 0,
     "unsellable": 0,
-    "reserved": 1,
-    "fbaTotal": 2,
+    "reserved": 0,
+    "fbaTotal": 1,
     "localWarehouse": 0,
     "orderedQty": 0,
-    "monthSales": 1,
-    "monthRevenue": 7.99,
-    "monthOrders": 1,
-    "dailySales": 0.03,
+    "monthSales": 2,
+    "monthRevenue": 15.98,
+    "monthOrders": 2,
+    "dailySales": 0.07,
     "vineGiftSales": 0,
     "packageSize": "11.5×9.5×1.8",
     "packageType": "",
@@ -1984,10 +1984,10 @@
       "https://m.media-amazon.com/images/I/411Nanz47ML.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/411Nanz47ML.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "Y-Splitter Cable Compatible with Govee Permanent Outdoor Lights H705A H705B H705C & Pro, 3-Pin IP68 Waterproof Extension Connector for Roof Peaks & Middle Starts, DIY Layout Accessory"
   },
   {
     "asin": "B0GHQRM96K",
@@ -2016,10 +2016,10 @@
       "https://m.media-amazon.com/images/I/71snQqB7Z1L._SL75_.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/71snQqB7Z1L._SL75_.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "Bow Hanger for Truck & SUV Headrest – Heavy Duty Compound/Recurve Bow Alloy Holder for Vehicle Seat – Anti-Scratch Rubber Coating, Quick Access Archery Hunting Gear Organizer & Safe Transport Storage"
   },
   {
     "asin": "B0GHYCGQ4C",
@@ -2048,10 +2048,10 @@
       "https://m.media-amazon.com/images/I/41NelL40q+L.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/41NelL40q+L.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "Ink Refill Kit Compatible with HP Smart Tank 6001 7001 7006 7301 7602 5101 5000 Printers – Replacement for HP 31 & 32XL Ink Bottle Set - High Yield for Smart Tank 551 450 651 and More Models Printers"
   },
   {
     "asin": "B0GJ3M3G9D",
@@ -2081,12 +2081,12 @@
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/aa507b44-2556-4e09-bf76-88d4e716b41d/uploads/2026-01-30/68b5db24-75f7-4d93-a0d3-7d2c7cd600a9.png"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/317kFFQPj0L.jpg",
     "listingDetailImages": [
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/aa507b44-2556-4e09-bf76-88d4e716b41d/uploads/2026-01-30/68b5db24-75f7-4d93-a0d3-7d2c7cd600a9.png"
     ],
-    "productTitle": ""
+    "productTitle": "Crystal Clear Case for Nothing Ear (3), Ultra-Clear Anti-Yellowing Transparent Cover, Shockproof Hard TPU Protective Skin for Nothing Earbuds (3) (2025) with Carabiner (Crystal Clear)"
   },
   {
     "asin": "B0GJDG4Q7C",
@@ -2116,12 +2116,12 @@
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/aa507b44-2556-4e09-bf76-88d4e716b41d/uploads/2026-01-30/84e79a08-8270-4798-a5bf-67514dd6e9de.png"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/41VFvFwqFQL.jpg",
     "listingDetailImages": [
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/aa507b44-2556-4e09-bf76-88d4e716b41d/uploads/2026-01-30/84e79a08-8270-4798-a5bf-67514dd6e9de.png"
     ],
-    "productTitle": ""
+    "productTitle": "Crystal Clear Case for Nothing Ear (3), Ultra-Clear Anti-Yellowing Transparent Cover, Shockproof Hard TPU Protective Skin for Nothing Earbuds (3) (2025) with Carabiner, Support Wireless Charging"
   },
   {
     "asin": "B0GJDHSSVY",
@@ -2151,12 +2151,12 @@
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/aa507b44-2556-4e09-bf76-88d4e716b41d/uploads/2026-01-30/9e189dd0-97a3-4224-9cb3-4ccf204ce00f.png"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/41wPJt4+hLL.jpg",
     "listingDetailImages": [
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/aa507b44-2556-4e09-bf76-88d4e716b41d/uploads/2026-01-30/9e189dd0-97a3-4224-9cb3-4ccf204ce00f.png"
     ],
-    "productTitle": ""
+    "productTitle": "Crystal Clear Case for Nothing Ear (3), Ultra-Clear Anti-Yellowing Transparent Cover, Shockproof Hard TPU Protective Skin for Nothing Earbuds (3) (2025) with Carabiner, Support Wireless Charging"
   },
   {
     "asin": "B0GKM2W6NK",
@@ -2186,12 +2186,12 @@
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/aa507b44-2556-4e09-bf76-88d4e716b41d/uploads/2026-01-30/47cc1a97-0851-4398-918e-bbb99a04b400.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/41rjHLgAZuL.jpg",
     "listingDetailImages": [
       "https://amz-client-global-1359221291.cos.ap-guangzhou.myqcloud.com/users/aa507b44-2556-4e09-bf76-88d4e716b41d/uploads/2026-01-30/47cc1a97-0851-4398-918e-bbb99a04b400.jpg"
     ],
-    "productTitle": ""
+    "productTitle": "Nylon Replacement Strap Compatible with Hume Band - Breathable & Sweatproof Sport Loop for Hume Health Band - Metal Buckle & Loop Closure for Secure - Adjustable Wristband Strap for Fitness Tracker (Orange)"
   },
   {
     "asin": "B0GQ9CDWCP",
@@ -2220,10 +2220,10 @@
       "https://m.media-amazon.com/images/I/51iQO6UF+uL.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/51iQO6UF+uL.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "100 Pcs Tire Repair Rubber Nail Kit with Screwdriver, Quick Flat Tire Puncture Repair Screws Fit for Tirefix Style, Self-Service Tubeless Tire Plug Patch Kit for Car, Motorcycle, ATV, Truck, Scooter"
   },
   {
     "asin": "B0GQB6R4FL",
@@ -2250,10 +2250,10 @@
     "productImage": "",
     "productImages": [],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "amazonMainImage": "",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "Case for T-Mobile REVVL Tab 2 (10.1 Inch, 2025), 3-in-1 EVA Shockproof Tablet Cover with Glass Screen Protector & Adjustable Shoulder Strap & Built-in Stand, Kids Friendly Case Cover for Revvl Tab 2"
   },
   {
     "asin": "B0GQGQ8Z8F",
@@ -2282,10 +2282,10 @@
       "https://m.media-amazon.com/images/I/61p1KVs8ScL._SL75_.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/61p1KVs8ScL._SL75_.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "2 Pack Crystal Glass Replacement Compatible with P4ffc0 only, Peak and Pro Replacement Glass, Decorative Mini Vase, Transparent, Borosilicate Material, 4.7'' x 2.7'', Heat Resistant"
   },
   {
     "asin": "B0GQSP988T",
@@ -2314,9 +2314,9 @@
       "https://m.media-amazon.com/images/I/71eHnIgDLwL._SL75_.jpg"
     ],
     "firstSeenWeek": "32周",
-    "lastSeenWeek": "33周",
+    "lastSeenWeek": "34周",
     "amazonMainImage": "https://m.media-amazon.com/images/I/71eHnIgDLwL._SL75_.jpg",
     "listingDetailImages": [],
-    "productTitle": ""
+    "productTitle": "24-Pack Style 7 Vacuum Bags Compatible with Bissell Upright Vacuums - Replaces Part 32120 - Fits for PowerForce 1739 3522, PowerGlide, Lift-Off, PowerTrak, Micro-Filtration Dust Bags"
   }
 ]

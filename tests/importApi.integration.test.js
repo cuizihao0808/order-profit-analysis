@@ -194,6 +194,21 @@ describe('import api integration', () => {
       { asin: 'B0ALIASROW', parentAsin: 'B0ALIASROW', name: 'alias wrong shop', category: '正常' },
     ])
     await writeJson(path.join(tmpRoot, 'src/data/products/shop-3.json'), [])
+    await writeJson(path.join(tmpRoot, 'src/data/weeks.json'), [
+      {
+        id: '31周',
+        filename: '31周/订单利润-ASIN-2026-07-26~2026-08-01-test.xlsx',
+        startDate: '2026-07-26',
+        endDate: '2026-08-01',
+        rowCount: 1,
+        listingFiles: [],
+        importedAt: '2026-08-22T00:00:00.000Z',
+      },
+    ])
+    await writeJson(path.join(tmpRoot, 'src/data/weeks/31周.json'), {
+      id: '31周',
+      notes: { B0HBKJFMMR: '上一周备注' },
+    })
 
     const folder = path.join(tmpRoot, 'public/data/32周(8-2~8-8)')
     await writeOrderWorkbook(path.join(folder, '订单利润-ASIN-2026-08-02~2026-08-08-test.xlsx'))
@@ -236,6 +251,7 @@ describe('import api integration', () => {
     expect(payload.results[0].weekId).toBe('32周')
 
     const week = JSON.parse(await readFile(path.join(tmpRoot, 'src/data/weeks/32周.json'), 'utf8'))
+    expect(week.notes.B0HBKJFMMR).toBe('上一周备注')
     const cols = week.columns
     const asinIdx = getColIndex(cols, 'ASIN')
     const shopIdx = getColIndex(cols, '店铺')
@@ -276,5 +292,16 @@ describe('import api integration', () => {
     expect(shop2Base).toBeTruthy()
     expect(shop2Base.amazonMainImage || '').toBe('')
     expect(shop2Base.productImage).toBe('https://cdn.example.com/detail.jpg')
+
+    week.notes.B0HBKJFMMR = '本周修改后的备注'
+    await writeJson(path.join(tmpRoot, 'src/data/weeks/32周.json'), week)
+    const reimportResp = await fetch(`${baseUrl}/api/import`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ weekIds: ['32周'] }),
+    })
+    expect(reimportResp.status).toBe(200)
+    const reimportedWeek = JSON.parse(await readFile(path.join(tmpRoot, 'src/data/weeks/32周.json'), 'utf8'))
+    expect(reimportedWeek.notes.B0HBKJFMMR).toBe('本周修改后的备注')
   }, 30000)
 })

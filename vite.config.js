@@ -761,6 +761,10 @@ function importWeekBundle(bundle) {
     ? readJson(`${WEEKS_DIR}/${previousWeek.id}.json`, null)
     : null
   const prevNotes = prevSnapshot && typeof prevSnapshot.notes === 'object' ? prevSnapshot.notes : {}
+  const currentSnapshot = readJson(`${WEEKS_DIR}/${weekId}.json`, null)
+  const currentNotes = currentSnapshot && typeof currentSnapshot.notes === 'object'
+    ? currentSnapshot.notes
+    : {}
 
   // 组装 rows 快照，附带 asin 主键便于后续 join
   const asinIdx = colIdx['ASIN']
@@ -798,7 +802,7 @@ function importWeekBundle(bundle) {
   for (const row of snapshotRows) {
     const asin = (row.asin || '').trim()
     if (!asin) continue
-    const note = prevNotes[asin]
+    const note = currentNotes[asin] ?? prevNotes[asin]
     if (typeof note === 'string' && note.trim()) {
       nextNotes[asin] = note
     }
@@ -2006,6 +2010,9 @@ export default defineConfig({
     host: '127.0.0.1',
     port: 8000,
     open: true,
+    watch: {
+      ignored: ['**/public/data/**'],
+    },
     headers: {
       'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
       Pragma: 'no-cache',

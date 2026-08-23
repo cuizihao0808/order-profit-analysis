@@ -12,16 +12,10 @@ export function computeRestockQty({ fbaTotal, sales, cycle, config }) {
 
   const restockMonths = config?.restockMonths || 12
   const restockMultiplier = config?.restockMultiplier || 4
-  const monthlyThreshold = config?.monthlyThreshold || 1
-  const doubleRestockMultiplier = config?.doubleRestockMultiplier || 8
   const quantityDiscount = config?.quantityDiscount || 0.8
 
   const threshold = nSales * (restockMonths + nCycle)
   if (nFba >= threshold) return '无需补货'
 
-  const monthlyStock = nSales * 4
-  const multiplier =
-    nFba < monthlyStock * monthlyThreshold ? doubleRestockMultiplier : restockMultiplier
-
-  return String(Math.round(nSales * multiplier * quantityDiscount))
+  return String(Math.round(nSales * restockMultiplier * quantityDiscount))
 }
