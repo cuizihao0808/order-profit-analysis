@@ -1113,10 +1113,10 @@ function updateStatus() {
     const supplyFilterText = {
       '__all__': '全部',
       'need-restock': '需要补货',
+      'need-restock-no-local-no-ordered': '需补货未下单',
       'no-restock': '不需要补货',
       ordered: '已经下单的',
       'local-warehouse': '本地仓库有的',
-      'need-restock-no-local-no-ordered': '需要补货且本地没有和没有下单的',
     }[supplyFilter.value]
     status.value = `订单 ${allRows.value.length} 行 · 当前 ${filteredRows.value.length} 行 · 店铺 ${shops.value.length} · ASIN ${products.value.length} · 补货筛选 ${supplyFilterText}`
   }
@@ -1838,10 +1838,10 @@ onBeforeUnmount(() => {
               <el-select v-model="supplyFilter" class="tool-ep-select" filterable>
                 <el-option label="全部" value="__all__" />
                 <el-option label="需要补货" value="need-restock" />
+                <el-option label="需补货未下单" value="need-restock-no-local-no-ordered" />
                 <el-option label="不需要补货" value="no-restock" />
                 <el-option label="已下单" value="ordered" />
                 <el-option label="本地仓有货" value="local-warehouse" />
-                <el-option label="待补且无本地/下单" value="need-restock-no-local-no-ordered" />
               </el-select>
             </div>
 
