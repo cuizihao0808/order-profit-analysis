@@ -228,8 +228,8 @@ async function generateLocalWarehousePdfBuffer(payload) {
   const imageGap = 3
   const imageCache = new Map()
 
-  const colWidths = [0.25, 0.16, 0.14, 0.08, 0.11, 0.1, 0.08, 0.08].map((r) => contentWidth * r)
-  const headers = ['产品图片（多图）', '品名', 'FNSKU', '本地仓库', '包装尺寸/cm', '单品重量/g', '重量类型', '包装类型']
+  const colWidths = [0.22, 0.14, 0.12, 0.07, 0.10, 0.09, 0.07, 0.07, 0.12].map((r) => contentWidth * r)
+  const headers = ['产品图片（多图）', '品名', 'FNSKU', '本地仓库', '包装尺寸/cm', '单品重量/g', '重量类型', '包装类型', '备注']
 
   const colX = [marginLeft]
   for (let i = 1; i < colWidths.length; i++) colX[i] = colX[i - 1] + colWidths[i - 1]
@@ -325,6 +325,7 @@ async function generateLocalWarehousePdfBuffer(payload) {
     const packageType = String(row?.packageType || '').trim() || '—'
     const itemWeight = String(row?.itemWeight || '').trim() || '—'
     const weightType = inferWeightType(row?.weightType, row?.itemWeight, row?.packageSize)
+    const note = String(row?.note ?? row?.notes ?? row?.remark ?? '').trim() || '—'
     const images = Array.isArray(row?.images)
       ? row.images.map((x) => String(x || '').trim()).filter(Boolean)
       : []
@@ -344,6 +345,7 @@ async function generateLocalWarehousePdfBuffer(payload) {
     const textHeightWeight = oneLineHeight
     const textHeightWeightType = oneLineHeight
     const textHeightType = Math.max(14, doc.heightOfString(packageType, { width: colWidths[7] - cellPadding * 2 }))
+    const textHeightNote = Math.max(14, doc.heightOfString(note, { width: colWidths[8] - cellPadding * 2 }))
 
     const rowHeight = Math.max(
       imageBlockHeight + cellPadding * 2,
@@ -354,6 +356,7 @@ async function generateLocalWarehousePdfBuffer(payload) {
       textHeightWeight + cellPadding * 2,
       textHeightWeightType + cellPadding * 2,
       textHeightType + cellPadding * 2,
+      textHeightNote + cellPadding * 2,
       24,
     )
 
@@ -377,6 +380,7 @@ async function generateLocalWarehousePdfBuffer(payload) {
     const weightY = cursorY + Math.max(cellPadding, (rowHeight - textHeightWeight) / 2)
     const weightTypeY = cursorY + Math.max(cellPadding, (rowHeight - textHeightWeightType) / 2)
     const typeY = cursorY + Math.max(cellPadding, (rowHeight - textHeightType) / 2)
+    const noteY = cursorY + Math.max(cellPadding, (rowHeight - textHeightNote) / 2)
 
     doc.text(displayName, colX[1] + cellPadding, nameY, {
       width: colWidths[1] - cellPadding * 2,
@@ -408,6 +412,10 @@ async function generateLocalWarehousePdfBuffer(payload) {
     })
     doc.text(packageType, colX[7] + cellPadding, typeY, {
       width: colWidths[7] - cellPadding * 2,
+      align: 'left',
+    })
+    doc.text(note, colX[8] + cellPadding, noteY, {
+      width: colWidths[8] - cellPadding * 2,
       align: 'left',
     })
 
