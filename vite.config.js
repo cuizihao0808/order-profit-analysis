@@ -9,6 +9,9 @@ import {
   writeFileSync,
   existsSync,
   mkdirSync,
+  cpSync,
+  renameSync,
+  rmSync,
   unlinkSync,
   statSync,
 } from 'node:fs'
@@ -32,7 +35,15 @@ const DATA_DIR = 'src/data'
 const WEEKS_DIR = 'src/data/weeks'
 const PRODUCTS_DIR = 'src/data/products'
 const XLSX_DIR = 'public/data'
+const BACKUP_DIR = '.opa-backups'
+const MAX_DATA_BACKUPS = 10
 const DEV_SESSION_ID = String(Date.now())
+const MAX_PDF_IMAGE_BYTES = 5 * 1024 * 1024
+const MAX_PDF_IMAGES_PER_ROW = 12
+const PDF_IMAGE_TIMEOUT_MS = 8_000
+const MAX_IMPORT_FILE_BYTES = 10 * 1024 * 1024
+const MAX_IMPORT_ROWS = 50_000
+const MAX_IMPORT_COLUMNS = 200
 
 // 导入补货配置
 let restockConfigData = {
@@ -84,7 +95,35 @@ function readJson(path, fallback) {
 function writeJson(path, data) {
   const p = fp(path)
   if (!existsSync(dirname(p))) mkdirSync(dirname(p), { recursive: true })
-  writeFileSync(p, JSON.stringify(data, null, 2), 'utf-8')
+  const tmp = `${p}.${process.pid}.${Date.now()}.tmp`
+  writeFileSync(tmp, JSON.stringify(data, null, 2), 'utf-8')
+  renameSync(tmp, p)
+}
+
+function isSafePathSegment(value) {
+  const segment = String(value || '').trim()
+  return !!segment && segment !== '.' && segment !== '..' && !/[\\/\0]/.test(segment)
+}
+
+function isSafeShopId(value) {
+  return /^shop-[a-z0-9-]+$/.test(String(value || '').trim())
+}
+
+function backupData(reason) {
+  const source = fp(DATA_DIR)
+  if (!existsSync(source)) return
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+  const target = fp(BACKUP_DIR, `${timestamp}-${sanitizeFilename(reason, 'data')}`)
+  mkdirSync(fp(BACKUP_DIR), { recursive: true })
+  cpSync(source, target, { recursive: true })
+
+  const backups = readdirSync(fp(BACKUP_DIR), { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort((a, b) => b.localeCompare(a))
+  for (const stale of backups.slice(MAX_DATA_BACKUPS)) {
+    rmSync(fp(BACKUP_DIR, stale), { recursive: true, force: true })
+  }
 }
 
 /* ============== products：按店铺拆分文件 ============== */
@@ -151,6 +190,47 @@ function sanitizeFilename(name, fallback = 'export') {
     .replace(/[\\/:*?"<>|]/g, '-')
     .trim()
   return cleaned || fallback
+}
+
+function isAllowedPdfImageUrl(value) {
+  try {
+    const url = new URL(String(value || '').trim())
+    if (url.protocol !== 'https:' || !url.hostname || url.username || url.password) return false
+    const host = url.hostname.toLowerCase()
+    if (host === 'localhost' || host === '::1' || host.endsWith('.local')) return false
+    if (/^(127\.|10\.|169\.254\.|192\.168\.)/.test(host)) return false
+    const private172 = host.match(/^172\.(\d+)\./)
+    return !private172 || Number(private172[1]) < 16 || Number(private172[1]) > 31
+  } catch {
+    return false
+  }
+}
+
+async function readRemoteImageBuffer(url) {
+  if (!isAllowedPdfImageUrl(url)) return null
+  try {
+    const response = await fetch(url, { signal: AbortSignal.timeout(PDF_IMAGE_TIMEOUT_MS) })
+    if (!response.ok || !response.body) return null
+    const length = Number(response.headers.get('content-length'))
+    if (Number.isFinite(length) && length > MAX_PDF_IMAGE_BYTES) return null
+
+    const reader = response.body.getReader()
+    const chunks = []
+    let total = 0
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      total += value.byteLength
+      if (total > MAX_PDF_IMAGE_BYTES) {
+        await reader.cancel()
+        return null
+      }
+      chunks.push(value)
+    }
+    return Buffer.concat(chunks.map((chunk) => Buffer.from(chunk)))
+  } catch {
+    return null
+  }
 }
 
 function choosePdfFontPath() {
@@ -296,17 +376,9 @@ async function generateLocalWarehousePdfBuffer(payload) {
     const key = String(url || '').trim()
     if (!key) return null
     if (imageCache.has(key)) return imageCache.get(key)
-    try {
-      const resp = await fetch(key)
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
-      const arr = await resp.arrayBuffer()
-      const buf = Buffer.from(arr)
-      imageCache.set(key, buf)
-      return buf
-    } catch {
-      imageCache.set(key, null)
-      return null
-    }
+    const buffer = await readRemoteImageBuffer(key)
+    imageCache.set(key, buffer)
+    return buffer
   }
 
   drawPageTitle()
@@ -327,7 +399,7 @@ async function generateLocalWarehousePdfBuffer(payload) {
     const weightType = inferWeightType(row?.weightType, row?.itemWeight, row?.packageSize)
     const note = String(row?.note ?? row?.notes ?? row?.remark ?? '').trim() || '—'
     const images = Array.isArray(row?.images)
-      ? row.images.map((x) => String(x || '').trim()).filter(Boolean)
+      ? row.images.map((x) => String(x || '').trim()).filter(Boolean).slice(0, MAX_PDF_IMAGES_PER_ROW)
       : []
 
     const imageRows = Math.max(1, Math.ceil(images.length / imageCols))
@@ -545,7 +617,12 @@ function findPreviousWeekMeta(weeks, currentWeekId, currentStartDate) {
 }
 
 function readTableFile(filePath) {
+  const fileSize = statSync(filePath).size
+  if (fileSize > MAX_IMPORT_FILE_BYTES) {
+    throw new Error(`导入文件超过 ${MAX_IMPORT_FILE_BYTES / 1024 / 1024} MB 限制`)
+  }
   const wb = XLSX.readFile(filePath, { raw: false })
+  if (!wb.SheetNames.length) throw new Error('导入文件不含工作表')
   const sh = wb.Sheets[wb.SheetNames[0]]
   const rows = XLSX.utils.sheet_to_json(sh, {
     header: 1,
@@ -553,6 +630,12 @@ function readTableFile(filePath) {
     raw: false,
     dateNF: 'yyyy-mm-dd',
   })
+  if (rows.length > MAX_IMPORT_ROWS + 1) {
+    throw new Error(`导入文件超过 ${MAX_IMPORT_ROWS} 行限制`)
+  }
+  if ((rows[0] || []).length > MAX_IMPORT_COLUMNS) {
+    throw new Error(`导入文件超过 ${MAX_IMPORT_COLUMNS} 列限制`)
+  }
   const columns = (rows[0] ?? []).map((v) => (v == null ? '' : String(v).trim()))
   const dataRows = rows.slice(1).map((r) => {
     const filled = r.map((v) => (v == null ? '' : String(v).trim()))
@@ -560,6 +643,12 @@ function readTableFile(filePath) {
     return filled
   })
   return { columns, rows: dataRows }
+}
+
+function requireImportColumns(table, label, requiredColumns) {
+  const columns = Array.isArray(table?.columns) ? table.columns : []
+  const missing = requiredColumns.filter((column) => !columns.includes(column))
+  if (missing.length) throw new Error(`${label}缺少必填列：${missing.join('、')}`)
 }
 
 function readListingDataForBundle(folderName, listingFiles) {
@@ -574,6 +663,7 @@ function readListingDataForBundle(folderName, listingFiles) {
   for (const listingFile of validListingFiles) {
     const listingPath = fp(XLSX_DIR, folderName, listingFile)
     const listing = readTableFile(listingPath)
+    requireImportColumns(listing, 'Listing销售库存表', ['ASIN'])
     const listingColIdx = {}
     listing.columns.forEach((c, i) => (listingColIdx[c] = i))
     const listingAsinIdx = listingColIdx['ASIN']
@@ -740,6 +830,7 @@ function importWeekBundle(bundle) {
   const validListingFiles = listingFiles.filter((f) => existsSync(fp(XLSX_DIR, folderName, f)))
 
   const { columns, rows } = readTableFile(orderPath)
+  requireImportColumns({ columns }, '订单利润表', ['ASIN'])
 
   const colIdx = {}
   columns.forEach((c, i) => (colIdx[c] = i))
@@ -1372,6 +1463,9 @@ function apiPlugin() {
           if (url === '/shops' && req.method === 'POST') {
             const body = (await readBody(req)) || {}
             if (!body.name) return sendJson(res, 400, { error: 'name required' })
+            if (body.id != null && body.id !== '' && !isSafeShopId(body.id)) {
+              return sendJson(res, 400, { error: '店铺 ID 格式无效' })
+            }
             const shops = readJson(`${DATA_DIR}/shops.json`, [])
             if (shops.some((s) => s.name === body.name)) {
               return sendJson(res, 409, { error: '店铺名已存在' })
@@ -1388,6 +1482,7 @@ function apiPlugin() {
           }
           if (url.startsWith('/shops/')) {
             const id = decodeURIComponent(url.slice('/shops/'.length))
+            if (!isSafeShopId(id)) return sendJson(res, 400, { error: '店铺 ID 格式无效' })
             const shops = readJson(`${DATA_DIR}/shops.json`, [])
             const idx = shops.findIndex((s) => s.id === id)
             if (idx < 0) return sendJson(res, 404, { error: 'not found' })
@@ -1413,6 +1508,7 @@ function apiPlugin() {
             const body = (await readBody(req)) || {}
             if (!body.asin) return sendJson(res, 400, { error: 'asin required' })
             if (!body.shopId) return sendJson(res, 400, { error: 'shopId required' })
+            if (!isSafeShopId(body.shopId)) return sendJson(res, 400, { error: '店铺 ID 格式无效' })
             const shops = readJson(`${DATA_DIR}/shops.json`, [])
             if (!shops.some((s) => s.id === body.shopId)) {
               return sendJson(res, 400, { error: 'shopId 不存在' })
@@ -1470,6 +1566,9 @@ function apiPlugin() {
             if (req.method === 'PUT') {
               const body = (await readBody(req)) || {}
               const explicitShopId = String(body.shopId || '').trim()
+              if (explicitShopId && !isSafeShopId(explicitShopId)) {
+                return sendJson(res, 400, { error: '店铺 ID 格式无效' })
+              }
               if (explicitShopId && !shops.some((s) => s.id === explicitShopId)) {
                 return sendJson(res, 400, { error: 'shopId 不存在' })
               }
@@ -1531,6 +1630,7 @@ function apiPlugin() {
             if (!m) return sendJson(res, 400, { error: 'bad request' })
             const id = decodeURIComponent(m[1])
             const asin = decodeURIComponent(m[2])
+            if (!isSafePathSegment(id)) return sendJson(res, 400, { error: '周次 ID 格式无效' })
             const body = (await readBody(req)) || {}
             const note = typeof body.note === 'string' ? body.note : ''
 
@@ -1546,12 +1646,14 @@ function apiPlugin() {
           }
           if (url.startsWith('/weeks/')) {
             const id = decodeURIComponent(url.slice('/weeks/'.length))
+            if (!isSafePathSegment(id)) return sendJson(res, 400, { error: '周次 ID 格式无效' })
             if (req.method === 'GET') {
               const data = readJson(`${WEEKS_DIR}/${id}.json`, null)
               if (!data) return sendJson(res, 404, { error: 'not found' })
               return sendJson(res, 200, data)
             }
             if (req.method === 'DELETE') {
+              backupData(`delete-week-${id}`)
               const weeks = readJson(`${DATA_DIR}/weeks.json`, [])
               const filtered = weeks.filter((w) => w.id !== id)
               writeJson(`${DATA_DIR}/weeks.json`, filtered)
@@ -1686,6 +1788,7 @@ function apiPlugin() {
             if (!weekIds.length) {
               return sendJson(res, 400, { error: 'weekIds required' })
             }
+            backupData(`import-${weekIds.join('-')}`)
             const bundleMap = new Map(scanWeekBundles().map((b) => [b.weekId, b]))
             const results = []
             for (const weekId of weekIds) {

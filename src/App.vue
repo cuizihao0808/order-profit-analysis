@@ -1,6 +1,8 @@
 <script setup>
 import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { computeRestockQty } from './lib/restockRules.js'
+import { prepareImportScan } from './lib/importScan.js'
+import { buildProductPatchTargets } from './lib/productUpdates.js'
 
 const ImportDialog = defineAsyncComponent(() => import('./components/ImportDialog.vue'))
 
@@ -1387,16 +1389,7 @@ async function deleteProduct(p) {
 async function patchProduct(asin, patch, options = {}) {
   if (!asin) return
   const preferredShopId = String(options?.shopId || '').trim()
-  const targets = [{ asin, patch, shopId: preferredShopId }]
-
-  // 联动：父体改为「放弃」时，所有子体同步「放弃」
-  if (patch.category === '放弃') {
-    for (const p of products.value) {
-      if (p.parentAsin === asin && p.asin !== asin && p.category !== '放弃') {
-        targets.push({ asin: p.asin, patch: { category: '放弃' }, shopId: String(p.shopId || '').trim() })
-      }
-    }
-  }
+  const targets = buildProductPatchTargets(products.value, asin, patch, preferredShopId)
 
   // 乐观更新：先改本地
   const backups = []
@@ -1519,7 +1512,8 @@ async function openImport() {
   importLoading.value = true
   try {
     const r = await fetch('/api/scan', { cache: 'no-store' })
-    importScan.value = r.ok ? await r.json() : { unimported: [], imported: [] }
+    const scanData = r.ok ? await r.json() : { unimported: [], imported: [] }
+    importScan.value = prepareImportScan(scanData)
     if (!Array.isArray(importScan.value.imported) || !importScan.value.imported.length) {
       const wk = await fetch('/api/weeks', { cache: 'no-store' })
       const weekList = wk.ok ? await wk.json() : []
@@ -1562,7 +1556,8 @@ async function doImport(weekIds) {
     }
     // 刷新扫描列表
     const r2 = await fetch('/api/scan', { cache: 'no-store' })
-    importScan.value = r2.ok ? await r2.json() : { unimported: [], imported: [] }
+    const scanData = r2.ok ? await r2.json() : { unimported: [], imported: [] }
+    importScan.value = prepareImportScan(scanData)
     if (!Array.isArray(importScan.value.imported) || !importScan.value.imported.length) {
       const wk = await fetch('/api/weeks', { cache: 'no-store' })
       const weekList = wk.ok ? await wk.json() : []
@@ -1718,7 +1713,8 @@ async function deleteWeek(week) {
       await loadCurrentWeek()
     }
     const r2 = await fetch('/api/scan', { cache: 'no-store' })
-    importScan.value = r2.ok ? await r2.json() : { unimported: [], imported: [] }
+    const scanData = r2.ok ? await r2.json() : { unimported: [], imported: [] }
+    importScan.value = prepareImportScan(scanData)
     updateStatus()
   }
 }

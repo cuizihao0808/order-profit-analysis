@@ -1,5 +1,7 @@
 node_modules
 dist
+coverage
+.opa-backups
 .DS_Store
 *.log
 .vscode/

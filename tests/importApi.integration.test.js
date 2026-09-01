@@ -1,7 +1,7 @@
 import { createServer } from 'vite'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createServer as createHttpServer } from 'node:http'
-import { mkdtemp, mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdtemp, mkdir, readdir, readFile, utimes, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -165,6 +165,14 @@ async function writeListingWorkbook(filePath) {
   XLSX.writeFile(wb, filePath)
 }
 
+async function writeWorkbookWithoutAsin(filePath) {
+  await mkdir(path.dirname(filePath), { recursive: true })
+  const wb = XLSX.utils.book_new()
+  const ws = XLSX.utils.aoa_to_sheet([['店铺', '品名'], ['测试店', '测试产品']])
+  XLSX.utils.book_append_sheet(wb, ws, 'Sheet1')
+  XLSX.writeFile(wb, filePath)
+}
+
 function getColIndex(columns, name) {
   const idx = columns.indexOf(name)
   if (idx >= 0) return idx
@@ -240,6 +248,88 @@ describe('import api integration', () => {
     if (previousCwd) process.chdir(previousCwd)
   })
 
+  it('validates shop and product CRUD, including an explicit cross-shop move', async () => {
+    const missingName = await fetch(`${baseUrl}/api/shops`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
+    })
+    expect(missingName.status).toBe(400)
+    const unsafeShop = await fetch(`${baseUrl}/api/shops`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: '../escape', name: '非法店铺' }),
+    })
+    expect(unsafeShop.status).toBe(400)
+
+    const createdShop = await fetch(`${baseUrl}/api/shops`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: '测试店铺', country: '美国' }),
+    })
+    expect(createdShop.status).toBe(201)
+    const createdShopData = await createdShop.json()
+    const updatedShop = await fetch(`${baseUrl}/api/shops/${createdShopData.id}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ note: '已更新' }),
+    })
+    expect((await updatedShop.json()).note).toBe('已更新')
+    const duplicateShop = await fetch(`${baseUrl}/api/shops`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: '测试店铺' }),
+    })
+    expect(duplicateShop.status).toBe(409)
+
+    const missingAsin = await fetch(`${baseUrl}/api/products`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
+    })
+    expect(missingAsin.status).toBe(400)
+    const createdProduct = await fetch(`${baseUrl}/api/products`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ asin: 'B0CRUD', name: '待迁移产品', shopId: 'shop-1' }),
+    })
+    expect(createdProduct.status).toBe(201)
+    const duplicateProduct = await fetch(`${baseUrl}/api/products`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ asin: 'B0CRUD', shopId: 'shop-2' }),
+    })
+    expect(duplicateProduct.status).toBe(409)
+
+    const moved = await fetch(`${baseUrl}/api/products/B0CRUD`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ shopId: 'shop-2', name: '已迁移产品' }),
+    })
+    expect(moved.status).toBe(200)
+    expect((await moved.json()).shopId).toBe('shop-2')
+    const products = await (await fetch(`${baseUrl}/api/products`)).json()
+    expect(products.filter((product) => product.asin === 'B0CRUD')).toEqual([
+      expect.objectContaining({ shopId: 'shop-2', name: '已迁移产品' }),
+    ])
+    const deletedProduct = await fetch(`${baseUrl}/api/products/B0CRUD`, { method: 'DELETE' })
+    expect(deletedProduct.status).toBe(200)
+    expect((await (await fetch(`${baseUrl}/api/products`)).json()).some((product) => product.asin === 'B0CRUD')).toBe(false)
+    const deletedShop = await fetch(`${baseUrl}/api/shops/${createdShopData.id}`, { method: 'DELETE' })
+    expect(deletedShop.status).toBe(200)
+  })
+
+  it('persists and clears week notes, then deletes an independent week snapshot', async () => {
+    const unsafeWeek = await fetch(`${baseUrl}/api/weeks/%2E%2E%2Fshops.json`)
+    expect(unsafeWeek.status).toBe(400)
+    const saved = await fetch(`${baseUrl}/api/weeks/31%E5%91%A8/notes/B0NOTE`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ note: '需要跟进' }),
+    })
+    expect(saved.status).toBe(200)
+    const cleared = await fetch(`${baseUrl}/api/weeks/31%E5%91%A8/notes/B0NOTE`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ note: '   ' }),
+    })
+    expect((await cleared.json()).note).toBe('')
+
+    await writeJson(path.join(tmpRoot, 'src/data/weeks/99周.json'), { id: '99周', rows: [] })
+    const weeks = JSON.parse(await readFile(path.join(tmpRoot, 'src/data/weeks.json'), 'utf8'))
+    await writeJson(path.join(tmpRoot, 'src/data/weeks.json'), [...weeks, { id: '99周' }])
+    const deleted = await fetch(`${baseUrl}/api/weeks/99%E5%91%A8`, { method: 'DELETE' })
+    expect(deleted.status).toBe(200)
+    expect(await fetch(`${baseUrl}/api/weeks/99%E5%91%A8`)).toHaveProperty('status', 404)
+  })
+
   it('fixes title missing and shop mismatch through /api/import, and prevents cross-shop duplicates', async () => {
     const resp = await fetch(`${baseUrl}/api/import`, {
       method: 'POST',
@@ -249,6 +339,8 @@ describe('import api integration', () => {
     expect(resp.status).toBe(200)
     const payload = await resp.json()
     expect(payload.results[0].weekId).toBe('32周')
+    const backups = await readdir(path.join(tmpRoot, '.opa-backups'))
+    expect(backups.some((name) => name.endsWith('-import-32周'))).toBe(true)
 
     const week = JSON.parse(await readFile(path.join(tmpRoot, 'src/data/weeks/32周.json'), 'utf8'))
     expect(week.notes.B0HBKJFMMR).toBe('上一周备注')
@@ -304,4 +396,63 @@ describe('import api integration', () => {
     const reimportedWeek = JSON.parse(await readFile(path.join(tmpRoot, 'src/data/weeks/32周.json'), 'utf8'))
     expect(reimportedWeek.notes.B0HBKJFMMR).toBe('本周修改后的备注')
   }, 30000)
+
+  it('classifies new and changed folders, and rejects invalid import requests', async () => {
+    const missingIds = await fetch(`${baseUrl}/api/import`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
+    })
+    expect(missingIds.status).toBe(400)
+
+    const unknown = await fetch(`${baseUrl}/api/import`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ weekIds: ['不存在周'] }),
+    })
+    expect((await unknown.json()).results[0].error).toContain('未找到周目录')
+
+    const newFolder = path.join(tmpRoot, 'public/data/36周')
+    await writeOrderWorkbook(path.join(newFolder, '订单利润-ASIN-2026-08-30~2026-09-05-test.xlsx'))
+    await writeListingWorkbook(path.join(newFolder, 'Listing销售库存_2026-08-30_2026-09-05.xlsx'))
+    const changedFile = path.join(tmpRoot, 'public/data/32周(8-2~8-8)', 'Listing销售库存_2026-07-11_2026-08-09.xlsx')
+    const future = new Date(Date.now() + 60_000)
+    await utimes(changedFile, future, future)
+
+    const scan = await (await fetch(`${baseUrl}/api/scan`)).json()
+    expect(scan.unimported).toEqual(expect.arrayContaining([
+      expect.objectContaining({ weekId: '36周', importMode: 'new' }),
+      expect.objectContaining({ weekId: '32周', importMode: 'reimport' }),
+    ]))
+
+    const missingListingFolder = path.join(tmpRoot, 'public/data/37周')
+    await writeOrderWorkbook(path.join(missingListingFolder, '订单利润-ASIN-2026-09-06~2026-09-12-test.xlsx'))
+    const missingListing = await fetch(`${baseUrl}/api/import`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ weekIds: ['37周'] }),
+    })
+    expect((await missingListing.json()).results[0].error).toContain('缺少 Listing销售库存')
+
+    const invalidTableFolder = path.join(tmpRoot, 'public/data/38周')
+    await writeWorkbookWithoutAsin(path.join(invalidTableFolder, '订单利润-ASIN-2026-09-13~2026-09-19-test.xlsx'))
+    await writeListingWorkbook(path.join(invalidTableFolder, 'Listing销售库存_2026-09-13_2026-09-19.xlsx'))
+    const invalidTable = await fetch(`${baseUrl}/api/import`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ weekIds: ['38周'] }),
+    })
+    expect((await invalidTable.json()).results[0].error).toContain('订单利润表缺少必填列：ASIN')
+  })
+
+  it('validates unresolved listing assignments', async () => {
+    const missingWeek = await fetch(`${baseUrl}/api/import/resolve-listing-only`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ assignments: [] }),
+    })
+    expect(missingWeek.status).toBe(400)
+    const emptyAssignments = await fetch(`${baseUrl}/api/import/resolve-listing-only`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ weekId: '32周', assignments: [] }),
+    })
+    expect(emptyAssignments.status).toBe(400)
+    const unresolved = await fetch(`${baseUrl}/api/import/resolve-listing-only`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ weekId: '32周', assignments: [{ asin: 'B0MISSING', shopId: 'missing-shop' }] }),
+    })
+    expect((await unresolved.json()).unresolved).toEqual([{ asin: 'B0MISSING', reason: 'shopId 不存在' }])
+  })
 })

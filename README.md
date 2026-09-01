@@ -5,7 +5,7 @@
 ## 30 秒上手
 
 1. 运行 `npm install && npm run dev`
-2. 在 `public/data/第x周目录/` 放入订单利润表和 Listing销售库存表
+2. 在 `public/data/周次目录/` 放入订单利润表和 Listing销售库存表
 3. 打开 `http://127.0.0.1:8000`
 4. 点击“扫描并导入”
 5. 点击“导入”或“全部导入”
@@ -19,7 +19,7 @@
 
 ## 你能用它做什么
 
-- 扫描 `public/data/第x周目录/`，按周次导入双表（订单利润 + Listing销售库存）
+- 扫描 `public/data/周次目录/`，按周次导入双表（订单利润 + Listing销售库存）
 - 将每周 xlsx 永久保存为 JSON 快照，避免历史数据丢失
 - 按店铺维护 ASIN 主数据，每个店铺一个 JSON 文件
 - 支持店铺筛选、父子 ASIN 折叠、固定列、列显隐和列排序
@@ -49,7 +49,9 @@ public/data/31周 (07:26～08:01)/
   Listing销售库存_2026-07-06_2026-08-04.csv
 ```
 
-订单利润表建议保持原始命名，Listing 文件需以 `Listing销售库存` 开头。
+订单利润表需为以“订单利润”开头的 `.xlsx` 文件；Listing 文件需以 `Listing销售库存` 开头，支持 `.xlsx` 和 `.csv`。周次目录名称通常含“`数字周`”，例如 `36周(08-30~09-05)`；系统会将其识别为 `36周`。
+
+为保护本地导入过程，单个导入文件不能超过 10 MB，首个工作表最多 50,000 行和 200 列；订单利润表及 Listing销售库存表都必须包含 `ASIN` 列。
 
 ### 3. 进入页面导入
 
@@ -58,6 +60,8 @@ public/data/31周 (07:26～08:01)/
 - 再手动点击“导入”或“全部导入”
 
 注意：启动项目时不会自动导入 xlsx。
+
+已导入周的源文件若发生变化，扫描接口会标记为“建议重新导入”，但不会再次显示在“待导入”列表。若确实需要重导，请先在“已导入”列表删除该周快照，再重新扫描。
 
 ## 常见操作
 
@@ -119,8 +123,34 @@ public/data/31周 (07:26～08:01)/
 
 ```bash
 npm run build
-npm run preview
+npm test
+npm run test:coverage
 ```
+
+`npm run preview` 仅预览前端构建产物，不包含本项目的本地文件 API；需要导入、编辑或导出数据时，请使用 `npm run dev`。
+
+每次导入周数据或删除周快照前，应用会自动将 `src/data/` 备份到 `.opa-backups/`，并仅保留最近 10 份。恢复时请先停止开发服务器，再用对应备份目录中的 `data/` 替换 `src/data/`。备份与测试覆盖率报告均不会提交到 Git。
+
+## 测试与构建
+
+```bash
+# 全部单元、集成和界面测试
+npm test
+
+# 生成 src/lib 业务规则的覆盖率报告
+npm run test:coverage
+
+# 仅运行本地 API 集成测试
+npm run test:api
+
+# 仅运行导入弹窗界面测试
+npm run test:ui
+
+# 构建前端生产产物
+npm run build
+```
+
+仓库中的 CI 会在推送和 Pull Request 时运行测试、覆盖率检查与生产构建。
 
 ## 数据结构
 
@@ -263,19 +293,20 @@ ROUND(毛利润 / 采购成本, 2)
 #### 补货数量
 
 ```text
-IF(库存数量 < 销量 * (12 + 补货用时), 销量 * 4 * 0.8, "无需补货")
+IF(库存数量 < 销量 * (12 + 补货用时), 销量 * 4 * quantityDiscount, "无需补货")
 ```
 
 说明：
 
-- 这里的“销量”直接取周报中的 7 天销量
+- 这里的“销量”直接取周报中的 7 天销量；`quantityDiscount` 当前配置为 `1`
 - 若计算结果需要补货，则整行高亮
 
 ### 产品分类
 
-支持四种状态：
+支持五种状态：
 
 - 正常
+- 新品
 - 观望
 - 断货
 - 放弃
@@ -370,8 +401,13 @@ IF(库存数量 < 销量 * (12 + 补货用时), 销量 * 4 * 0.8, "无需补货"
 - `GET /api/weeks`
 - `GET /api/weeks/:id`
 - `DELETE /api/weeks/:id`
+- `PUT /api/weeks/:weekId/notes/:asin`
+- `GET /api/restock-config`
 - `GET /api/scan`
+- `GET /api/scan-signature`
 - `POST /api/import`
+- `POST /api/import/resolve-listing-only`
+- `POST /api/export/local-warehouse-pdf`
 
 ## 开发说明
 
@@ -382,6 +418,8 @@ IF(库存数量 < 销量 * (12 + 补货用时), 销量 * 4 * 0.8, "无需补货"
 ## 备注
 
 这是一个本地使用工具，数据直接写入仓库内的 JSON 文件。
+
+本地 API 仅监听 `127.0.0.1`。店铺 ID、周次 ID、导入文件尺寸与工作表规模都会在服务端校验；PDF 导出仅下载受限制的 HTTPS 图片资源。
 
 如果要迁移到多人协作或线上部署，需要额外补：
 

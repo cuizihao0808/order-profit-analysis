@@ -32,4 +32,26 @@ describe('restockRules: computeRestockQty', () => {
   it('works with default config fallback', () => {
     expect(computeRestockQty({ fbaTotal: 20, sales: 10, cycle: 2, config: undefined })).toBe('32')
   })
+
+  it('keeps explicitly configured zero values instead of replacing them with defaults', () => {
+    expect(computeRestockQty({
+      fbaTotal: 1,
+      sales: 10,
+      cycle: 2,
+      config: { restockMonths: 0, restockMultiplier: 0, quantityDiscount: 0 },
+    })).toBe('0')
+  })
+
+  it('accepts numeric strings and rounds fractional replenishment quantities', () => {
+    expect(computeRestockQty({
+      fbaTotal: '1',
+      sales: '1.6',
+      cycle: '2',
+      config: cfg,
+    })).toBe('5')
+  })
+
+  it('does not replenish at the exact stock threshold', () => {
+    expect(computeRestockQty({ fbaTotal: 140, sales: 10, cycle: 2, config: cfg })).toBe('无需补货')
+  })
 })
