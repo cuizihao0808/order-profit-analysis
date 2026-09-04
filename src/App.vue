@@ -385,7 +385,7 @@ async function patchWeekNote(asin, note) {
  *  1. 主字段（品名/ASIN/父ASIN）优先取 products.json，其次 xlsx
  *  2. 扩展字段（产品分类/库存明细/补货用时）取 products.json
  *  3. ROI = ROUND(毛利润 / 采购成本, 2)
- *  4. 补货数量 = IF(FBA总量 < 销量*(12+补货用时), 销量*4*0.8, '无需补货')
+ *  4. 补货数量 = IF(FBA总量 < 销量*(8+补货用时), 销量*8, '无需补货')
  *  5. 其余取 xlsx 快照
  */
 function getCell(row, colName) {

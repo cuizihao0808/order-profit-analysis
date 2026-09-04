@@ -10,9 +10,9 @@ export function computeRestockQty({ fbaTotal, sales, cycle, config }) {
   if (!Number.isFinite(nFba) || !Number.isFinite(nSales) || !Number.isFinite(nCycle)) return ''
   if (nSales <= 0) return '无需补货'
 
-  const restockMonths = config?.restockMonths ?? 12
-  const restockMultiplier = config?.restockMultiplier ?? 4
-  const quantityDiscount = config?.quantityDiscount ?? 0.8
+  const restockMonths = config?.restockMonths ?? 8
+  const restockMultiplier = config?.restockMultiplier ?? 8
+  const quantityDiscount = config?.quantityDiscount ?? 1
 
   const threshold = nSales * (restockMonths + nCycle)
   if (nFba >= threshold) return '无需补货'

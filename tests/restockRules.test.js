@@ -1,12 +1,9 @@
 import { describe, expect, it } from 'vitest'
+import { restockConfig } from '../src/data/restockConfig.js'
 import { computeRestockQty } from '../src/lib/restockRules.js'
 
 describe('restockRules: computeRestockQty', () => {
-  const cfg = {
-    restockMonths: 12,
-    restockMultiplier: 4,
-    quantityDiscount: 0.8,
-  }
+  const cfg = restockConfig
 
   it('returns empty when inputs are invalid', () => {
     expect(computeRestockQty({ fbaTotal: '', sales: 10, cycle: 2, config: cfg })).toBe('')
@@ -21,16 +18,16 @@ describe('restockRules: computeRestockQty', () => {
     expect(computeRestockQty({ fbaTotal: 200, sales: 10, cycle: 2, config: cfg })).toBe('无需补货')
   })
 
-  it('adds one month when stock is below the three-month threshold', () => {
-    expect(computeRestockQty({ fbaTotal: 60, sales: 10, cycle: 2, config: cfg })).toBe('32')
+  it('adds two months when stock is below the two-month-plus-cycle threshold', () => {
+    expect(computeRestockQty({ fbaTotal: 99, sales: 10, cycle: 2, config: cfg })).toBe('80')
   })
 
-  it('still adds one month when stock is very low', () => {
-    expect(computeRestockQty({ fbaTotal: 20, sales: 10, cycle: 2, config: cfg })).toBe('32')
+  it('still adds two months when stock is very low', () => {
+    expect(computeRestockQty({ fbaTotal: 20, sales: 10, cycle: 2, config: cfg })).toBe('80')
   })
 
   it('works with default config fallback', () => {
-    expect(computeRestockQty({ fbaTotal: 20, sales: 10, cycle: 2, config: undefined })).toBe('32')
+    expect(computeRestockQty({ fbaTotal: 20, sales: 10, cycle: 2, config: undefined })).toBe('80')
   })
 
   it('keeps explicitly configured zero values instead of replacing them with defaults', () => {
@@ -48,10 +45,10 @@ describe('restockRules: computeRestockQty', () => {
       sales: '1.6',
       cycle: '2',
       config: cfg,
-    })).toBe('5')
+    })).toBe('13')
   })
 
   it('does not replenish at the exact stock threshold', () => {
-    expect(computeRestockQty({ fbaTotal: 140, sales: 10, cycle: 2, config: cfg })).toBe('无需补货')
+    expect(computeRestockQty({ fbaTotal: 100, sales: 10, cycle: 2, config: cfg })).toBe('无需补货')
   })
 })

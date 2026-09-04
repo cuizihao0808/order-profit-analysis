@@ -47,11 +47,11 @@ const MAX_IMPORT_COLUMNS = 200
 
 // 导入补货配置
 let restockConfigData = {
-  restockMonths: 12,
-  restockMultiplier: 4,
+  restockMonths: 8,
+  restockMultiplier: 8,
   monthlyThreshold: 1,
   doubleRestockMultiplier: 8,
-  quantityDiscount: 0.8,
+  quantityDiscount: 1,
 }
 try {
   const configPath = fp(`${DATA_DIR}/restockConfig.js`)
