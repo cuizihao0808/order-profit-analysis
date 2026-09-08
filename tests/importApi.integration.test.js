@@ -58,6 +58,12 @@ async function writeListingWorkbook(filePath) {
     '产品图片1',
     '销售数据截止',
     '库存数据截止',
+    '包装成本1(CNY)',
+    '包装成本2(CNY)',
+    '外箱尺寸1(长×宽×高cm)',
+    '外箱尺寸2(长×宽×高cm)',
+    '外箱最大装箱数1',
+    '外箱最大装箱数2',
   ]
 
   const rows = [
@@ -84,6 +90,12 @@ async function writeListingWorkbook(filePath) {
       '',
       '2026-08-09',
       '2026-08-10T06:00:03.234Z',
+      '1.25',
+      '2.5',
+      '50×40×30',
+      '60×50×40',
+      '24',
+      '12',
     ],
     [
       'CZH-主店一号',
@@ -367,7 +379,16 @@ describe('import api integration', () => {
     const shop2 = JSON.parse(await readFile(path.join(tmpRoot, 'src/data/products/shop-2.json'), 'utf8'))
     const shop3 = JSON.parse(await readFile(path.join(tmpRoot, 'src/data/products/shop-3.json'), 'utf8'))
 
-    expect(shop1.some((p) => p.asin === 'B0HBKJFMMR')).toBe(true)
+    const mainProduct = shop1.find((p) => p.asin === 'B0HBKJFMMR')
+    expect(mainProduct).toEqual(expect.objectContaining({
+      packageCost1: 1.25,
+      packageCost2: 2.5,
+      outerCartonSize1: '50×40×30',
+      outerCartonSize2: '60×50×40',
+      maxCartonQty1: 24,
+      maxCartonQty2: 12,
+      packingMode: 'mixed',
+    }))
     expect(shop1.some((p) => p.asin === 'B0ONLYLIST')).toBe(true)
     expect(shop3.some((p) => p.asin === 'B0ALIASROW')).toBe(true)
 
@@ -385,6 +406,14 @@ describe('import api integration', () => {
     expect(shop2Base.amazonMainImage || '').toBe('')
     expect(shop2Base.productImage).toBe('https://cdn.example.com/detail.jpg')
 
+    const packingModeResp = await fetch(`${baseUrl}/api/products/B0HBKJFMMR`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ shopId: 'shop-1', packingMode: 'full' }),
+    })
+    expect(packingModeResp.status).toBe(200)
+    expect((await packingModeResp.json()).packingMode).toBe('full')
+
     week.notes.B0HBKJFMMR = '本周修改后的备注'
     await writeJson(path.join(tmpRoot, 'src/data/weeks/32周.json'), week)
     const reimportResp = await fetch(`${baseUrl}/api/import`, {
@@ -395,6 +424,10 @@ describe('import api integration', () => {
     expect(reimportResp.status).toBe(200)
     const reimportedWeek = JSON.parse(await readFile(path.join(tmpRoot, 'src/data/weeks/32周.json'), 'utf8'))
     expect(reimportedWeek.notes.B0HBKJFMMR).toBe('本周修改后的备注')
+    const reimportedShop1 = JSON.parse(
+      await readFile(path.join(tmpRoot, 'src/data/products/shop-1.json'), 'utf8'),
+    )
+    expect(reimportedShop1.find((p) => p.asin === 'B0HBKJFMMR')?.packingMode).toBe('full')
   }, 30000)
 
   it('classifies new and changed folders, and rejects invalid import requests', async () => {

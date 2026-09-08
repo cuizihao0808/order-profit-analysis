@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildProductPatchTargets } from '../src/lib/productUpdates.js'
+import { buildProductPatchTargets, sortFullCartonFirst } from '../src/lib/productUpdates.js'
 
 describe('buildProductPatchTargets', () => {
   const products = [
@@ -20,5 +20,22 @@ describe('buildProductPatchTargets', () => {
     expect(buildProductPatchTargets(products, 'PARENT', { localWarehouse: 5 }, 'shop-1')).toEqual([
       { asin: 'PARENT', patch: { localWarehouse: 5 }, shopId: 'shop-1' },
     ])
+  })
+
+  it('moves full-carton rows first while preserving the order within each mode', () => {
+    const rows = [
+      { asin: 'MIXED-1', packingMode: 'mixed' },
+      { asin: 'FULL-1', packingMode: 'full' },
+      { asin: 'MIXED-2' },
+      { asin: 'FULL-2', packingMode: 'full' },
+    ]
+
+    expect(sortFullCartonFirst(rows).map((row) => row.asin)).toEqual([
+      'FULL-1',
+      'FULL-2',
+      'MIXED-1',
+      'MIXED-2',
+    ])
+    expect(rows.map((row) => row.asin)).toEqual(['MIXED-1', 'FULL-1', 'MIXED-2', 'FULL-2'])
   })
 })

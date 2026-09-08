@@ -30,6 +30,10 @@ describe('dataPipeline: product normalization', () => {
       monthSales: '1,233',
       packageSize1: '10×20×30',
       packageType2: '纸箱',
+      packageCost1: '1.25',
+      packageCost2: '',
+      outerCartonSize1: '50×40×30',
+      maxCartonQty1: '24',
       itemWeight: '250',
     })
 
@@ -39,6 +43,11 @@ describe('dataPipeline: product normalization', () => {
     expect(next.monthSales).toBe(1233)
     expect(next.packageSize).toBe('10×20×30')
     expect(next.packageType).toBe('纸箱')
+    expect(next.packageCost1).toBe(1.25)
+    expect(next.packageCost2).toBe('')
+    expect(next.outerCartonSize1).toBe('50×40×30')
+    expect(next.maxCartonQty1).toBe(24)
+    expect(next.packingMode).toBe('mixed')
     expect(next.itemWeight).toBe(250)
   })
 
@@ -189,6 +198,12 @@ describe('dataPipeline: listing row mapping', () => {
       'FBA总量',
       '包装尺寸(长×宽×高cm)',
       '包装类型',
+      '包装成本1(CNY)',
+      '包装成本2(CNY)',
+      '外箱尺寸1(长×宽×高cm)',
+      '外箱尺寸2(长×宽×高cm)',
+      '外箱最大装箱数1',
+      '外箱最大装箱数2',
       '单品重量(g)',
       '产品图片',
     ]
@@ -209,6 +224,12 @@ describe('dataPipeline: listing row mapping', () => {
       '111',
       '30×20×10',
       '纸箱',
+      '1.25',
+      '2.5',
+      '50×40×30',
+      '60×50×40',
+      '24',
+      '12',
       '250',
       'https://example.com/a.jpg',
     ]
@@ -224,6 +245,12 @@ describe('dataPipeline: listing row mapping', () => {
     expect(mapped.fbaTotal).toBe(111)
     expect(mapped.packageSize).toBe('30×20×10')
     expect(mapped.packageType).toBe('纸箱')
+    expect(mapped.packageCost1).toBe(1.25)
+    expect(mapped.packageCost2).toBe(2.5)
+    expect(mapped.outerCartonSize1).toBe('50×40×30')
+    expect(mapped.outerCartonSize2).toBe('60×50×40')
+    expect(mapped.maxCartonQty1).toBe(24)
+    expect(mapped.maxCartonQty2).toBe(12)
     expect(mapped.productImage).toBe('https://example.com/a.jpg')
     expect(mapped.listingDetailImages).toEqual(['https://example.com/a.jpg'])
   })

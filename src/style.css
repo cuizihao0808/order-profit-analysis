@@ -1208,6 +1208,25 @@ thead th.col-expand {
   font-size: 12px;
 }
 
+.inventory-paired-value {
+  min-width: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.inventory-packing-mode {
+  padding-block: 4px;
+}
+
+.packing-mode-control {
+  flex-shrink: 0;
+}
+
+.packing-mode-control .el-radio-button__inner {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
 .inventory-item strong.inventory-health-good {
   color: #1a9550;
 }
@@ -2047,8 +2066,18 @@ code {
     max-width: 300px;
   }
 
+  .app.compact-13 .inventory-detail-grid,
   .inventory-detail-grid {
-    grid-template-columns: 1fr 1fr;
+    width: calc(100vw - 24px);
+    position: sticky;
+    left: 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .inventory-footer-bar {
+    width: calc(100vw - 24px);
+    position: sticky;
+    left: 12px;
   }
 
   thead th.fix-left,
@@ -2143,6 +2172,7 @@ code {
     min-width: 40px;
   }
 
+  .app.compact-13 .inventory-detail-grid,
   .inventory-detail-grid {
     grid-template-columns: 1fr;
   }

@@ -987,6 +987,12 @@ function importWeekBundle(bundle) {
       fbaTotal: product.fbaTotal,
       packageSize: product.packageSize,
       packageType: product.packageType,
+      packageCost1: product.packageCost1,
+      packageCost2: product.packageCost2,
+      outerCartonSize1: product.outerCartonSize1,
+      outerCartonSize2: product.outerCartonSize2,
+      maxCartonQty1: product.maxCartonQty1,
+      maxCartonQty2: product.maxCartonQty2,
       itemWeight: product.itemWeight,
       amazonMainImage: product.amazonMainImage,
       listingDetailImages: product.listingDetailImages,
@@ -1017,6 +1023,12 @@ function importWeekBundle(bundle) {
     product.fbaTotal = listingRow.fbaTotal
     product.packageSize = listingRow.packageSize
     product.packageType = listingRow.packageType
+    product.packageCost1 = listingRow.packageCost1
+    product.packageCost2 = listingRow.packageCost2
+    product.outerCartonSize1 = listingRow.outerCartonSize1
+    product.outerCartonSize2 = listingRow.outerCartonSize2
+    product.maxCartonQty1 = listingRow.maxCartonQty1
+    product.maxCartonQty2 = listingRow.maxCartonQty2
     product.itemWeight = listingRow.itemWeight
     product.amazonMainImage = listingRow.amazonMainImage || ''
     product.listingDetailImages = Array.isArray(listingRow.listingDetailImages)
@@ -1043,6 +1055,12 @@ function importWeekBundle(bundle) {
       fbaTotal: product.fbaTotal,
       packageSize: product.packageSize,
       packageType: product.packageType,
+      packageCost1: product.packageCost1,
+      packageCost2: product.packageCost2,
+      outerCartonSize1: product.outerCartonSize1,
+      outerCartonSize2: product.outerCartonSize2,
+      maxCartonQty1: product.maxCartonQty1,
+      maxCartonQty2: product.maxCartonQty2,
       itemWeight: product.itemWeight,
       amazonMainImage: product.amazonMainImage,
       listingDetailImages: product.listingDetailImages,
@@ -1161,6 +1179,13 @@ function importWeekBundle(bundle) {
           vineGiftSales: '',
           packageSize: '',
           packageType: '',
+          packageCost1: '',
+          packageCost2: '',
+          outerCartonSize1: '',
+          outerCartonSize2: '',
+          maxCartonQty1: '',
+          maxCartonQty2: '',
+          packingMode: 'mixed',
           itemWeight: '',
           amazonMainImage: '',
           listingDetailImages: [],
@@ -1330,6 +1355,13 @@ function importWeekBundle(bundle) {
           vineGiftSales: listingRow?.vineGiftSales ?? '',
           packageSize: listingRow?.packageSize ?? '',
           packageType: listingRow?.packageType ?? '',
+          packageCost1: listingRow?.packageCost1 ?? '',
+          packageCost2: listingRow?.packageCost2 ?? '',
+          outerCartonSize1: listingRow?.outerCartonSize1 ?? '',
+          outerCartonSize2: listingRow?.outerCartonSize2 ?? '',
+          maxCartonQty1: listingRow?.maxCartonQty1 ?? '',
+          maxCartonQty2: listingRow?.maxCartonQty2 ?? '',
+          packingMode: 'mixed',
           itemWeight: listingRow?.itemWeight ?? '',
           amazonMainImage: listingRow?.amazonMainImage ?? '',
           listingDetailImages: Array.isArray(listingRow?.listingDetailImages)
@@ -1540,6 +1572,13 @@ function apiPlugin() {
               vineGiftSales: body.vineGiftSales ?? '',
               packageSize: body.packageSize ?? '',
               packageType: body.packageType ?? '',
+              packageCost1: body.packageCost1 ?? '',
+              packageCost2: body.packageCost2 ?? '',
+              outerCartonSize1: body.outerCartonSize1 ?? '',
+              outerCartonSize2: body.outerCartonSize2 ?? '',
+              maxCartonQty1: body.maxCartonQty1 ?? '',
+              maxCartonQty2: body.maxCartonQty2 ?? '',
+              packingMode: body.packingMode === 'full' ? 'full' : 'mixed',
               itemWeight: body.itemWeight ?? '',
               amazonMainImage: body.amazonMainImage ?? '',
               listingDetailImages: Array.isArray(body.listingDetailImages)
@@ -1842,6 +1881,12 @@ function apiPlugin() {
                 fbaTotal: product.fbaTotal,
                 packageSize: product.packageSize,
                 packageType: product.packageType,
+                packageCost1: product.packageCost1,
+                packageCost2: product.packageCost2,
+                outerCartonSize1: product.outerCartonSize1,
+                outerCartonSize2: product.outerCartonSize2,
+                maxCartonQty1: product.maxCartonQty1,
+                maxCartonQty2: product.maxCartonQty2,
                 itemWeight: product.itemWeight,
                 amazonMainImage: product.amazonMainImage,
                 listingDetailImages: product.listingDetailImages,
@@ -1872,6 +1917,12 @@ function apiPlugin() {
               product.fbaTotal = listingRow.fbaTotal
               product.packageSize = listingRow.packageSize
               product.packageType = listingRow.packageType
+              product.packageCost1 = listingRow.packageCost1
+              product.packageCost2 = listingRow.packageCost2
+              product.outerCartonSize1 = listingRow.outerCartonSize1
+              product.outerCartonSize2 = listingRow.outerCartonSize2
+              product.maxCartonQty1 = listingRow.maxCartonQty1
+              product.maxCartonQty2 = listingRow.maxCartonQty2
               product.itemWeight = listingRow.itemWeight
               product.amazonMainImage = listingRow.amazonMainImage || ''
               product.listingDetailImages = Array.isArray(listingRow.listingDetailImages)
@@ -1900,6 +1951,12 @@ function apiPlugin() {
                 fbaTotal: product.fbaTotal,
                 packageSize: product.packageSize,
                 packageType: product.packageType,
+                packageCost1: product.packageCost1,
+                packageCost2: product.packageCost2,
+                outerCartonSize1: product.outerCartonSize1,
+                outerCartonSize2: product.outerCartonSize2,
+                maxCartonQty1: product.maxCartonQty1,
+                maxCartonQty2: product.maxCartonQty2,
                 itemWeight: product.itemWeight,
                 amazonMainImage: product.amazonMainImage,
                 listingDetailImages: product.listingDetailImages,
@@ -1991,6 +2048,13 @@ function apiPlugin() {
                 vineGiftSales: listingRow.vineGiftSales,
                 packageSize: listingRow.packageSize,
                 packageType: listingRow.packageType,
+                packageCost1: listingRow.packageCost1,
+                packageCost2: listingRow.packageCost2,
+                outerCartonSize1: listingRow.outerCartonSize1,
+                outerCartonSize2: listingRow.outerCartonSize2,
+                maxCartonQty1: listingRow.maxCartonQty1,
+                maxCartonQty2: listingRow.maxCartonQty2,
+                packingMode: 'mixed',
                 itemWeight: listingRow.itemWeight,
                 amazonMainImage: listingRow.amazonMainImage || '',
                 listingDetailImages: Array.isArray(listingRow.listingDetailImages)

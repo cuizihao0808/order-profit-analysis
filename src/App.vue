@@ -2,7 +2,7 @@
 import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { computeRestockQty } from './lib/restockRules.js'
 import { prepareImportScan } from './lib/importScan.js'
-import { buildProductPatchTargets } from './lib/productUpdates.js'
+import { buildProductPatchTargets, sortFullCartonFirst } from './lib/productUpdates.js'
 
 const ImportDialog = defineAsyncComponent(() => import('./components/ImportDialog.vue'))
 
@@ -162,6 +162,13 @@ function weightTypeText(row) {
   const [lengthCm, widthCm, heightCm] = dims
   const volumetricWeightG = (lengthCm * widthCm * heightCm * 1000) / 6000
   return itemWeightG > volumetricWeightG ? '实重' : '抛重'
+}
+
+function pairedInventoryText(row, firstKey, secondKey) {
+  const product = rowProduct(row)
+  const values = [product?.[firstKey], product?.[secondKey]]
+    .filter((value) => value != null && value !== '')
+  return values.join(' / ') || '—'
 }
 
 /* ================= 状态 ================= */
@@ -730,6 +737,10 @@ function rowAsinKey(row) {
   return normalizeAsinKey(row?.asin)
 }
 
+function rowPackingMode(row) {
+  return rowProduct(row)?.packingMode === 'full' ? 'full' : 'mixed'
+}
+
 /**
  * 按 父ASIN 分组
  * - 同父 ASIN 的记录强制聚合为同一组
@@ -749,14 +760,21 @@ const groups = computed(() => {
 
   const result = []
   for (const [key, rows] of map) {
-    const sorted = rows.slice().sort((a, b) => profitValue(b) - profitValue(a))
+    const profitSorted = rows.slice().sort((a, b) => profitValue(b) - profitValue(a))
+    const sorted = sortFullCartonFirst(profitSorted, rowPackingMode)
     let headerRow = sorted.find((r) => rowAsinKey(r) === key)
     if (!headerRow) headerRow = sorted[0]
     let children
     children = sorted.filter((r) => r !== headerRow)
     result.push({ key, header: headerRow, children })
   }
-  return result.sort((a, b) => profitValue(b.header) - profitValue(a.header))
+  const profitSortedGroups = result.sort((a, b) => profitValue(b.header) - profitValue(a.header))
+  return sortFullCartonFirst(profitSortedGroups, (group) => {
+    const hasFullCarton = [group.header, ...group.children].some(
+      (row) => rowPackingMode(row) === 'full',
+    )
+    return hasFullCarton ? 'full' : 'mixed'
+  })
 })
 
 const visibleRows = computed(() => {
@@ -1445,6 +1463,13 @@ function commitEditableText(row, key, value) {
   patchProduct(row.asin, { [key]: nextValue }, { shopId: rowShopId(row) })
 }
 
+function setPackingMode(row, value) {
+  if (!row) return
+  const nextValue = value === 'full' ? 'full' : 'mixed'
+  if (rowPackingMode(row) === nextValue) return
+  patchProduct(row.asin, { packingMode: nextValue }, { shopId: rowShopId(row) })
+}
+
 async function applyBatchCategoryChange() {
   const targetCategory = String(batchCategoryValue.value || '').trim()
   if (!targetCategory) {
@@ -2128,8 +2153,23 @@ onBeforeUnmount(() => {
                   <div class="inventory-item"><span>FBA总量</span><strong>{{ getCell(item.row, 'FBA总量') || '—' }}</strong></div>
                   <div class="inventory-item"><span>包装尺寸/cm</span><strong>{{ rowProduct(item.row)?.packageSize || rowProduct(item.row)?.packageSize1 || rowProduct(item.row)?.packageSize2 || '—' }}</strong></div>
                   <div class="inventory-item"><span>包装类型</span><strong>{{ rowProduct(item.row)?.packageType || rowProduct(item.row)?.packageType1 || rowProduct(item.row)?.packageType2 || '—' }}</strong></div>
+                  <div class="inventory-item"><span>包装成本/CNY</span><strong class="inventory-paired-value">{{ pairedInventoryText(item.row, 'packageCost1', 'packageCost2') }}</strong></div>
+                  <div class="inventory-item"><span>外箱尺寸/cm</span><strong class="inventory-paired-value">{{ pairedInventoryText(item.row, 'outerCartonSize1', 'outerCartonSize2') }}</strong></div>
+                  <div class="inventory-item"><span>最大装箱数</span><strong class="inventory-paired-value">{{ pairedInventoryText(item.row, 'maxCartonQty1', 'maxCartonQty2') }}</strong></div>
                   <div class="inventory-item"><span>单品重量/g</span><strong>{{ rowProduct(item.row)?.itemWeight || '—' }}</strong></div>
                   <div class="inventory-item"><span>重量类型</span><strong>{{ weightTypeText(item.row) }}</strong></div>
+                  <div class="inventory-item inventory-packing-mode">
+                    <span>装箱方式</span>
+                    <el-radio-group
+                      class="packing-mode-control"
+                      :model-value="rowPackingMode(item.row)"
+                      size="small"
+                      @change="setPackingMode(item.row, $event)"
+                    >
+                      <el-radio-button value="full">整箱</el-radio-button>
+                      <el-radio-button value="mixed">混装</el-radio-button>
+                    </el-radio-group>
+                  </div>
                   <label class="inventory-item inventory-input-item">
                     <span>本地仓库</span>
                     <input

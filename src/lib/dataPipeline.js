@@ -40,6 +40,13 @@ export function normalizeInventoryProduct(product) {
 
   next.packageSize = next.packageSize == null ? legacyPackageSize : String(next.packageSize)
   next.packageType = next.packageType == null ? legacyPackageType : String(next.packageType)
+  next.packageCost1 = normalizeNumber(next.packageCost1, '')
+  next.packageCost2 = normalizeNumber(next.packageCost2, '')
+  next.outerCartonSize1 = next.outerCartonSize1 == null ? '' : String(next.outerCartonSize1).trim()
+  next.outerCartonSize2 = next.outerCartonSize2 == null ? '' : String(next.outerCartonSize2).trim()
+  next.maxCartonQty1 = normalizeNumber(next.maxCartonQty1, '')
+  next.maxCartonQty2 = normalizeNumber(next.maxCartonQty2, '')
+  next.packingMode = next.packingMode === 'full' ? 'full' : 'mixed'
   next.itemWeight = normalizeNumber(next.itemWeight, '')
   const normalizedImages = Array.isArray(next.productImages)
     ? next.productImages
@@ -157,6 +164,12 @@ export function buildListingRowRecord(values, listingColIdx) {
       String(values[listingColIdx['包装类型']] ?? '').trim() ||
       String(values[listingColIdx['包装类型1']] ?? '').trim() ||
       String(values[listingColIdx['包装类型2']] ?? '').trim(),
+    packageCost1: normalizeNumber(values[listingColIdx['包装成本1(CNY)']], ''),
+    packageCost2: normalizeNumber(values[listingColIdx['包装成本2(CNY)']], ''),
+    outerCartonSize1: String(values[listingColIdx['外箱尺寸1(长×宽×高cm)']] ?? '').trim(),
+    outerCartonSize2: String(values[listingColIdx['外箱尺寸2(长×宽×高cm)']] ?? '').trim(),
+    maxCartonQty1: normalizeNumber(values[listingColIdx['外箱最大装箱数1']], ''),
+    maxCartonQty2: normalizeNumber(values[listingColIdx['外箱最大装箱数2']], ''),
     itemWeight: normalizeNumber(values[listingColIdx['单品重量(g)']], ''),
     amazonMainImage,
     listingDetailImages,

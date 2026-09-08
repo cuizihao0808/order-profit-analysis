@@ -54,6 +54,8 @@ describe('import dialog', () => {
           'el-input': { template: '<input />' },
           'el-switch': { template: '<input type="checkbox" />' },
           'el-tag': { template: '<span><slot /></span>' },
+          'el-radio-group': { template: '<div><slot /></div>' },
+          'el-radio-button': ButtonStub,
         },
       },
     })
