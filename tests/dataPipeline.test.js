@@ -255,6 +255,21 @@ describe('dataPipeline: listing row mapping', () => {
     expect(mapped.listingDetailImages).toEqual(['https://example.com/a.jpg'])
   })
 
+  it('reads carton columns without the numeric suffix', () => {
+    const cols = [
+      'ASIN',
+      '外箱尺寸(长×宽×高cm)',
+      '外箱最大装箱数',
+      '产品图片',
+    ]
+    const idx = Object.fromEntries(cols.map((c, i) => [c, i]))
+    const mapped = buildListingRowRecord(['B0GWFHTRCX', '50×48×49', '12', ''], idx)
+    expect(mapped.outerCartonSize1).toBe('50×48×49')
+    expect(mapped.maxCartonQty1).toBe(12)
+    expect(mapped.outerCartonSize2).toBe('')
+    expect(mapped.maxCartonQty2).toBe('')
+  })
+
   it('falls back to legacy package columns when single-column fields are empty', () => {
     const cols = [
       'ASIN',

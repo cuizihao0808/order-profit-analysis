@@ -664,6 +664,75 @@ async function writeClipboard(text) {
   document.body.removeChild(ta)
 }
 
+function escapeHtml(text) {
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+function buildClipboardTableHtml(header, rows) {
+  const cellStyle = 'border:1px solid #999;padding:4px 8px;'
+  const headHtml = header
+    .map((h) => `<th style="${cellStyle}background:#f0f0f0;font-weight:bold;">${escapeHtml(h)}</th>`)
+    .join('')
+  const bodyHtml = rows
+    .map((row) => `<tr>${row.map((v) => `<td style="${cellStyle}">${escapeHtml(v)}</td>`).join('')}</tr>`)
+    .join('')
+  return `<table style="border-collapse:collapse;"><thead><tr>${headHtml}</tr></thead><tbody>${bodyHtml}</tbody></table>`
+}
+
+/** 转为全角字符：聊天框多为非等宽字体，只有全角字符宽度一致，才能保证各列对齐 */
+function toFullWidth(text) {
+  return String(text)
+    .replace(/[\u0021-\u007E]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) + 0xfee0))
+    .replace(/ /g, '\u3000')
+    .replace(/×/g, 'ｘ')
+    .replace(/—/g, '－')
+}
+
+/** 生成纯文本表格：所有字符全角，每列用全角空格补齐到同一长度 */
+function buildClipboardTableText(header, rows) {
+  const cells = [header, ...rows].map((row) => row.map(toFullWidth))
+  const widths = header.map((_, i) => Math.max(...cells.map((row) => [...row[i]].length)))
+  const pad = (v, i) => v + '\u3000'.repeat(widths[i] - [...v].length)
+  const line = (row) => row.map(pad).join('｜')
+  const divider = widths.map((w) => '－'.repeat(w)).join('＋')
+  return [line(cells[0]), divider, ...cells.slice(1).map(line)].join('\n')
+}
+
+/** 同时写入 HTML 表格和纯文本表格：Word/Excel 等识别 HTML，纯文本聊天框使用全角对齐文本 */
+async function writeClipboardTable(header, rows) {
+  const text = buildClipboardTableText(header, rows)
+  const html = buildClipboardTableHtml(header, rows)
+
+  if (navigator.clipboard?.write && typeof ClipboardItem !== 'undefined') {
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        'text/html': new Blob([html], { type: 'text/html' }),
+        'text/plain': new Blob([text], { type: 'text/plain' }),
+      }),
+    ])
+    return
+  }
+
+  const container = document.createElement('div')
+  container.innerHTML = html
+  container.style.position = 'absolute'
+  container.style.left = '-9999px'
+  document.body.appendChild(container)
+  const range = document.createRange()
+  range.selectNodeContents(container)
+  const selection = window.getSelection()
+  selection.removeAllRanges()
+  selection.addRange(range)
+  const ok = document.execCommand('copy')
+  selection.removeAllRanges()
+  document.body.removeChild(container)
+  if (!ok) await writeClipboard(text)
+}
+
 /** 判断某行是否被标记为「放弃」 */
 function isAbandoned(row) {
   if (!row) return false
@@ -815,20 +884,31 @@ const visibleAsinList = computed(() => {
 
 const selectedAsinCount = computed(() => selectedAsins.value.size)
 
+/** 复制包装信息只导出该包装类型的产品 */
+const PACKAGE_COPY_TYPE = '飞机盒'
+
 const selectedPackageAndOrderedRows = computed(() => {
   const rows = []
   for (const asin of selectedAsins.value) {
     const product = productMap.value.get(asin)
     if (!product) continue
+    const packageType = String(
+      product.packageType || product.packageType1 || product.packageType2 || '',
+    ).trim()
+    if (packageType !== PACKAGE_COPY_TYPE) continue
     const packageSize = String(
       product.packageSize || product.packageSize1 || product.packageSize2 || '',
     ).trim()
     const orderedQtyRaw = product.orderedQty
     const orderedQty = orderedQtyRaw == null || orderedQtyRaw === '' ? 0 : Number(orderedQtyRaw)
+    const packageCost = [product.packageCost1, product.packageCost2]
+      .filter((value) => value != null && value !== '')
+      .join(' / ')
     rows.push({
       asin,
       packageSize: packageSize || '—',
       orderedQty: Number.isFinite(orderedQty) ? orderedQty : 0,
+      packageCost: packageCost || '—',
     })
   }
   return rows.sort((a, b) => a.asin.localeCompare(b.asin))
@@ -980,13 +1060,20 @@ async function copyNonAbandonedAsins() {
 async function copySelectedPackageAndOrdered() {
   const rows = selectedPackageAndOrderedRows.value
   if (!rows.length) {
-    showToast('请先勾选产品', 'warn')
+    showToast(`勾选的产品中没有包装类型为「${PACKAGE_COPY_TYPE}」的`, 'warn')
     return
   }
-  const content = rows.map((x) => `${x.packageSize}\t${x.orderedQty}`).join('\n')
+  const header = ['包装尺寸', '包装数量', '包装价格']
+  const lines = rows.map((x) => [x.packageSize, x.orderedQty, x.packageCost])
   try {
-    await writeClipboard(content)
-    showToast(`已复制 ${rows.length} 条包装尺寸和已下单数量`, 'success')
+    await writeClipboardTable(header, lines)
+    const skipped = selectedAsinCount.value - rows.length
+    showToast(
+      skipped > 0
+        ? `已复制 ${rows.length} 条${PACKAGE_COPY_TYPE}包装信息，跳过 ${skipped} 条其他包装类型`
+        : `已复制 ${rows.length} 条${PACKAGE_COPY_TYPE}包装信息`,
+      'success',
+    )
   } catch {
     showToast('复制失败，请重试', 'error')
   }
@@ -1915,8 +2002,8 @@ onBeforeUnmount(() => {
       <el-button :disabled="!nonAbandonedVisibleAsins.length" @click="copyNonAbandonedAsins">
         复制非放弃ASIN（{{ nonAbandonedVisibleAsins.length }}）
       </el-button>
-      <el-button :disabled="!selectedAsinCount" @click="copySelectedPackageAndOrdered">
-        复制包装尺寸+已下单（{{ selectedAsinCount }}）
+      <el-button :disabled="!selectedPackageAndOrderedRows.length" @click="copySelectedPackageAndOrdered">
+        复制飞机盒包装信息（{{ selectedPackageAndOrderedRows.length }}）
       </el-button>
       <span class="tool-label">批量分类</span>
       <el-select v-model="batchCategoryValue" class="tool-ep-select" style="width: 122px" placeholder="选择分类">

@@ -116,7 +116,7 @@ public/data/36周(08-30~09-05)/
 勾选表格左侧的复选框后，工具栏上的批量动作会启用：
 
 - **批量改分类**：把选中的所有 ASIN 改为同一个产品分类
-- **复制包装尺寸+已下单**：把选中 ASIN 的包装尺寸和已下单数量复制到剪贴板
+- **复制飞机盒包装信息**：只处理勾选中包装类型为“飞机盒”的 ASIN，其他包装类型自动跳过；把包装尺寸、已下单数量、包装成本（CNY）复制到剪贴板，首行为表头“包装尺寸 / 包装数量 / 包装价格”。粘贴进 Word、Excel 等支持富文本的软件会显示为带边框的表格；粘贴进只认纯文本的聊天框会得到全角字符对齐的文字表格，每列长度一致
 - **清空勾选**：取消所有选择
 
 另有一个不依赖勾选的按钮：**复制非放弃ASIN**，复制当前筛选结果里所有非“放弃”的 ASIN。
@@ -283,7 +283,7 @@ src/data/
 | `fbaTotal` `sellable` `inbound` `unsellable` `reserved` | FBA 库存明细 |
 | `monthSales` `monthRevenue` `monthOrders` `dailySales` `vineGiftSales` | 月度销售指标 |
 | `packageSize` `packageType` `packageCost1` `packageCost2` | 包装信息 |
-| `outerCartonSize1` `outerCartonSize2` `maxCartonQty1` `maxCartonQty2` | 外箱信息 |
+| `outerCartonSize1` `outerCartonSize2` `maxCartonQty1` `maxCartonQty2` | 外箱信息，新旧两种表头都能识别，见下 |
 | `itemWeight` | 单品重量，单位克 |
 | `amazonMainImage` `productImage` `productImages` `listingDetailImages` | 图片 URL |
 
@@ -293,6 +293,8 @@ src/data/
 |------|------|
 | `asin` `parentAsin` | ASIN 与父 ASIN |
 | `firstSeenWeek` `lastSeenWeek` | 首次和最近出现的周次 |
+
+Listing 表的表头有新旧两版：外箱两列旧版叫「外箱尺寸1(长×宽×高cm)」和「外箱最大装箱数1」，新版去掉了数字后缀。包装尺寸和包装类型同理。导入时两种都能识别，优先取无后缀的那一版。
 
 `packageSize1` `packageSize2` `packageType1` `packageType2` `stock` 是历史遗留字段，读取时作为 `packageSize` `packageType` `fbaTotal` 的兜底来源，新导入不再写入。
 

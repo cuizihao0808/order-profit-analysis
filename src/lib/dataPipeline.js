@@ -135,6 +135,13 @@ export function buildListingRowRecord(values, listingColIdx) {
   const listingDetailImages = collectListingImageUrls(values, listingColIdx)
   const rawAmazonMainImage = String(values[listingColIdx['图片URL']] ?? '').trim()
   const amazonMainImage = isAmazonMainImageUrl(rawAmazonMainImage) ? rawAmazonMainImage : ''
+  // 新版表头去掉了数字后缀，旧版为 外箱尺寸1 / 外箱最大装箱数1
+  const outerCartonSize =
+    String(values[listingColIdx['外箱尺寸(长×宽×高cm)']] ?? '').trim() ||
+    String(values[listingColIdx['外箱尺寸1(长×宽×高cm)']] ?? '').trim()
+  const maxCartonQtyNew = normalizeNumber(values[listingColIdx['外箱最大装箱数']], '')
+  const maxCartonQty =
+    maxCartonQtyNew === '' ? normalizeNumber(values[listingColIdx['外箱最大装箱数1']], '') : maxCartonQtyNew
   const mergedImages = listingDetailImages.slice()
   if (amazonMainImage && !mergedImages.includes(amazonMainImage)) {
     mergedImages.unshift(amazonMainImage)
@@ -166,9 +173,9 @@ export function buildListingRowRecord(values, listingColIdx) {
       String(values[listingColIdx['包装类型2']] ?? '').trim(),
     packageCost1: normalizeNumber(values[listingColIdx['包装成本1(CNY)']], ''),
     packageCost2: normalizeNumber(values[listingColIdx['包装成本2(CNY)']], ''),
-    outerCartonSize1: String(values[listingColIdx['外箱尺寸1(长×宽×高cm)']] ?? '').trim(),
+    outerCartonSize1: outerCartonSize,
     outerCartonSize2: String(values[listingColIdx['外箱尺寸2(长×宽×高cm)']] ?? '').trim(),
-    maxCartonQty1: normalizeNumber(values[listingColIdx['外箱最大装箱数1']], ''),
+    maxCartonQty1: maxCartonQty,
     maxCartonQty2: normalizeNumber(values[listingColIdx['外箱最大装箱数2']], ''),
     itemWeight: normalizeNumber(values[listingColIdx['单品重量(g)']], ''),
     amazonMainImage,
