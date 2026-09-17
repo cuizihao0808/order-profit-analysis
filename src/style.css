@@ -18,6 +18,17 @@
   --header-bg: #f6f6f6;
 }
 
+/* Element Plus 主色：默认蓝 → 与整体黑白灰一致（html:root 提高优先级，确保覆盖组件样式里的 :root） */
+html:root {
+  --el-color-primary: #111111;
+  --el-color-primary-light-3: #585858;
+  --el-color-primary-light-5: #888888;
+  --el-color-primary-light-7: #b8b8b8;
+  --el-color-primary-light-8: #d0d0d0;
+  --el-color-primary-light-9: #efefef;
+  --el-color-primary-dark-2: #000000;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -370,12 +381,12 @@ thead tr {
 .filter-item-search { flex: 1.4 1 140px; }
 
 .filter-item-active {
-  border-color: #a8c5ff;
-  background: linear-gradient(180deg, #f5f9ff, #eef4ff);
-  box-shadow: 0 0 0 2px rgba(99, 155, 255, 0.12);
+  border-color: #9a9a9a;
+  background: linear-gradient(180deg, #fafafa, #f1f1f1);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.06);
 }
 .filter-item-active .tool-label {
-  color: #2563eb;
+  color: var(--text-strong);
 }
 
 .filter-reset-btn {
@@ -681,6 +692,19 @@ thead tr {
   --el-button-border-color: #111111;
   --el-button-hover-bg-color: #000000;
   --el-button-hover-border-color: #000000;
+  --el-button-active-bg-color: #000000;
+  --el-button-active-border-color: #000000;
+}
+
+/* 描边款主按钮：白底黑字黑边，悬停反色 */
+.el-button--primary.is-plain {
+  --el-button-text-color: #111111;
+  --el-button-bg-color: #ffffff;
+  --el-button-border-color: #111111;
+  --el-button-hover-text-color: #ffffff;
+  --el-button-hover-bg-color: #111111;
+  --el-button-hover-border-color: #111111;
+  --el-button-active-text-color: #ffffff;
   --el-button-active-bg-color: #000000;
   --el-button-active-border-color: #000000;
 }
@@ -2175,5 +2199,148 @@ code {
   .app.compact-13 .inventory-detail-grid,
   .inventory-detail-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ===== App shell / side nav ===== */
+.shell {
+  --shell-header-h: 52px;
+  display: flex;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+}
+
+.shell-main {
+  flex: 1;
+  min-width: 0;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.side-nav {
+  flex: 0 0 176px;
+  width: 176px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--line);
+  background: var(--panel);
+  transition: flex-basis 0.18s ease, width 0.18s ease;
+}
+
+.shell-collapsed .side-nav {
+  flex-basis: 56px;
+  width: 56px;
+}
+
+.side-nav-head {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  height: var(--shell-header-h);
+  padding: 0 15px;
+  border-bottom: 1px solid var(--line-soft);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.side-nav-brand {
+  font-weight: 700;
+  color: var(--text-strong);
+}
+
+.side-nav-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 8px;
+}
+
+.side-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.side-nav-item:hover {
+  background: var(--row-hover);
+}
+
+.side-nav-item.active {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.side-nav-icon {
+  flex: 0 0 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: var(--accent-soft);
+  color: var(--text-strong);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.side-nav-item.active .side-nav-icon {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+.side-nav-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 8px;
+  padding: 8px;
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.side-nav-toggle:hover {
+  color: var(--text-strong);
+  background: var(--row-hover);
+}
+
+/* 两个页面的 header 与侧栏顶部等高（覆盖紧凑模式 / 响应式里的 padding） */
+.shell .shell-main .topbar {
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  height: var(--shell-header-h);
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+/* 页面切换：KeepAlive 重新挂载 DOM 时动画会重新播放 */
+.shell-main > .app {
+  animation: page-in 0.16s ease-out;
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0.35;
+  }
+  to {
+    opacity: 1;
   }
 }
