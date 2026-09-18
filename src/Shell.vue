@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue'
 import App from './App.vue'
 import FocusProducts from './components/FocusProducts.vue'
+import ReplenishmentPlan from './components/ReplenishmentPlan.vue'
 
 const PAGE_KEY = 'opa:page:v1'
 const SIDEBAR_KEY = 'opa:sidebar-collapsed:v1'
@@ -9,6 +10,7 @@ const SIDEBAR_KEY = 'opa:sidebar-collapsed:v1'
 const PAGES = [
   { id: 'weekly', label: '周订单利润', short: '周' },
   { id: 'focus', label: '重点关注产品', short: '重' },
+  { id: 'replenish', label: '补货批次计划', short: '补' },
 ]
 
 function readStored(key, fallback) {
@@ -65,6 +67,7 @@ watch(collapsed, (v) => writeStored(SIDEBAR_KEY, v ? '1' : '0'))
       <KeepAlive>
         <App v-if="page === 'weekly'" />
         <FocusProducts v-else-if="page === 'focus'" />
+        <ReplenishmentPlan v-else-if="page === 'replenish'" />
       </KeepAlive>
     </main>
   </div>

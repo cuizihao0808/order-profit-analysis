@@ -26,6 +26,12 @@ import {
   parseDatesFromFilename,
   parseWeekIdFromFolder,
 } from './src/lib/dataPipeline.js'
+import {
+  applyShippedChange,
+  findInvalidShippedEntries,
+  parseCsv,
+  parseReplenishmentPlan,
+} from './src/lib/replenishmentPlan.js'
 
 const require = createRequire(import.meta.url)
 const XLSX = require('xlsx')
@@ -34,6 +40,8 @@ const PDFDocument = require('pdfkit')
 const DATA_DIR = 'src/data'
 const WEEKS_DIR = 'src/data/weeks'
 const PRODUCTS_DIR = 'src/data/products'
+const REPLENISH_DIR = 'src/data/replenishment'
+const REPLENISH_SHIPPED_FILE = `${REPLENISH_DIR}/shipped.json`
 const XLSX_DIR = 'public/data'
 const BACKUP_DIR = '.opa-backups'
 const MAX_DATA_BACKUPS = 10
@@ -124,6 +132,38 @@ function backupData(reason) {
   for (const stale of backups.slice(MAX_DATA_BACKUPS)) {
     rmSync(fp(BACKUP_DIR, stale), { recursive: true, force: true })
   }
+}
+
+/* ============== 补货批次计划：src/data/replenishment/*.csv ============== */
+/** 读取全部补货清单；同一店铺有多个文件时取修改时间最新的那个 */
+function readReplenishmentPlans() {
+  const dir = fp(REPLENISH_DIR)
+  if (!existsSync(dir)) return { plans: [], warnings: [] }
+  const byShop = new Map()
+  const warnings = []
+  const files = readdirSync(dir).filter((name) => /.csv$/i.test(name) && !name.startsWith('~$')).sort()
+  for (const file of files) {
+    const stat = statSync(fp(REPLENISH_DIR, file))
+    if (stat.size > MAX_IMPORT_FILE_BYTES) {
+      warnings.push(`${file}：超过 ${MAX_IMPORT_FILE_BYTES / 1024 / 1024} MB 限制，已跳过`)
+      continue
+    }
+    try {
+      const rows = parseCsv(readFileSync(fp(REPLENISH_DIR, file), 'utf-8'))
+      const plan = { ...parseReplenishmentPlan(rows, { refDate: stat.mtime }), file, updatedAt: stat.mtime.toISOString() }
+      const existing = byShop.get(plan.shop)
+      if (existing) {
+        const [keep, drop] = existing.updatedAt >= plan.updatedAt ? [existing, plan] : [plan, existing]
+        warnings.push(`${drop.file}：与 ${keep.file} 同属店铺 ${plan.shop}，已使用较新的 ${keep.file}`)
+        byShop.set(plan.shop, keep)
+      } else {
+        byShop.set(plan.shop, plan)
+      }
+    } catch (e) {
+      warnings.push(`${file}：${e.message}`)
+    }
+  }
+  return { plans: [...byShop.values()], warnings }
 }
 
 /* ============== products：按店铺拆分文件 ============== */
@@ -1705,6 +1745,35 @@ function apiPlugin() {
               if (existsSync(snapshotPath)) unlinkSync(snapshotPath)
               return sendJson(res, 200, { ok: true })
             }
+          }
+
+          /* ---------- 补货批次计划 ---------- */
+          if (url === '/replenishment' && req.method === 'GET') {
+            const { plans, warnings } = readReplenishmentPlans()
+            return sendJson(res, 200, { plans, warnings, shipped: readJson(REPLENISH_SHIPPED_FILE, {}) })
+          }
+          if (url === '/replenishment/shipped' && req.method === 'PUT') {
+            const body = (await readBody(req)) || {}
+            const shop = String(body.shop || '').trim()
+            const entries = Array.isArray(body.entries)
+              ? body.entries.map((e) => ({ sku: String(e?.sku ?? '').trim(), batch: String(e?.batch ?? '').trim() }))
+              : []
+            if (!shop) return sendJson(res, 400, { error: 'shop required' })
+            if (typeof body.shipped !== 'boolean') return sendJson(res, 400, { error: 'shipped 必须为 true 或 false' })
+            if (!entries.length || entries.length > 5000) return sendJson(res, 400, { error: 'entries 不能为空' })
+            const plan = readReplenishmentPlans().plans.find((p) => p.shop === shop)
+            if (!plan) return sendJson(res, 404, { error: `没有店铺 ${shop} 的补货清单` })
+            const invalid = findInvalidShippedEntries(plan, entries)
+            if (invalid.length) return sendJson(res, 400, { error: '计划中不存在的 SKU / 批次', invalid })
+            const next = applyShippedChange(
+              readJson(REPLENISH_SHIPPED_FILE, {}),
+              shop,
+              entries,
+              body.shipped,
+              new Date().toISOString(),
+            )
+            writeJson(REPLENISH_SHIPPED_FILE, next)
+            return sendJson(res, 200, { shop, shipped: next[shop] || {} })
           }
 
           /* ---------- 补货配置 ---------- */

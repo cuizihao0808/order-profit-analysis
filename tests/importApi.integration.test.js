@@ -488,4 +488,45 @@ describe('import api integration', () => {
     })
     expect((await unresolved.json()).unresolved).toEqual([{ asin: 'B0MISSING', reason: 'shopId 不存在' }])
   })
+
+  it('serves replenishment plans and persists shipped marks', async () => {
+    const dir = path.join(tmpRoot, 'src/data/replenishment')
+    const header = '店铺,SKU,品名,ASIN,09/26(仅现货),10/03,春节前合计'
+    await mkdir(dir, { recursive: true })
+    await writeFile(path.join(dir, 'TZH补货清单.csv'), `﻿${header}\r\nTZH,SKU-A,品名A,B0A,10,5,15\r\nTZH,每周合计件数,,,10,5,15\r\n`, 'utf8')
+    await writeFile(path.join(dir, 'TZH补货清单-旧.csv'), `${header}\nTZH,SKU-OLD,旧,B0O,1,,1\n`, 'utf8')
+    await utimes(path.join(dir, 'TZH补货清单-旧.csv'), new Date('2026-01-01'), new Date('2026-01-01'))
+    await writeFile(path.join(dir, '坏文件.csv'), '店铺,品名\nTZH,x\n', 'utf8')
+
+    const listed = await (await fetch(`${baseUrl}/api/replenishment`)).json()
+    expect(listed.plans.map((p) => [p.shop, p.file, p.items.map((i) => i.sku)])).toEqual([
+      ['TZH', 'TZH补货清单.csv', ['SKU-A']],
+    ])
+    expect(listed.plans[0].batches.map((b) => b.key)).toEqual(['09/26', '10/03'])
+    expect(listed.warnings).toEqual([
+      'TZH补货清单-旧.csv：与 TZH补货清单.csv 同属店铺 TZH，已使用较新的 TZH补货清单.csv',
+      '坏文件.csv：补货清单缺少 SKU 列',
+    ])
+    expect(listed.shipped).toEqual({})
+
+    const put = (body) => fetch(`${baseUrl}/api/replenishment/shipped`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    })
+    expect((await put({ entries: [{ sku: 'SKU-A', batch: '09/26' }], shipped: true })).status).toBe(400)
+    expect((await put({ shop: 'TZH', entries: [{ sku: 'SKU-A', batch: '09/26' }], shipped: 'yes' })).status).toBe(400)
+    expect((await put({ shop: 'TZH', entries: [], shipped: true })).status).toBe(400)
+    expect((await put({ shop: 'LPH', entries: [{ sku: 'SKU-A', batch: '09/26' }], shipped: true })).status).toBe(404)
+    const invalid = await put({ shop: 'TZH', entries: [{ sku: 'SKU-A', batch: '10/10' }], shipped: true })
+    expect(invalid.status).toBe(400)
+    expect((await invalid.json()).invalid).toEqual([{ sku: 'SKU-A', batch: '10/10' }])
+
+    const marked = await put({ shop: 'TZH', entries: [{ sku: 'SKU-A', batch: '09/26' }, { sku: 'SKU-A', batch: '10/03' }], shipped: true })
+    expect(marked.status).toBe(200)
+    expect(Object.keys((await marked.json()).shipped['SKU-A'])).toEqual(['09/26', '10/03'])
+
+    const undone = await put({ shop: 'TZH', entries: [{ sku: 'SKU-A', batch: '09/26' }], shipped: false })
+    expect(Object.keys((await undone.json()).shipped['SKU-A'])).toEqual(['10/03'])
+    const stored = JSON.parse(await readFile(path.join(dir, 'shipped.json'), 'utf-8'))
+    expect(Object.keys(stored.TZH['SKU-A'])).toEqual(['10/03'])
+  })
 })
