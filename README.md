@@ -33,6 +33,9 @@
 - 自动计算 ROI、补货数量、库存健康度、重量类型
 - 支持导出本地仓库 PDF 清单（含产品图片）
 - 支持导入反馈、toast 提示、异常高亮、补货整行高亮、商品图片预览
+- 提供“重点关注产品”页面，按店铺跨周跟踪指定 ASIN 的销量、利润、广告、退款等指标环比与趋势
+
+页面左侧有可折叠的侧边栏，用来在“周订单利润”和“重点关注产品”两个页面之间切换。
 
 ## 快速开始
 
@@ -154,6 +157,30 @@ public/data/36周(08-30~09-05)/
 - 毛利润 < 0
 - ROI < 0
 
+### 跟踪重点关注产品
+
+在左侧边栏切换到“重点关注产品”。这个页面只读，不会修改任何 JSON，数据来自所有已导入的周快照和店铺主数据。
+
+1. 在 `src/data/focusProducts.json` 里按店铺 ID 配置要跟踪的 ASIN（格式见“数据结构”），保存后页面自动热更新
+2. 顶部按钮切换店铺，按钮上的数字是该店铺配置的重点 ASIN 数
+3. 导入新周报或在主表改过库存后，点“刷新数据”重新拉取
+4. 点“一键导出ASIN”，把当前店铺的重点关注 ASIN 复制到剪贴板，每行一个，顺序与页面卡片一致，可直接粘贴到 Excel 或其他工具；换个店铺再点一次即可导出另一个店铺
+
+页面内容：
+
+- **店铺汇总**：该店铺全部重点产品在最新一周的销量、销售额、毛利润、广告花费合计及环比
+- **产品卡片**，每个 ASIN 一张，顺序与配置文件一致：
+  - 头部：主图、品名、产品分类、ASIN（点击跳转亚马逊）、父 ASIN、FNSKU、最新周次、商品标题、最新一周的备注
+  - KPI：周销量、销售额、毛利润、毛利率、广告费率、ROI、退款率，各带与上一个有数据周次的环比
+  - 周趋势图：柱为周销量，折线为毛利润
+  - 库存：可售、入库中、预留、FBA总量、本地仓库、已下单、日均销量、FBA可售天数（`FBA总量 / 日均销量`，小于 30 天标记警示）
+  - 趋势表：周销量、销售额、毛利润、毛利率、平均售价、广告花费、广告费率、广告单占比、ROI、退款率的逐周数值
+- 卡片可单独折叠，也可“全部展开 / 全部折叠”；折叠后只保留周销量、毛利润、毛利率三项摘要
+
+环比规则：百分比类指标（毛利率、广告费率、广告单占比、退款率）显示百分点差值 `pp`，ROI 显示差值，其余显示变化率。销量、销售额、毛利润、毛利率、平均售价、ROI 越高越好；广告花费、广告费率、广告单占比、退款率越低越好，颜色按此区分好坏。`广告单占比 = 广告销量 / 销量`。
+
+某个 ASIN 在某周没有数据时，该周显示 `—`，不参与环比。
+
 ## 技术栈
 
 - Vite 6
@@ -215,6 +242,7 @@ src/data/
   shops.json                店铺列表
   weeks.json                周快照索引
   restockConfig.js          补货计算参数
+  focusProducts.json        重点关注产品的 ASIN 清单
   products/
     shop-1.json             店铺 1 的 ASIN 主数据
     shop-2.json             店铺 2 的 ASIN 主数据
@@ -335,6 +363,20 @@ Listing 表的表头有新旧两版：外箱两列旧版叫「外箱尺寸1(长�
 - `notes`: 该周的 ASIN 备注，形如 `{ "B0XXXX": "备注内容" }`
 
 这部分用于保留每周指标，不会因为后续编辑主数据而丢失历史值。
+
+### focusProducts.json
+
+“重点关注产品”页面的配置，键为店铺 ID，值为 ASIN 数组，数组顺序就是页面上卡片的顺序：
+
+```json
+{
+  "shop-1": ["B0D3HJPD2P", "B0CYCGY6NM"],
+  "shop-2": ["B0HCZT8BMB"],
+  "shop-3": []
+}
+```
+
+这个文件只能手工编辑，页面上没有增删入口，也没有对应的 API。它由前端直接 `import`，不经过 `/api`。
 
 ## 导入规则
 
@@ -508,6 +550,9 @@ IF(FBA总量 < 周销量 * (restockMonths + 补货用时), 周销量 * restockMu
 | `opa:supply-filter:v1` | 补货筛选 |
 | `opa:column-config:v4` | 自定义列配置（显隐与顺序） |
 | `opa:dev-session:v1` | dev server 会话 ID，用于重启后清缓存 |
+| `opa:page:v1` | 当前页面（`weekly` 周订单利润 / `focus` 重点关注产品） |
+| `opa:sidebar-collapsed:v1` | 侧边栏是否折叠 |
+| `opa:focus-collapsed:v1` | 重点关注产品页里已折叠的卡片，形如 `店铺ID::ASIN` |
 
 分类筛选、库存健康筛选和 ASIN 搜索不持久化，刷新后回到“全部”。
 
@@ -561,7 +606,12 @@ IF(FBA总量 < 周销量 * (restockMonths + 补货用时), 周销量 * restockMu
 
 ### 为什么导出的 PDF 里中文变成方块
 
-PDF 生成依赖系统中文字体，当前只在 macOS 常见路径中查找（Arial Unicode、STHeiti、PingFang）。在没有这些字体的系统上，中文会退化为默认字体。
+PDF 生成依赖系统中文字体，按以下顺序查找，用第一个存在的：
+
+- macOS：Arial Unicode、STHeiti Medium、PingFang
+- Windows（`%WINDIR%\Fonts`）：微软雅黑 `msyh.ttc`、黑体 `simhei.ttf`、宋体 `simsun.ttc`
+
+都找不到时（例如 Linux）中文会退化为默认字体而变成方块。需要支持其他字体时，在 `vite.config.js` 的 `choosePdfFont` 里追加候选；`.ttc` 字体集合必须同时填写 `family`（字体的 PostScript 名），否则 PDFKit 无法加载。
 
 ### 为什么导出的 PDF 里缺图片
 
@@ -602,9 +652,12 @@ PDF 生成依赖系统中文字体，当前只在 macOS 常见路径中查找（
 
 ## 开发说明
 
-- 前端主界面在 `src/App.vue`
+- 入口 `src/main.js` 挂载 `src/Shell.vue`，后者负责侧边栏和页面切换（用 `KeepAlive` 保留各页面状态）
+- “周订单利润”页面在 `src/App.vue`
+- “重点关注产品”页面在 `src/components/FocusProducts.vue`，趋势图为手写 SVG，没有引入图表库
 - 导入弹窗在 `src/components/ImportDialog.vue`
 - 样式在 `src/style.css`
+- 两个页面共用的剪贴板写入在 `src/utils/clipboard.js`
 - 导入、JSON 读写、PDF 生成、API 中间件都在 `vite.config.js`
 - 可测试的业务规则抽在 `src/lib/` 下：
   - `restockRules.js` 补货数量公式

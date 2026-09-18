@@ -233,13 +233,18 @@ async function readRemoteImageBuffer(url) {
   }
 }
 
-function choosePdfFontPath() {
+function choosePdfFont() {
+  const winFonts = resolve(process.env.WINDIR || process.env.SystemRoot || 'C:\\Windows', 'Fonts')
+  // .ttc 是字体集合，PDFKit 需要同时给出 family（PostScript 名）才能加载
   const candidates = [
-    '/System/Library/Fonts/Supplemental/Arial Unicode.ttf',
-    '/System/Library/Fonts/STHeiti Medium.ttc',
-    '/System/Library/Fonts/PingFang.ttc',
+    { path: '/System/Library/Fonts/Supplemental/Arial Unicode.ttf' },
+    { path: '/System/Library/Fonts/STHeiti Medium.ttc', family: 'STHeitiSC-Medium' },
+    { path: '/System/Library/Fonts/PingFang.ttc', family: 'PingFangSC-Regular' },
+    { path: resolve(winFonts, 'msyh.ttc'), family: 'MicrosoftYaHei' },
+    { path: resolve(winFonts, 'simhei.ttf') },
+    { path: resolve(winFonts, 'simsun.ttc'), family: 'SimSun' },
   ]
-  return candidates.find((p) => existsSync(p)) || ''
+  return candidates.find((c) => existsSync(c.path)) || null
 }
 
 function parsePositiveNumber(value) {
@@ -286,8 +291,8 @@ async function generateLocalWarehousePdfBuffer(payload) {
     doc.on('error', rejectP)
   })
 
-  const fontPath = choosePdfFontPath()
-  if (fontPath) doc.font(fontPath)
+  const pdfFont = choosePdfFont()
+  if (pdfFont) doc.font(pdfFont.path, pdfFont.family)
 
   const pageWidth = doc.page.width
   const pageHeight = doc.page.height
@@ -364,7 +369,7 @@ async function generateLocalWarehousePdfBuffer(payload) {
   const addPageIfNeeded = (requiredHeight) => {
     if (cursorY + requiredHeight <= pageHeight - marginBottom) return
     doc.addPage({ size: 'A4', margin: 18 })
-    if (fontPath) doc.font(fontPath)
+    if (pdfFont) doc.font(pdfFont.path, pdfFont.family)
     pageNo += 1
     cursorY = marginTop
     drawPageTitle()

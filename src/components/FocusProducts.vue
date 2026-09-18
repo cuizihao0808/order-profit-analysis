@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import focusConfig from '../data/focusProducts.json'
+import { writeClipboard } from '../utils/clipboard.js'
 
 /* ================= 工具 ================= */
 function toNum(v) {
@@ -324,6 +325,33 @@ const shopSummary = computed(() => {
   }
 })
 
+/* ================= 导出 ASIN ================= */
+const toast = ref({ show: false, text: '', type: 'success' })
+let toastTimer = null
+function showToast(text, type = 'success') {
+  toast.value = { show: true, text, type }
+  if (toastTimer) clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => {
+    toast.value.show = false
+  }, 2400)
+}
+
+/** 把当前店铺的重点关注 ASIN 复制到剪贴板，每行一个，顺序与卡片一致 */
+async function exportShopAsins() {
+  const shop = activeShop.value
+  const asins = shop ? focusAsinsByShop.value[shop.id] || [] : []
+  if (!asins.length) {
+    showToast('该店铺没有可导出的重点关注 ASIN', 'warn')
+    return
+  }
+  try {
+    await writeClipboard(asins.join('\n'))
+    showToast(`已复制「${shop.name}」的 ${asins.length} 个重点关注 ASIN`)
+  } catch {
+    showToast('复制失败，请重试', 'error')
+  }
+}
+
 /* ================= 趋势图 ================= */
 const TREND_TABLE_KEYS = ['sales', 'revenue', 'profit', 'margin', 'price', 'adSpend', 'adRate', 'adShare', 'roi', 'refundRate']
 const TREND_TABLE_METRICS = TREND_TABLE_KEYS.map((k) => METRIC_BY_KEY[k])
@@ -398,6 +426,13 @@ function cellClass(metric, series, i) {
       </el-button>
       <span class="focus-total">合计 <strong>{{ focusTotal }}</strong></span>
       <span class="focus-toolbar-spacer" />
+      <el-button
+        :disabled="!shopViews.length"
+        title="把当前店铺的重点关注 ASIN 复制到剪贴板，每行一个"
+        @click="exportShopAsins"
+      >
+        一键导出ASIN
+      </el-button>
       <el-button :disabled="!shopViews.length" @click="setAllCollapsed(false)">全部展开</el-button>
       <el-button :disabled="!shopViews.length" @click="setAllCollapsed(true)">全部折叠</el-button>
       <el-button type="primary" :loading="loading" @click="loadAll">{{ loading ? '加载中...' : '刷新数据' }}</el-button>
@@ -555,6 +590,11 @@ function cellClass(metric, series, i) {
           </div>
         </article>
       </template>
+    </div>
+
+    <div v-if="toast.show" class="toast" :class="`toast-${toast.type}`">
+      <span class="loading-dot toast-icon">✓</span>
+      <span>{{ toast.text }}</span>
     </div>
   </div>
 </template>
