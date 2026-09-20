@@ -3,6 +3,12 @@ import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch 
 import { computeRestockQty } from './lib/restockRules.js'
 import { prepareImportScan } from './lib/importScan.js'
 import { buildProductPatchTargets, sortFullCartonFirst } from './lib/productUpdates.js'
+import {
+  inventoryHealthText as productInventoryHealthText,
+  pairedText,
+  toNum,
+  weightTypeText as productWeightTypeText,
+} from './lib/weekSnapshot.js'
 import { writeClipboard } from './utils/clipboard.js'
 
 const ImportDialog = defineAsyncComponent(() => import('./components/ImportDialog.vue'))
@@ -133,43 +139,12 @@ function ensureColumnsOrder(cols) {
   return arr
 }
 
-/** 将字符串/数字安全转为数字（去除 $ 逗号 百分号） */
-function toNum(v) {
-  if (v == null || v === '') return NaN
-  const s = String(v).replace(/[$,\s]/g, '').replace(/%$/, '')
-  const n = Number(s)
-  return Number.isFinite(n) ? n : NaN
-}
-
-function parsePackageDimsCm(sizeText) {
-  const raw = String(sizeText || '').trim()
-  if (!raw) return null
-  const nums = raw.match(/\d+(?:\.\d+)?/g) || []
-  if (nums.length < 3) return null
-  const dims = nums.slice(0, 3).map((v) => Number(v))
-  if (dims.some((n) => !Number.isFinite(n) || n <= 0)) return null
-  return dims
-}
-
 function weightTypeText(row) {
-  const product = rowProduct(row)
-  const itemWeightG = toNum(product?.itemWeight)
-  if (!Number.isFinite(itemWeightG) || itemWeightG <= 0) return '—'
-
-  const packageSize = product?.packageSize || product?.packageSize1 || product?.packageSize2 || ''
-  const dims = parsePackageDimsCm(packageSize)
-  if (!dims) return '—'
-
-  const [lengthCm, widthCm, heightCm] = dims
-  const volumetricWeightG = (lengthCm * widthCm * heightCm * 1000) / 6000
-  return itemWeightG > volumetricWeightG ? '实重' : '抛重'
+  return productWeightTypeText(rowProduct(row))
 }
 
 function pairedInventoryText(row, firstKey, secondKey) {
-  const product = rowProduct(row)
-  const values = [product?.[firstKey], product?.[secondKey]]
-    .filter((value) => value != null && value !== '')
-  return values.join(' / ') || '—'
+  return pairedText(rowProduct(row), firstKey, secondKey)
 }
 
 /* ================= 状态 ================= */
@@ -287,13 +262,7 @@ function rowProduct(row) {
 }
 
 function inventoryHealthText(row) {
-  const sellable = toNum(getCell(row, '可售'))
-  const reserved = toNum(getCell(row, '预留'))
-  const monthSales = toNum(getCell(row, '月销量'))
-
-  const stock = (Number.isFinite(sellable) ? sellable : 0) + (Number.isFinite(reserved) ? reserved : 0)
-  const monthly = Number.isFinite(monthSales) ? monthSales : 0
-  return stock > monthly * 1.5 ? '健康' : '不足'
+  return productInventoryHealthText(rowProduct(row))
 }
 
 function inventoryHealthClass(row) {

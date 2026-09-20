@@ -178,12 +178,24 @@ export function isShipped(shopShipped, sku, batchKey) {
   return !!shopShipped?.[sku]?.[batchKey]
 }
 
+/** 未来多少天内还要发货的 SKU 视为“临近补货”，需要置顶 */
+export const URGENT_WINDOW_DAYS = 14
+
+function diffDays(from, to) {
+  return Math.round((Date.parse(`${to}T00:00:00`) - Date.parse(`${from}T00:00:00`)) / 86400000)
+}
+
 /**
  * 汇总发货进度。
  * 批次状态：empty 无计划 / done 已发完 / partial 部分已发 / pending 待发；
  * overdue 表示批次日期已过（早于 today）但还没发完。
+ * 每个 SKU 另外给出：
+ *   firstBatch/firstDate/firstInDays — 计划里的第一个批次（不随发货状态变），
+ *   urgent — 该批次在 urgentWindowDays 天内（含逾期），页面据此置顶，标记发货不会让行跳动；
+ *   dueBatch/dueDate/dueInDays — 最近一个还没标记发货的批次，用于行内提示；
+ *   nearTermDone — 两周内的批次都已发货。
  */
-export function buildShippingSummary(plan, shopShipped = {}, today = '') {
+export function buildShippingSummary(plan, shopShipped = {}, today = '', urgentWindowDays = URGENT_WINDOW_DAYS) {
   const batches = plan.batches.map((b) => {
     let plannedQty = 0
     let plannedSkus = 0
@@ -211,11 +223,31 @@ export function buildShippingSummary(plan, shopShipped = {}, today = '') {
   for (const item of plan.items) {
     let plannedQty = 0
     let shippedQty = 0
-    for (const [key, qty] of Object.entries(item.qtyByBatch)) {
+    let firstBatch = null
+    let dueBatch = null
+    for (const b of plan.batches) {
+      const qty = item.qtyByBatch[b.key]
+      if (!qty) continue
       plannedQty += qty
-      if (isShipped(shopShipped, item.sku, key)) shippedQty += qty
+      if (!firstBatch) firstBatch = b
+      if (isShipped(shopShipped, item.sku, b.key)) shippedQty += qty
+      else if (!dueBatch) dueBatch = b
     }
-    items[item.sku] = { plannedQty, shippedQty }
+    const firstInDays = firstBatch && today ? diffDays(today, firstBatch.date) : null
+    const dueInDays = dueBatch && today ? diffDays(today, dueBatch.date) : null
+    const urgent = firstInDays != null && firstInDays <= urgentWindowDays
+    items[item.sku] = {
+      plannedQty,
+      shippedQty,
+      firstBatch: firstBatch ? firstBatch.key : '',
+      firstDate: firstBatch ? firstBatch.date : '',
+      firstInDays,
+      urgent,
+      dueBatch: dueBatch ? dueBatch.key : '',
+      dueDate: dueBatch ? dueBatch.date : '',
+      dueInDays,
+      nearTermDone: urgent && (dueInDays == null || dueInDays > urgentWindowDays),
+    }
   }
 
   const plannedQty = batches.reduce((acc, b) => acc + b.plannedQty, 0)
@@ -247,4 +279,22 @@ export function applyShippedChange(state, shop, entries, shipped, timestamp) {
   if (Object.keys(shopState).length) next[shop] = shopState
   else delete next[shop]
   return next
+}
+
+/**
+ * 临近补货的 SKU 置顶（按计划里的第一个批次升序），其余保持原顺序。
+ * 只看计划、不看发货状态，标记已发货不会让行重新排序。
+ */
+export function sortByUrgency(items, summary) {
+  const info = (item) => summary?.items?.[item.sku] || {}
+  return items
+    .map((item, index) => ({ item, index }))
+    .sort((a, b) => {
+      const ua = info(a.item)
+      const ub = info(b.item)
+      if (!!ua.urgent !== !!ub.urgent) return ua.urgent ? -1 : 1
+      if (ua.urgent && ua.firstDate !== ub.firstDate) return ua.firstDate < ub.firstDate ? -1 : 1
+      return a.index - b.index
+    })
+    .map((x) => x.item)
 }

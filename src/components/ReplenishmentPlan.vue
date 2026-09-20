@@ -1,6 +1,19 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
-import { buildShippingSummary, isShipped } from '../lib/replenishmentPlan.js'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { URGENT_WINDOW_DAYS, buildShippingSummary, isShipped, sortByUrgency } from '../lib/replenishmentPlan.js'
+import { computeRestockQty } from '../lib/restockRules.js'
+import {
+  buildColIndex,
+  buildRowByAsin,
+  groupWeekFields,
+  inventoryHealthText,
+  isWeekFieldAlert,
+  pairedText,
+  toNum,
+  weekCell,
+  weekRoi,
+  weightTypeText,
+} from '../lib/weekSnapshot.js'
 import { writeClipboard } from '../utils/clipboard.js'
 
 const SHOP_KEY = 'opa:replenish-shop:v1'
@@ -34,6 +47,9 @@ const warnings = ref([])
 const shippedState = ref({})
 const shops = ref([])
 const products = ref([])
+const weekMeta = ref(null) // weeks.json 里最新一周的元信息
+const week = ref(null) // 最新一周的订单利润快照 { columns, rows, notes }
+const restockConfig = ref({})
 const loading = ref(true)
 const loadError = ref('')
 const saving = ref(false)
@@ -69,16 +85,22 @@ async function loadAll() {
   loadError.value = ''
   today.value = localDate()
   try {
-    const [data, shopList, productList] = await Promise.all([
+    const [data, shopList, productList, weekList, config] = await Promise.all([
       getJson('/api/replenishment'),
       getJson('/api/shops', []),
       getJson('/api/products', []),
+      getJson('/api/weeks', []),
+      getJson('/api/restock-config', {}),
     ])
     plans.value = data.plans || []
     warnings.value = data.warnings || []
     shippedState.value = data.shipped || {}
     shops.value = shopList
     products.value = productList
+    restockConfig.value = config || {}
+    // weeks 按时间倒序，第一条即最新一周
+    weekMeta.value = weekList[0] || null
+    week.value = weekMeta.value ? await getJson(`/api/weeks/${encodeURIComponent(weekMeta.value.id)}`, null) : null
     if (!plans.value.some((p) => p.shop === activeShop.value) && plans.value.length) {
       activeShop.value = orderedPlans.value[0].shop
     }
@@ -152,6 +174,7 @@ const rowFilter = ref('all') // all | pending | done | batch
 const keyword = ref('')
 
 watch(activeShop, () => {
+  openRow.value = ''
   activeBatch.value = ''
   if (rowFilter.value === 'batch') rowFilter.value = 'all'
 })
@@ -167,7 +190,7 @@ const rows = computed(() => {
   const p = plan.value
   if (!p) return []
   const kw = keyword.value.trim().toLowerCase()
-  return p.items.filter((item) => {
+  const matched = p.items.filter((item) => {
     if (kw && ![item.sku, item.name, item.asin].some((v) => String(v).toLowerCase().includes(kw))) return false
     const s = summary.value.items[item.sku]
     if (rowFilter.value === 'pending') return s.plannedQty > s.shippedQty
@@ -175,22 +198,254 @@ const rows = computed(() => {
     if (rowFilter.value === 'batch') return !!item.qtyByBatch[activeBatch.value]
     return true
   })
+  /* 未来两周要补货的 SKU 置顶 */
+  return sortByUrgency(matched, summary.value)
 })
 
+/* ================= 临近补货 ================= */
+/** 置顶看计划，这里统计的是其中还没发货的（真正要处理的） */
+const urgentCount = computed(
+  () => Object.values(summary.value?.items || {}).filter((s) => s.urgent && !s.nearTermDone).length,
+)
+
+function urgentInfo(item) {
+  const s = summary.value.items[item.sku]
+  if (!s?.urgent) return null
+  if (s.nearTermDone) {
+    return {
+      text: '两周内已发',
+      cls: 'rp-tag-green',
+      title: `${URGENT_WINDOW_DAYS} 天内的批次都已标记发货`,
+    }
+  }
+  const d = s.dueInDays
+  const text = d < 0 ? `逾期 ${-d} 天` : d === 0 ? '今天发货' : `${d} 天后补货`
+  return {
+    text,
+    cls: d <= 0 ? 'rp-tag-red' : d <= 7 ? 'rp-tag-amber' : 'rp-tag-blue',
+    title: `最近待发批次 ${s.dueBatch}（${s.dueDate}）`,
+  }
+}
+
+/* ================= 最新一周订单利润 ================= */
+/** 周列分组展示，未列出的列会进“其它”，保证整行数据都能看到 */
+const WEEK_FIELD_GROUPS = [
+  { title: '销售', cols: ['销量', '平均日销', '销售额', '含税销售额', '净销售额', '平均售价', '广告销售额', '广告销量', '多渠道销量', '补换货量'] },
+  { title: '利润', cols: ['毛利润', '毛利率', '平均毛利润', '净毛利率', '其它收入', 'FBA库存赔偿'] },
+  { title: '成本', cols: ['采购成本', '采购均价', '头程成本', '头程均价', '其他成本', '其他均价', '合计成本'] },
+  {
+    title: '费用',
+    cols: [
+      '平台费', '平台费占比', 'FBA发货费', 'FBA发货费占比', '其他订单费用', '总仓储费', '仓储费占比',
+      '广告花费', '广告费率', '推广费', '站外推广费', 'FBA国际物流运费', '调整费', '平台其他费', '入库配置费(原合仓费)',
+    ],
+  },
+  { title: '退货退款', cols: ['退货量', '退款量', '退货率', '退款率', '退款金额', '促销折扣', '买家运费'] },
+  { title: '基础信息', cols: ['ASIN', '父ASIN', '店铺', '国家', '品名', 'SKU', '标题', '分类', '品牌', '币种', 'Listing标签', 'Listing负责人'] },
+]
+
+const WEEK_KPI_COLS = ['销量', '销售额', '毛利润', '毛利率', '广告费率', '退货率']
+/** 长文本列占两格并换行 */
+const WEEK_WIDE_COLS = new Set(['标题', '品名'])
+
+const weekColIndex = computed(() => buildColIndex(week.value?.columns || []))
+const weekRowByAsin = computed(() => buildRowByAsin(week.value))
+const weekRange = computed(() =>
+  weekMeta.value?.startDate ? `${weekMeta.value.startDate} ~ ${weekMeta.value.endDate}` : '',
+)
+
+/** products.json 拉平后带 shopId，同 ASIN 可能出现在多个店铺 */
+const productByShopAsin = computed(() => {
+  const map = new Map()
+  for (const p of products.value) {
+    if (p?.asin && p?.shopId) map.set(`${p.shopId}::${p.asin}`, p)
+  }
+  return map
+})
+const productByAsin = computed(() => {
+  const map = new Map()
+  for (const p of products.value) {
+    if (p?.asin && !map.has(p.asin)) map.set(p.asin, p)
+  }
+  return map
+})
+
+/** 补货清单的 SKU 与周表的 SKU 命名不同，按 ASIN 关联 */
+function weekRowFor(item) {
+  return (item.asin && weekRowByAsin.value.get(item.asin)) || null
+}
+function productFor(item) {
+  const shopId = findShop(plan.value?.shop)?.id
+  if (shopId) {
+    const exact = productByShopAsin.value.get(`${shopId}::${item.asin}`)
+    if (exact) return exact
+  }
+  return productByAsin.value.get(item.asin) || null
+}
+function weekValue(item, col) {
+  const row = weekRowFor(item)
+  return row ? weekCell(row, weekColIndex.value, col) : ''
+}
+function weekNote(item) {
+  return String(week.value?.notes?.[item.asin] || '').trim()
+}
+
+function show(v) {
+  return v == null || v === '' ? '—' : String(v)
+}
+
+function weekKpis(item) {
+  const row = weekRowFor(item)
+  if (!row) return []
+  const cols = WEEK_KPI_COLS.map((name) => ({ name, value: weekCell(row, weekColIndex.value, name) }))
+  cols.splice(4, 0, { name: 'ROI', value: weekRoi(row, weekColIndex.value) })
+  return cols.map((c) => ({ ...c, alert: isWeekFieldAlert(c.name, c.value) }))
+}
+
+function weekGroups(item) {
+  const row = weekRowFor(item)
+  if (!row || !week.value) return []
+  return groupWeekFields(week.value.columns, row, WEEK_FIELD_GROUPS).map((g) => ({
+    ...g,
+    fields: g.fields.map((f) => ({
+      ...f,
+      alert: isWeekFieldAlert(f.name, f.value),
+      wide: WEEK_WIDE_COLS.has(f.name),
+    })),
+  }))
+}
+
+/** 与周订单利润页“库存详情”一致的字段（此处只读） */
+function inventoryFields(item) {
+  const p = productFor(item)
+  const restockQty = computeRestockQty({
+    fbaTotal: toNum(p?.fbaTotal),
+    sales: toNum(weekValue(item, '销量')),
+    cycle: toNum(p?.restockCycle),
+    config: restockConfig.value,
+  })
+  const health = p ? inventoryHealthText(p) : ''
+  return [
+    { name: '库存健康', value: show(health), tone: health === '健康' ? 'good' : health ? 'bad' : '' },
+    { name: 'FNSKU', value: show(p?.fnsku) },
+    { name: '可售', value: show(p?.sellable) },
+    { name: '入库中', value: show(p?.inbound) },
+    { name: '不可售', value: show(p?.unsellable) },
+    { name: '预留', value: show(p?.reserved) },
+    { name: 'FBA总量', value: show(p?.fbaTotal) },
+    { name: '本地仓库', value: show(p?.localWarehouse) },
+    { name: '已下单', value: show(p?.orderedQty), edit: 'orderedQty' },
+    { name: '补货用时', value: show(p?.restockCycle) },
+    { name: '补货数量', value: show(restockQty), tone: restockQty && restockQty !== '无需补货' ? 'warn' : '' },
+    { name: '产品分类', value: show(p?.category) },
+    { name: '月销量', value: show(p?.monthSales) },
+    { name: '月销售额', value: show(p?.monthRevenue) },
+    { name: '月订单数', value: show(p?.monthOrders) },
+    { name: '日均销量', value: show(p?.dailySales) },
+    { name: 'Vine赠品销量', value: show(p?.vineGiftSales) },
+    { name: '包装尺寸/cm', value: show(p?.packageSize || p?.packageSize1 || p?.packageSize2) },
+    { name: '包装类型', value: show(p?.packageType || p?.packageType1 || p?.packageType2) },
+    { name: '包装成本/CNY', value: pairedText(p, 'packageCost1', 'packageCost2') },
+    { name: '外箱尺寸/cm', value: pairedText(p, 'outerCartonSize1', 'outerCartonSize2') },
+    { name: '最大装箱数', value: pairedText(p, 'maxCartonQty1', 'maxCartonQty2') },
+    { name: '单品重量/g', value: show(p?.itemWeight) },
+    { name: '重量类型', value: weightTypeText(p) },
+    { name: '装箱方式', value: p?.packingMode === 'full' ? '整箱' : '混装' },
+  ]
+}
+
+function productImages(item) {
+  const p = productFor(item)
+  const list = p?.listingDetailImages?.length ? p.listingDetailImages : p?.productImages || []
+  return list.slice(0, 8)
+}
+
+/** 改“已下单”：写回 products.json，与周订单利润页的内联编辑同一个接口 */
+const productSaving = ref(false)
+async function commitOrderedQty(item, event) {
+  const input = event?.target
+  const product = productFor(item)
+  if (!product) {
+    showToast('没有找到这个 ASIN 的产品资料', 'error')
+    return
+  }
+  const text = String(input?.value ?? '').trim()
+  const next = text === '' ? 0 : Number(text)
+  const current = Number(product.orderedQty ?? 0)
+  if (!Number.isFinite(next)) {
+    if (input) input.value = current
+    return
+  }
+  if (next === current || productSaving.value) return
+
+  // 乐观更新：先改本地，失败再回滚
+  const idx = products.value.indexOf(product)
+  products.value[idx] = { ...product, orderedQty: next }
+  productSaving.value = true
+  try {
+    const r = await fetch(`/api/products/${encodeURIComponent(product.asin)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(product.shopId ? { orderedQty: next, shopId: product.shopId } : { orderedQty: next }),
+    })
+    if (!r.ok) throw new Error(`HTTP ${r.status}`)
+    if (input) input.value = next // 清空输入框时回填成 0
+    showToast(`${item.sku} 已下单改为 ${next}`)
+  } catch (e) {
+    products.value[idx] = product
+    if (input) input.value = current
+    showToast('保存失败：' + (e.message || e), 'error')
+  } finally {
+    productSaving.value = false
+  }
+}
+
 /* ================= 展开 ================= */
-const expanded = ref(new Set())
+/** 同时只展开一行：打开新的一行会自动收起上一行 */
+const openRow = ref('')
 function rowKey(item) {
   return `${plan.value?.shop}::${item.sku}`
 }
 function isOpen(item) {
-  return expanded.value.has(rowKey(item))
+  return openRow.value === rowKey(item)
 }
 function toggleOpen(item) {
-  const next = new Set(expanded.value)
   const key = rowKey(item)
-  if (next.has(key)) next.delete(key)
-  else next.add(key)
-  expanded.value = next
+  openRow.value = openRow.value === key ? '' : key
+}
+
+/**
+ * 展开的那一行会吸附在表头下面，所以要知道表头实际多高。
+ * 批次列是两行文字，高度会随数据变，测量比写死可靠。
+ */
+const tableWrapRef = ref(null)
+const headRef = ref(null)
+const headHeight = ref(0)
+function measureHead() {
+  headHeight.value = headRef.value?.offsetHeight || 0
+}
+onMounted(() => {
+  measureHead()
+  window.addEventListener('resize', measureHead)
+})
+onBeforeUnmount(() => window.removeEventListener('resize', measureHead))
+watch([plan, rows, openRow], () => nextTick(measureHead))
+
+/** 收起明细后把表格滚回最上面（等明细行移除、高度回落之后再滚，否则会被浏览器的滚动锚定打断） */
+watch(openRow, (next, prev) => {
+  if (next || !prev) return
+  nextTick(() => {
+    if (tableWrapRef.value) tableWrapRef.value.scrollTop = 0
+  })
+})
+
+/** 折叠面板分页：plan 为原有的补货判断，week 为最新一周订单利润 */
+const detailTab = ref({})
+function tabOf(item) {
+  return urgentInfo(item) ? detailTab.value[rowKey(item)] || 'plan' : 'plan'
+}
+function setTab(item, tab) {
+  detailTab.value = { ...detailTab.value, [rowKey(item)]: tab }
 }
 
 /* ================= 标记已发货 ================= */
@@ -339,6 +594,9 @@ const colCount = computed(() => 6 + (plan.value?.batches.length || 0) + TAIL_COL
       <template v-if="plan">
         <el-tag effect="light" round disable-transitions>SKU {{ plan.items.length }}</el-tag>
         <el-tag effect="light" round disable-transitions>批次 {{ plan.batches.length }}</el-tag>
+        <el-tag v-if="urgentCount" type="danger" effect="light" round disable-transitions>
+          {{ URGENT_WINDOW_DAYS }} 天内待发 {{ urgentCount }} SKU（已置顶）
+        </el-tag>
         <el-tag v-if="rows.length !== plan.items.length" effect="light" round disable-transitions>当前显示 {{ rows.length }}</el-tag>
       </template>
       <div class="status">
@@ -457,10 +715,10 @@ const colCount = computed(() => 6 + (plan.value?.batches.length || 0) + TAIL_COL
             <strong>SKU 批次明细</strong>
             <span>点击数字标记该批次已发货，再点一次撤销；点击 ▶ 查看判断说明</span>
           </div>
-          <div class="rp-table-wrap">
+          <div ref="tableWrapRef" class="rp-table-wrap" :style="{ '--rp-head-h': `${headHeight}px` }">
             <div v-if="!rows.length" class="rp-empty">当前筛选条件下没有 SKU</div>
             <table v-else class="rp-table">
-              <thead>
+              <thead ref="headRef">
                 <tr>
                   <th class="fix-left rp-col-expand"></th>
                   <th class="fix-left fix-last rp-col-product">产品</th>
@@ -492,6 +750,7 @@ const colCount = computed(() => 6 + (plan.value?.batches.length || 0) + TAIL_COL
                     :class="{
                       'rp-row-open': isOpen(item),
                       'rp-row-done': itemProgress(item).plannedQty && itemProgress(item).plannedQty === itemProgress(item).shippedQty,
+                      'rp-row-urgent': !!urgentInfo(item),
                     }"
                   >
                     <td class="fix-left rp-col-expand">
@@ -505,6 +764,14 @@ const colCount = computed(() => 6 + (plan.value?.batches.length || 0) + TAIL_COL
                           <div class="rp-name" :title="item.name">{{ item.name || '—' }}</div>
                           <div class="rp-sku">
                             {{ item.sku }}
+                            <span
+                              v-if="urgentInfo(item)"
+                              class="rp-tag"
+                              :class="urgentInfo(item).cls"
+                              :title="urgentInfo(item).title"
+                            >
+                              {{ urgentInfo(item).text }}
+                            </span>
                             <span v-if="item.remark.includes('利润红旗')" class="rp-tag rp-tag-red">利润红旗</span>
                           </div>
                         </div>
@@ -561,13 +828,129 @@ const colCount = computed(() => 6 + (plan.value?.batches.length || 0) + TAIL_COL
                   <tr v-if="isOpen(item)" class="rp-detail-row">
                     <td :colspan="colCount">
                       <div class="rp-detail">
-                        <div class="rp-detail-grid">
-                          <div><span>日均需求参考</span>{{ item.dailyDemand || '—' }}</div>
-                          <div><span>在途晚到 7 天时残余缺口</span>{{ item.lateGap || '—' }}</div>
-                          <div><span>9/26 应急量</span>{{ item.emergency || '—' }}</div>
+                        <div class="rp-detail-tabs">
+                          <button
+                            type="button"
+                            class="rp-detail-tab"
+                            :class="{ active: tabOf(item) === 'plan' }"
+                            @click="setTab(item, 'plan')"
+                          >
+                            补货判断
+                          </button>
+                          <button
+                            type="button"
+                            class="rp-detail-tab"
+                            :class="{ active: tabOf(item) === 'week' }"
+                            :disabled="!urgentInfo(item)"
+                            :title="urgentInfo(item) ? '最新一周订单利润的全部数据' : '仅两周内需要补货的产品展示'"
+                            @click="setTab(item, 'week')"
+                          >
+                            最新周订单利润
+                            <small v-if="weekMeta">{{ weekMeta.id }}</small>
+                          </button>
+                          <span v-if="!urgentInfo(item)" class="rp-detail-tab-hint">仅两周内需补货的产品可查看周数据</span>
                         </div>
-                        <div class="rp-detail-block"><span>判断说明</span>{{ item.reason || '—' }}</div>
-                        <div class="rp-detail-block"><span>备注</span>{{ item.remark || '—' }}</div>
+
+                        <div v-if="tabOf(item) === 'plan'" class="rp-detail-pane">
+                          <div class="rp-detail-grid">
+                            <div><span>日均需求参考</span>{{ item.dailyDemand || '—' }}</div>
+                            <div><span>在途晚到 7 天时残余缺口</span>{{ item.lateGap || '—' }}</div>
+                            <div><span>9/26 应急量</span>{{ item.emergency || '—' }}</div>
+                          </div>
+                          <div class="rp-detail-block"><span>判断说明</span>{{ item.reason || '—' }}</div>
+                          <div class="rp-detail-block"><span>备注</span>{{ item.remark || '—' }}</div>
+                        </div>
+
+                        <div v-else class="rp-detail-pane">
+                          <template v-if="weekRowFor(item)">
+                            <div class="rp-week-head">
+                              <strong>{{ weekMeta.id }}</strong>
+                              <span class="rp-week-range">{{ weekRange }}</span>
+                              <span class="rp-tag">{{ weekValue(item, '店铺') || shopLabel(plan.shop) }}</span>
+                              <span class="rp-tag rp-tag-outline">SKU {{ weekValue(item, 'SKU') || item.sku }}</span>
+                              <span v-if="productFor(item)?.category" class="rp-tag">{{ productFor(item).category }}</span>
+                              <a
+                                v-if="item.asin"
+                                class="rp-asin rp-week-link"
+                                :href="`https://www.amazon.com/dp/${item.asin}`"
+                                target="_blank"
+                                rel="noopener"
+                              >{{ item.asin }}</a>
+                            </div>
+
+                            <div class="rp-week-kpis">
+                              <div v-for="k in weekKpis(item)" :key="k.name" class="rp-week-kpi">
+                                <span>{{ k.name === '销量' ? '周销量' : k.name }}</span>
+                                <strong :class="{ 'rp-val-bad': k.alert }">{{ k.value || '—' }}</strong>
+                              </div>
+                            </div>
+
+                            <div class="rp-week-cards">
+                              <section v-for="g in weekGroups(item)" :key="g.title" class="rp-week-card">
+                                <h4>{{ g.title }}</h4>
+                                <div class="rp-week-grid">
+                                  <div
+                                    v-for="f in g.fields"
+                                    :key="f.name"
+                                    class="rp-week-field"
+                                    :class="{ 'rp-week-field-wide': f.wide }"
+                                  >
+                                    <span :title="f.name">{{ f.name === '销量' ? '周销量' : f.name }}</span>
+                                    <strong :class="{ 'rp-val-bad': f.alert }" :title="String(f.value)">{{ f.value || '—' }}</strong>
+                                  </div>
+                                </div>
+                              </section>
+
+                              <section class="rp-week-card rp-week-card-wide">
+                                <h4>库存详情</h4>
+                                <div class="rp-week-grid">
+                                  <div v-for="f in inventoryFields(item)" :key="f.name" class="rp-week-field">
+                                    <span :title="f.name">{{ f.name }}</span>
+                                    <input
+                                      v-if="f.edit === 'orderedQty'"
+                                      class="rp-week-input"
+                                      type="number"
+                                      min="0"
+                                      step="1"
+                                      :value="productFor(item)?.orderedQty ?? 0"
+                                      :disabled="!productFor(item)"
+                                      title="改完回车或点空白处自动保存"
+                                      @change="commitOrderedQty(item, $event)"
+                                      @blur="commitOrderedQty(item, $event)"
+                                      @keyup.enter="$event.target.blur()"
+                                    />
+                                    <strong
+                                      v-else
+                                      :class="{
+                                        'rp-val-bad': f.tone === 'bad',
+                                        'rp-val-good': f.tone === 'good',
+                                        'rp-val-warn': f.tone === 'warn',
+                                      }"
+                                      :title="String(f.value)"
+                                    >{{ f.value }}</strong>
+                                  </div>
+                                </div>
+                                <div v-if="productImages(item).length" class="rp-week-images">
+                                  <a
+                                    v-for="(img, i) in productImages(item)"
+                                    :key="`${item.sku}-img-${i}`"
+                                    :href="img"
+                                    target="_blank"
+                                    rel="noopener"
+                                    title="打开大图"
+                                  >
+                                    <img :src="img" :alt="`${item.name} 图片 ${i + 1}`" loading="lazy" />
+                                  </a>
+                                </div>
+                              </section>
+                            </div>
+
+                            <div class="rp-detail-block"><span>本周备注</span>{{ weekNote(item) || '—' }}</div>
+                          </template>
+                          <div v-else class="rp-week-empty">
+                            最新一周（{{ weekMeta ? weekMeta.id : '—' }}）里没有 {{ item.asin || item.sku }} 的订单利润数据
+                          </div>
+                        </div>
                       </div>
                     </td>
                   </tr>
@@ -982,6 +1365,32 @@ const colCount = computed(() => 6 + (plan.value?.batches.length || 0) + TAIL_COL
   color: var(--text);
   box-shadow: inset 0 0 0 1px var(--line);
 }
+.rp-tag-blue {
+  background: #e8f1ff;
+  color: #1d4ed8;
+}
+.rp-tag-green {
+  background: #e6f4ec;
+  color: #1a7f45;
+}
+
+/* 未来两周要补货的 SKU 置顶并加左侧标识 */
+.rp-row-urgent td {
+  background: #fffaf5;
+}
+.rp-row-urgent .rp-col-expand {
+  box-shadow: inset 3px 0 0 0 #e08a2e;
+}
+.rp-row-urgent.rp-row-done td {
+  background: #f7faf8;
+}
+.rp-row-urgent.rp-row-done .rp-col-expand {
+  box-shadow: inset 3px 0 0 0 #7fb99a;
+}
+.rp-row-urgent .rp-name {
+  font-weight: 600;
+  color: var(--text-strong);
+}
 
 .rp-col-batch {
   min-width: 64px;
@@ -1065,8 +1474,24 @@ const colCount = computed(() => 6 + (plan.value?.batches.length || 0) + TAIL_COL
   margin: 3px 0 0;
 }
 
-.rp-row-open td {
-  background: #fafafa;
+/* 展开的那一行吸附在表头下面，下拉时始终能看到行数据 */
+.rp-table tbody tr.rp-row-open > td {
+  position: sticky;
+  top: var(--rp-head-h, 44px);
+  z-index: 6;
+  background: #fff6e9;
+  border-bottom: 1px solid var(--line);
+  box-shadow: 0 2px 6px rgba(38, 35, 30, 0.08);
+}
+.rp-table tbody tr.rp-row-open > td.fix-left {
+  z-index: 7;
+  background: #fff6e9;
+}
+.rp-table tbody tr.rp-row-open:hover > td {
+  background: #fff1dd;
+}
+.rp-row-open .rp-name {
+  color: var(--text-strong);
 }
 .rp-detail-row td {
   background: #fafafa;
@@ -1094,6 +1519,219 @@ const colCount = computed(() => 6 + (plan.value?.batches.length || 0) + TAIL_COL
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
+}
+.rp-detail-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ---------- 折叠面板分页 ---------- */
+.rp-detail-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--accent-soft-2);
+  align-self: flex-start;
+}
+.rp-detail-tab {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  border: 0;
+  border-radius: 8px;
+  padding: 5px 14px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.rp-detail-tab:hover:not(:disabled) {
+  color: var(--text-strong);
+}
+.rp-detail-tab.active {
+  background: var(--panel);
+  color: var(--text-strong);
+  box-shadow: 0 1px 3px rgba(38, 35, 30, 0.14);
+}
+.rp-detail-tab:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.rp-detail-tab small {
+  font-size: 10px;
+  color: var(--muted);
+}
+.rp-detail-tab-hint {
+  padding-right: 8px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+/* ---------- 最新一周订单利润 ---------- */
+.rp-week-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.rp-week-head strong {
+  color: var(--text-strong);
+  font-size: 13px;
+}
+.rp-week-head span {
+  display: inline-block;
+}
+.rp-week-range {
+  color: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.rp-week-link {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--muted);
+}
+.rp-week-kpis {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+.rp-week-kpi {
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: var(--panel);
+  border: 1px solid var(--line-soft);
+  min-width: 0;
+}
+.rp-week-kpi span {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+}
+.rp-week-kpi strong {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-strong);
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rp-week-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.rp-week-card {
+  padding: 10px 12px 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  background: var(--panel);
+  min-width: 0;
+}
+.rp-week-card-wide {
+  grid-column: 1 / -1;
+}
+.rp-week-card h4 {
+  margin: 0 0 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--text-strong);
+  font-size: 12px;
+  font-weight: 600;
+}
+.rp-week-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 8px 12px;
+}
+.rp-week-field {
+  min-width: 0;
+}
+.rp-week-field span {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.rp-week-field-wide {
+  grid-column: span 2;
+}
+.rp-week-field-wide strong {
+  white-space: normal !important;
+  line-height: 1.5;
+}
+.rp-week-field strong {
+  display: block;
+  color: var(--text-strong);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.rp-week-input {
+  width: 100%;
+  margin-top: 1px;
+  padding: 2px 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--text-strong);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.rp-week-input:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+.rp-week-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+.rp-week-input:disabled {
+  background: var(--accent-soft-2);
+  color: var(--muted);
+}
+.rp-val-bad {
+  color: #b42318 !important;
+}
+.rp-val-good {
+  color: #1a7f45 !important;
+}
+.rp-val-warn {
+  color: #946200 !important;
+}
+.rp-week-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.rp-week-images img {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border: 1px solid var(--line-soft);
+  border-radius: 6px;
+  background: #fff;
+}
+.rp-week-empty {
+  padding: 18px 0;
+  color: var(--muted);
+  text-align: center;
 }
 
 .rp-table tfoot td {
@@ -1123,6 +1761,12 @@ const colCount = computed(() => 6 + (plan.value?.batches.length || 0) + TAIL_COL
 @media (max-width: 1280px) {
   .rp-summary {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .rp-week-kpis {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .rp-week-cards {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 </style>

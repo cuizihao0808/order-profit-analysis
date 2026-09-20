@@ -8,6 +8,7 @@ import {
   parseBatchHeader,
   parseCsv,
   parseReplenishmentPlan,
+  sortByUrgency,
 } from '../src/lib/replenishmentPlan.js'
 
 const HEADER = [
@@ -128,7 +129,32 @@ describe('shipping state', () => {
       ['01/02', 'pending', true, 0, 30],
       ['01/16', 'pending', false, 0, 80],
     ])
-    expect(s.items).toEqual({ 'SKU-A': { plannedQty: 300, shippedQty: 220 }, 'SKU-B': { plannedQty: 30, shippedQty: 0 } })
+    expect(s.items).toEqual({
+      'SKU-A': {
+        plannedQty: 300,
+        shippedQty: 220,
+        firstBatch: '12/26',
+        firstDate: '2026-12-26',
+        firstInDays: -15,
+        urgent: true,
+        dueBatch: '01/16',
+        dueDate: '2027-01-16',
+        dueInDays: 6,
+        nearTermDone: false,
+      },
+      'SKU-B': {
+        plannedQty: 30,
+        shippedQty: 0,
+        firstBatch: '01/02',
+        firstDate: '2027-01-02',
+        firstInDays: -8,
+        urgent: true,
+        dueBatch: '01/02',
+        dueDate: '2027-01-02',
+        dueInDays: -8,
+        nearTermDone: false,
+      },
+    })
     expect([s.plannedQty, s.shippedQty, s.nextBatch.key]).toEqual([330, 220, '01/02'])
   })
 
@@ -145,6 +171,39 @@ describe('shipping state', () => {
     expect(done.nextBatch).toBeNull()
     expect(done.batches.every((b) => b.status === 'done' && !b.overdue)).toBe(true)
     expect(buildShippingSummary(plan).shippedQty).toBe(0)
+  })
+
+  it('pins SKUs whose first planned batch falls inside the urgency window', () => {
+    // 窗口按“计划里的第一个批次”判断：SKU-A 12/26、SKU-B 01/02 都已逾期
+    const s = buildShippingSummary(plan, {}, '2027-01-10', 3)
+    expect(s.items['SKU-A']).toMatchObject({ firstBatch: '12/26', firstInDays: -15, urgent: true, nearTermDone: false })
+    expect(s.items['SKU-B']).toMatchObject({ firstBatch: '01/02', firstInDays: -8, urgent: true })
+    expect(sortByUrgency(plan.items, s).map((i) => i.sku)).toEqual(['SKU-A', 'SKU-B'])
+
+    // 计划外的窗口：两个 SKU 都不置顶，保持原顺序
+    const future = buildShippingSummary(plan, {}, '2026-01-01', 3)
+    expect(future.items['SKU-A'].urgent).toBe(false)
+    expect(sortByUrgency(plan.items, future).map((i) => i.sku)).toEqual(['SKU-A', 'SKU-B'])
+
+    // 没有 today 就不判断紧急，保持原顺序
+    const noToday = buildShippingSummary(plan, {})
+    expect(noToday.items['SKU-A']).toMatchObject({ firstInDays: null, urgent: false })
+    expect(sortByUrgency(plan.items, noToday).map((i) => i.sku)).toEqual(['SKU-A', 'SKU-B'])
+    expect(sortByUrgency(plan.items, null).map((i) => i.sku)).toEqual(['SKU-A', 'SKU-B'])
+  })
+
+  it('keeps the order stable when a batch is marked shipped', () => {
+    const before = buildShippingSummary(plan, {}, '2027-01-10')
+    const orderBefore = sortByUrgency(plan.items, before).map((i) => i.sku)
+    // 把 SKU-A 最近的待发批次标记为已发货：dueBatch 往后走，但置顶依据（firstDate）不变
+    const after = buildShippingSummary(plan, { 'SKU-A': { '12/26': 't' } }, '2027-01-10')
+    expect(after.items['SKU-A']).toMatchObject({ firstBatch: '12/26', dueBatch: '01/16', urgent: true })
+    expect(sortByUrgency(plan.items, after).map((i) => i.sku)).toEqual(orderBefore)
+
+    // 窗口内的批次全部发完 → nearTermDone，但仍然置顶
+    const done = buildShippingSummary(plan, { 'SKU-B': { '01/02': 't' } }, '2027-01-10', 3)
+    expect(done.items['SKU-B']).toMatchObject({ urgent: true, nearTermDone: true, dueInDays: null })
+    expect(sortByUrgency(plan.items, done).map((i) => i.sku)).toEqual(orderBefore)
   })
 
   it('checks and validates entries against the plan', () => {
