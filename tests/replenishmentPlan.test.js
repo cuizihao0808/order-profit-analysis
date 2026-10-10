@@ -60,6 +60,11 @@ describe('parseBatchHeader / inferBatchDates', () => {
     expect(inferBatchDates(batches, new Date(2026, 11, 28))).toEqual(['2027-01-09', '2027-01-16'])
     expect(inferBatchDates([], new Date(2026, 11, 28))).toEqual([])
   })
+
+  it('starts last year when a new-year file still lists batches from last autumn', () => {
+    const batches = ['10/17', '12/26', '01/23'].map(parseBatchHeader)
+    expect(inferBatchDates(batches, new Date(2027, 0, 5))).toEqual(['2026-10-17', '2026-12-26', '2027-01-23'])
+  })
 })
 
 describe('parseReplenishmentPlan', () => {
@@ -67,6 +72,7 @@ describe('parseReplenishmentPlan', () => {
 
   it('reads shop, batches and SKU rows', () => {
     expect(plan.shop).toBe('TZH')
+    expect(plan.labels).toEqual({ emergency: '9/26下周海运是否带应急量', lateGap: '在途晚到7天时残余缺口', postHolidayRef: '2/27节后首班参考(须节前备好)' })
     expect(plan.batches).toEqual([
       { key: '12/26', label: '12/26(仅现货)', note: '仅现货', date: '2026-12-26' },
       { key: '01/02', label: '01/02', note: '', date: '2027-01-02' },

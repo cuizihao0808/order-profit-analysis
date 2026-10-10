@@ -62,12 +62,14 @@ export function parseBatchHeader(header) {
 
 /**
  * 批次表头只有月/日：以文件时间所在年份为起点，月份回退时跨年。
- * 文件时间在年底、首批在次年初（相差超过半年）时，起始年份 +1。
+ * 文件时间在年底、首批在次年初（相差超过半年）时，起始年份 +1；
+ * 文件时间在年初、首批在上年末（相差超过半年）时，起始年份 -1。
  */
 export function inferBatchDates(batches, refDate) {
   const ref = new Date(refDate)
   let year = ref.getFullYear()
   if (batches.length && batches[0].month < ref.getMonth() + 1 - 6) year += 1
+  if (batches.length && batches[0].month > ref.getMonth() + 1 + 6) year -= 1
   let prevMonth = 0
   return batches.map((b) => {
     if (b.month < prevMonth) year += 1
@@ -105,6 +107,7 @@ const SUMMARY_MATCHERS = [
  * 把 parseCsv 的结果解析为补货计划。
  * @param rows 二维数组，第一行为表头
  * @param options.refDate 用于推断批次年份的参考时间（通常是文件修改时间）
+ * 返回的 labels 是应急 / 残余缺口 / 节后首班三列的原始表头文字，页面据此显示列名。
  */
 export function parseReplenishmentPlan(rows, { refDate = new Date() } = {}) {
   const header = (rows[0] || []).map((h) => String(h ?? '').replace(/^﻿/, '').trim())
@@ -171,7 +174,12 @@ export function parseReplenishmentPlan(rows, { refDate = new Date() } = {}) {
     })
   }
   if (!shop) throw new Error('补货清单缺少店铺')
-  return { shop, batches, items, weekly, weeklyNotes }
+  const labels = {
+    emergency: col.emergency == null ? '' : header[col.emergency],
+    lateGap: col.lateGap == null ? '' : header[col.lateGap],
+    postHolidayRef: col.postHolidayRef == null ? '' : header[col.postHolidayRef],
+  }
+  return { shop, batches, items, weekly, weeklyNotes, labels }
 }
 
 export function isShipped(shopShipped, sku, batchKey) {

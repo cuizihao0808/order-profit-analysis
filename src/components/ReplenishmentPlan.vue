@@ -725,7 +725,7 @@ const colCount = computed(() => 6 + (plan.value?.batches.length || 0) + TAIL_COL
                   <th>ASIN</th>
                   <th class="num">当前可用</th>
                   <th class="num">在途</th>
-                  <th>应急判断</th>
+                  <th>{{ plan.labels?.emergency || '应急判断' }}</th>
                   <th
                     v-for="b in summary.batches"
                     :key="b.key"
@@ -854,8 +854,8 @@ const colCount = computed(() => 6 + (plan.value?.batches.length || 0) + TAIL_COL
                         <div v-if="tabOf(item) === 'plan'" class="rp-detail-pane">
                           <div class="rp-detail-grid">
                             <div><span>日均需求参考</span>{{ item.dailyDemand || '—' }}</div>
-                            <div><span>在途晚到 7 天时残余缺口</span>{{ item.lateGap || '—' }}</div>
-                            <div><span>9/26 应急量</span>{{ item.emergency || '—' }}</div>
+                            <div><span>{{ plan.labels?.lateGap || '在途晚到 7 天时残余缺口' }}</span>{{ item.lateGap || '—' }}</div>
+                            <div><span>{{ plan.labels?.emergency || '应急判断' }}</span>{{ item.emergency || '—' }}</div>
                           </div>
                           <div class="rp-detail-block"><span>判断说明</span>{{ item.reason || '—' }}</div>
                           <div class="rp-detail-block"><span>备注</span>{{ item.remark || '—' }}</div>
