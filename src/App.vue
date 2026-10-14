@@ -1,28 +1,67 @@
 <script setup>
 import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import focusConfig from './data/focusProducts.json'
 import { computeRestockQty } from './lib/restockRules.js'
 import { prepareImportScan } from './lib/importScan.js'
 import { buildProductPatchTargets, sortFullCartonFirst } from './lib/productUpdates.js'
+import { findShopByCode, suggestedRestock } from './lib/replenishmentPlan.js'
+import { METRIC_BY_KEY, buildSeries, deltaOf, fmtMetric, sumMetric } from './lib/trendMetrics.js'
 import {
+  formatRoi,
   inventoryHealthText as productInventoryHealthText,
+  isWeekFieldAlert,
   pairedText,
+  shopCodeOf,
   toNum,
+  weekRoi,
   weightTypeText as productWeightTypeText,
 } from './lib/weekSnapshot.js'
+import { useReplenishment } from './composables/useReplenishment.js'
+import { useTrendWeeks } from './composables/useTrendWeeks.js'
 import { writeClipboard } from './utils/clipboard.js'
+import FilterChip from './components/FilterChip.vue'
+import PlanDetail from './components/PlanDetail.vue'
+import PlanOverview from './components/PlanOverview.vue'
+import TrendPanel from './components/TrendPanel.vue'
 
 const ImportDialog = defineAsyncComponent(() => import('./components/ImportDialog.vue'))
 
 /* ================= 常量 ================= */
-const FIXED_COLS = ['亚马逊主图', '品名', 'ASIN']
-const COL_CONFIG_KEY = 'opa:column-config:v4'
+const FIXED_COLS = ['品名', 'ASIN'] // 品名列里带主图
+const COL_CONFIG_KEY = 'opa:column-config:v6'
 const SHOP_FILTER_KEY = 'opa:shop-filter:v1'
 const SUPPLY_FILTER_KEY = 'opa:supply-filter:v1'
-const WEEK_KEY = 'opa:current-week:v1'
+const VIEW_KEY = 'opa:view:v1'
+const PLAN_SHOP_KEY = 'opa:plan-shop:v1'
 const DEV_SESSION_KEY = 'opa:dev-session:v1'
-const FIXED_WIDTHS = { 亚马逊主图: 92, 品名: 320, ASIN: 180 }
-const EXPAND_COL_WIDTH = 40
-const SELECT_COL_WIDTH = 44
+const FIXED_WIDTHS = { 品名: 340, ASIN: 150 }
+const FIXED_WIDTHS_COMPACT = { 品名: 300, ASIN: 140 }
+const SELECT_COL_WIDTH = 60 // 勾选框 + 展开箭头
+const SELECT_COL_WIDTH_COMPACT = 54
+
+/** 表头分组：列名 → 组名；相邻同组的列合并成一个组头，不在表里的列不显示组名 */
+const COL_GROUPS = {
+  销售: ['销量', '月销量', '月销售额', '月订单数', '日均销量', 'Vine赠品销量', '销售额', '平均日销', '含税销售额', '净销售额', '平均售价', '广告销售额', '广告销量', '多渠道销量'],
+  利润: ['采购成本', '毛利润', '毛利率', 'ROI', '净毛利率', '平均毛利润', '合计成本', '头程成本', '采购均价', '头程均价'],
+  运营: ['广告费率', '广告花费', '退货率', '退款率', '退货量', '退款量', '退款金额', '推广费', '平台费', 'FBA发货费'],
+  库存: ['可售', '入库中', '不可售', '预留', 'FBA总量', '本地仓库', '已下单', '补货用时'],
+  补货: ['静态补货', '建议补货', '批次进度'],
+}
+const GROUP_OF_COL = Object.fromEntries(Object.entries(COL_GROUPS).flatMap(([g, cols]) => cols.map((c) => [c, g])))
+
+const SUPPLY_OPTIONS = [
+  { value: '__all__', label: '全部' },
+  { value: 'need-restock', label: '需要补货' },
+  { value: 'need-restock-no-local-no-ordered', label: '需补货未下单' },
+  { value: 'no-restock', label: '不需要补货' },
+  { value: 'ordered', label: '已下单' },
+  { value: 'local-warehouse', label: '本地仓有货' },
+]
+const HEALTH_OPTIONS = [
+  { value: '__all__', label: '全部' },
+  { value: '健康', label: '健康' },
+  { value: '不足', label: '不足' },
+]
 
 /**
  * ASIN 主数据字段（存于 src/data/products/{shopId}.json）
@@ -61,7 +100,23 @@ const EXTRA_COLS = [
   { name: '已下单', key: 'orderedQty', type: 'edit-num' },
   { name: '补货用时', key: 'restockCycle', type: 'edit-num' },
   { name: 'ROI', key: 'roi', type: 'calc' },
-  { name: '补货数量', key: 'restockQty', type: 'calc' },
+  { name: '静态补货', key: 'restockQty', type: 'calc' },
+  { name: '建议补货', key: 'suggestedQty', type: 'calc' },
+  { name: '批次进度', key: 'batchProgress', type: 'calc' },
+]
+
+/** 顶部视图：全部 / 重点关注 / 有补货计划 */
+const VIEWS = [
+  { id: 'all', label: '全部' },
+  { id: 'focus', label: '重点关注' },
+  { id: 'plan', label: '有补货计划' },
+]
+
+/** 展开行的 Tab */
+const DETAIL_TABS = [
+  { id: 'inventory', label: '库存详情' },
+  { id: 'trend', label: '8 周趋势' },
+  { id: 'plan', label: '补货批次' },
 ]
 const EXTRA_COL_NAMES = EXTRA_COLS.map((c) => c.name)
 const EXTRA_COL_BY_NAME = Object.fromEntries(EXTRA_COLS.map((c) => [c.name, c]))
@@ -97,10 +152,13 @@ const DEFAULT_VISIBLE_ORDER = [
   'Vine赠品销量',
   '采购成本',
   '毛利润',
-  '广告费率',
   'ROI',
+  '广告费率',
   '退货率',
   '退款率',
+  '静态补货',
+  '建议补货',
+  '批次进度',
   '备注',
 ]
 const DEFAULT_VISIBLE_SET = new Set(DEFAULT_VISIBLE_ORDER)
@@ -119,15 +177,16 @@ function ensureColumnsOrder(cols) {
     arr.splice(salesIdx + 1, 0, ...picked)
   }
 
-  const roiIdx = arr.findIndex((c) => c?.name === 'ROI')
-  if (roiIdx >= 0) {
-    const targetNames = ['退货率', '退款率']
-    const picked = []
-    for (const name of targetNames) {
-      const idx = arr.findIndex((c) => c?.name === name)
-      if (idx >= 0) picked.push(arr.splice(idx, 1)[0])
-    }
-    arr.splice(roiIdx + 1, 0, ...picked)
+  // 退货率、退款率跟在广告费率后面（同属“运营”组）；没有广告费率时跟在 ROI 后面
+  const picked = []
+  for (const name of ['退货率', '退款率']) {
+    const idx = arr.findIndex((c) => c?.name === name)
+    if (idx >= 0) picked.push(arr.splice(idx, 1)[0])
+  }
+  if (picked.length) {
+    let anchor = arr.findIndex((c) => c?.name === '广告费率')
+    if (anchor < 0) anchor = arr.findIndex((c) => c?.name === 'ROI')
+    arr.splice(anchor < 0 ? arr.length : anchor + 1, 0, ...picked)
   }
 
   const noteIdx = arr.findIndex((c) => c?.name === '备注')
@@ -151,8 +210,9 @@ function pairedInventoryText(row, firstKey, secondKey) {
 const shops = ref([])
 const products = ref([])
 const weeks = ref([]) // [{ id, filename, startDate, endDate, rowCount, importedAt }]
-const currentWeekId = ref('')
+const currentWeekId = ref('') // 始终是最新一周（weeks[0]）
 const currentWeek = ref(null) // { columns, rows: [{ asin, values }] }
+const currentWeekMeta = computed(() => weeks.value.find((w) => w.id === currentWeekId.value) || null)
 const restockConfig = ref({}) // { monthlyMultiplier, quantityMultiplier, quantityDiscount }
 
 const customCols = ref([]) // [{ name, visible }]
@@ -189,19 +249,54 @@ const expandedInventoryRows = ref(new Set())
 const selectedAsins = ref(new Set())
 const batchCategoryValue = ref('')
 const batchCategoryBusy = ref(false)
-const filtersCollapsed = ref(false)
 const compact13Mode = ref(false)
 
-const activeFilterCount = computed(() => {
-  let n = 0
-  if (currentWeekId.value) n++
-  if (shopFilter.value !== '__all__') n++
-  if (supplyFilter.value !== '__all__') n++
-  if (categoryFilter.value !== '__all__') n++
-  if (inventoryHealthFilter.value !== '__all__') n++
-  if (asinSearch.value.trim()) n++
-  return n
-})
+function readStored(key, fallback) {
+  try {
+    return localStorage.getItem(key) ?? fallback
+  } catch {
+    return fallback
+  }
+}
+function writeStored(key, value) {
+  try {
+    localStorage.setItem(key, value)
+  } catch {
+    /* ignore */
+  }
+}
+
+const storedView = readStored(VIEW_KEY, 'all')
+const viewMode = ref(VIEWS.some((v) => v.id === storedView) ? storedView : 'all')
+const planShop = ref(readStored(PLAN_SHOP_KEY, '')) // 补货视图当前店铺（CSV 简码）
+const planBatch = ref('') // 补货视图选中的批次
+const planRowFilter = ref('all') // all | pending | done | batch
+const planOverviewCollapsed = ref(false)
+const detailTab = ref('inventory')
+
+const {
+  orderedPlans,
+  warnings: planWarnings,
+  summaries: planSummaries,
+  today,
+  saving: planSaving,
+  loadReplenishment,
+  planEntry,
+  cellShipped,
+  shippedAt,
+  saveShipped,
+} = useReplenishment(shops, { onError: (text) => showToast(text, 'error') })
+
+const { trendWeeks, trendLoading, ensureTrendWeeks, resetTrendWeeks, seedTrendWeek } = useTrendWeeks(weeks)
+
+const hasActiveFilters = computed(
+  () =>
+    (viewMode.value !== 'plan' && shopFilter.value !== '__all__') ||
+    supplyFilter.value !== '__all__' ||
+    categoryFilter.value !== '__all__' ||
+    inventoryHealthFilter.value !== '__all__' ||
+    !!asinSearch.value.trim(),
+)
 
 function resetFilters() {
   shopFilter.value = '__all__'
@@ -265,6 +360,60 @@ function inventoryHealthText(row) {
   return productInventoryHealthText(rowProduct(row))
 }
 
+/* ---------- 重点关注 / 补货计划：都按「店铺 + ASIN」关联 ---------- */
+/** shopId → 重点关注 ASIN → 在配置里的顺序 */
+const focusOrder = computed(() => {
+  const out = new Map()
+  for (const [shopId, list] of Object.entries(focusConfig)) {
+    const order = new Map()
+    ;(Array.isArray(list) ? list : []).forEach((a, i) => {
+      const asin = String(a).trim()
+      if (asin && !order.has(asin)) order.set(asin, i)
+    })
+    out.set(shopId, order)
+  }
+  return out
+})
+
+function isFocus(row) {
+  return !!focusOrder.value.get(rowShopId(row))?.has(String(row?.asin || '').trim())
+}
+
+/** 该行在补货计划里的条目：{ plan, item, summary } 或 null */
+function rowPlan(row) {
+  const shopId = rowShopId(row)
+  const asin = String(row?.asin || '').trim()
+  return shopId && asin ? planEntry(shopId, asin) : null
+}
+
+function rowSuggested(row) {
+  const entry = rowPlan(row)
+  return entry ? suggestedRestock(entry.item, entry.summary) : { state: 'none' }
+}
+
+function rowMatchesPlanFilter(row) {
+  const entry = rowPlan(row)
+  if (!entry || entry.plan.shop !== planShop.value) return false
+  const s = entry.summary
+  switch (planRowFilter.value) {
+    case 'pending':
+      return s.plannedQty > s.shippedQty
+    case 'done':
+      return s.plannedQty > 0 && s.plannedQty === s.shippedQty
+    case 'batch':
+      return !!entry.item.qtyByBatch[planBatch.value]
+    default:
+      return true
+  }
+}
+
+const activePlan = computed(() => orderedPlans.value.find((p) => p.shop === planShop.value) || null)
+const activePlanSummary = computed(() => (activePlan.value ? planSummaries.value[activePlan.value.shop] : null))
+
+function planShopLabel(code) {
+  return findShopByCode(shops.value, code)?.name || code
+}
+
 function inventoryHealthClass(row) {
   return inventoryHealthText(row) === '健康' ? 'inventory-health-good' : 'inventory-health-low'
 }
@@ -297,7 +446,10 @@ function rowMatchesSupplyFilter(row) {
 
 const filteredRows = computed(() => {
   let rows = allRows.value
-  if (shopFilter.value !== '__all__') {
+  if (viewMode.value === 'focus') rows = rows.filter(isFocus)
+  // 补货视图按补货店铺筛选，忽略店铺下拉
+  if (viewMode.value === 'plan') rows = rows.filter(rowMatchesPlanFilter)
+  else if (shopFilter.value !== '__all__') {
     rows = rows.filter((r) => getCell(r, '店铺') === shopFilter.value)
   }
   rows = rows.filter(rowMatchesSupplyFilter)
@@ -310,11 +462,11 @@ const filteredRows = computed(() => {
 
   const q = asinSearch.value.trim().toLowerCase()
   if (!q) return rows
-  return rows.filter((r) => {
-    const asin = String(getCell(r, 'ASIN') || '').toLowerCase()
-    const fnsku = String(getCell(r, 'FNSKU') || '').toLowerCase()
-    return asin.includes(q) || fnsku.includes(q)
-  })
+  return rows.filter((r) =>
+    [getCell(r, 'ASIN'), getCell(r, 'FNSKU'), getCell(r, '品名')].some((v) =>
+      String(v || '').toLowerCase().includes(q),
+    ),
+  )
 })
 
 function getWeekNote(asin) {
@@ -361,9 +513,10 @@ async function patchWeekNote(asin, note) {
 /** 单元格取值：
  *  1. 主字段（品名/ASIN/父ASIN）优先取 products.json，其次 xlsx
  *  2. 扩展字段（产品分类/库存明细/补货用时）取 products.json
- *  3. ROI = ROUND(毛利润 / 采购成本, 2)
- *  4. 补货数量 = IF(FBA总量 < 销量*(8+补货用时), 销量*8, '无需补货')
- *  5. 其余取 xlsx 快照
+ *  3. ROI = 毛利润 / 采购成本（不取整，展示两位小数）
+ *  4. 静态补货 = IF(FBA总量 < 销量*(8+补货用时), 销量*8, '无需补货')
+ *  5. 建议补货 / 批次进度 取补货批次计划 CSV
+ *  6. 其余取 xlsx 快照
  */
 function getCell(row, colName) {
   if (!row) return ''
@@ -397,11 +550,17 @@ function getCell(row, colName) {
       return getWeekNote(row.asin)
     }
     if (extra.type === 'calc') {
-      if (extra.key === 'roi') {
-        const profit = toNum(row.values[colIndex.value['毛利润']])
-        const cost = Math.abs(toNum(row.values[colIndex.value['采购成本']]))
-        if (!Number.isFinite(profit) || !Number.isFinite(cost) || cost === 0) return ''
-        return (Math.round((profit / cost) * 100) / 100).toFixed(2)
+      if (extra.key === 'roi') return formatRoi(rowRoi(row))
+      if (extra.key === 'suggestedQty') {
+        const s = rowSuggested(row)
+        if (s.state === 'done') return '已发完'
+        if (s.state === 'pending') return `${s.qty} · ${s.batch}`
+        return rowPlan(row) ? '计划不补' : ''
+      }
+      if (extra.key === 'batchProgress') {
+        const summary = rowPlan(row)?.summary
+        if (!summary?.plannedQty) return ''
+        return `${summary.shippedQty}/${summary.plannedQty}`
       }
       if (extra.key === 'restockQty') {
         return computeRestockQty({
@@ -427,6 +586,10 @@ function getCell(row, colName) {
     if (Number.isFinite(n)) return String(Math.abs(n))
   }
   return raw
+}
+
+function rowRoi(row) {
+  return weekRoi(row, colIndex.value)
 }
 
 function asinValue(row) {
@@ -604,13 +767,15 @@ function shouldShowNoteTooltip(asin) {
   return !!note && !!noteOverflowMap.value[asin]
 }
 
-function toggleInventoryRow(asin) {
+/** 同时只展开一行；tab 指定时直接打开该 Tab（再次点同一 Tab 收起） */
+function toggleInventoryRow(asin, tab) {
   if (!asin) return
   const current = expandedInventoryRows.value
-  if (current.has(asin)) {
+  if (current.has(asin) && (!tab || tab === detailTab.value)) {
     expandedInventoryRows.value = new Set()
     return
   }
+  if (tab) detailTab.value = tab
   expandedInventoryRows.value = new Set([asin])
 }
 
@@ -694,43 +859,74 @@ function isAbandoned(row) {
 }
 
 /** 单元格告警高亮：
- *  - 广告费率 > 15%       → 红
- *  - 毛利润 / ROI 为负数  → 红
- *  - 补货数量 是数字      → 黄
+ *  - 广告费率 > 15、退款率 / 退货率 > 10、毛利润 / ROI 为负 → 红（规则见 isWeekFieldAlert）
+ *  - 静态补货 是数字                                  → 黄
+ *  - 建议补货 / 批次进度：有逾期未发的批次 → 红；7 天内要发 → 黄
  */
 function cellAlertClass(row, colName) {
   if (!row) return ''
-  if (colName === '广告费率' || colName === '退款率' || colName === '退货率') {
-    const n = toNum(getCell(row, '广告费率'))
-    if (colName === '广告费率' && Number.isFinite(n) && n > 15) return 'alert-red'
-    const rate = toNum(getCell(row, colName))
-    if ((colName === '退款率' || colName === '退货率') && Number.isFinite(rate) && rate > 10) {
-      return 'alert-red'
-    }
-    return ''
+  if (colName === 'ROI') return isWeekFieldAlert('ROI', rowRoi(row)) ? 'alert-red' : ''
+  if (colName === '广告费率' || colName === '退款率' || colName === '退货率' || colName === '毛利润') {
+    const i = colIndex.value[colName]
+    return i != null && isWeekFieldAlert(colName, row.values[i]) ? 'alert-red' : ''
   }
-  if (colName === '毛利润') {
-    const n = toNum(row.values[colIndex.value['毛利润']])
-    if (Number.isFinite(n) && n < 0) return 'alert-red'
-    return ''
-  }
-  if (colName === 'ROI') {
-    const v = getCell(row, 'ROI')
-    const n = toNum(v)
-    if (Number.isFinite(n) && n < 0) return 'alert-red'
-    return ''
-  }
-  if (colName === '补货数量') {
-    const v = getCell(row, '补货数量')
-    if (v !== '' && v !== '无需补货' && Number.isFinite(toNum(v))) return 'alert-yellow'
-    return ''
+  if (colName === '静态补货') return hasRestockNeed(row) ? 'alert-yellow' : ''
+  if (colName === '建议补货' || colName === '批次进度') {
+    const s = rowSuggested(row)
+    if (s.state !== 'pending') return ''
+    if (s.overdue) return 'alert-red'
+    if (colName === '建议补货' && s.inDays != null && s.inDays <= 7) return 'alert-yellow'
   }
   return ''
 }
 
+/** 建议补货的悬停提示 */
+function suggestedTitle(row) {
+  const entry = rowPlan(row)
+  if (!entry) return '没有补货批次计划'
+  const s = rowSuggested(row)
+  const total = `春节前合计 ${entry.item.preHolidayTotal ?? '—'} 件`
+  if (s.state !== 'pending') return total
+  const when = s.inDays == null ? '' : s.inDays < 0 ? `，已逾期 ${-s.inDays} 天` : s.inDays === 0 ? '，今天发货' : `，${s.inDays} 天后`
+  return `下一批 ${s.date}${when}\n${total}`
+}
+
+/** 普通单元格：告警值加红色小底；0 / 0.00% / 空值显示为淡灰 —，让真正的数字更显眼 */
+function cellView(row, colName) {
+  const text = String(getCell(row, colName) ?? '')
+  if (cellAlertClass(row, colName) === 'alert-red') return { text, cls: 'v-bad' }
+  if (text === '' || (numericColumns.value[colName] && toNum(text) === 0)) return { text: '—', cls: 'v-dim' }
+  return { text, cls: '' }
+}
+
+/** 建议补货：第一行件数，第二行「N 天后 · 批次」；7 天内琥珀色、逾期红色 */
+function suggestedView(row) {
+  const s = rowSuggested(row)
+  if (s.state === 'pending') {
+    let when = ''
+    let tone = ''
+    if (s.inDays != null && s.inDays < 0) {
+      when = `逾期 ${-s.inDays} 天 · `
+      tone = 'bad'
+    } else if (s.inDays != null && s.inDays <= 7) {
+      when = s.inDays === 0 ? '今天 · ' : `${s.inDays} 天后 · `
+      tone = 'soon'
+    }
+    return { qty: `${s.qty} 件`, sub: `${when}${s.batch}`, tone }
+  }
+  if (s.state === 'done') return { qty: '', sub: '已发完', tone: 'done' }
+  return { qty: '', sub: rowPlan(row) ? '计划不补' : '', tone: '' }
+}
+
+function progressView(row) {
+  const s = rowPlan(row)?.summary
+  if (!s?.plannedQty) return null
+  return { text: `${s.shippedQty} / ${s.plannedQty.toLocaleString('en-US')}`, pct: (s.shippedQty / s.plannedQty) * 100 }
+}
+
 function hasRestockNeed(row) {
   if (!row) return false
-  const v = getCell(row, '补货数量')
+  const v = getCell(row, '静态补货')
   return v !== '' && v !== '无需补货' && Number.isFinite(toNum(v))
 }
 
@@ -792,13 +988,37 @@ const groups = computed(() => {
     result.push({ key, header: headerRow, children })
   }
   const profitSortedGroups = result.sort((a, b) => profitValue(b.header) - profitValue(a.header))
-  return sortFullCartonFirst(profitSortedGroups, (group) => {
+  const sortedGroups = sortFullCartonFirst(profitSortedGroups, (group) => {
     const hasFullCarton = [group.header, ...group.children].some(
       (row) => rowPackingMode(row) === 'full',
     )
     return hasFullCarton ? 'full' : 'mixed'
   })
+  if (viewMode.value === 'plan') return sortGroupsBy(sortedGroups, planUrgencyKey)
+  if (viewMode.value === 'focus') return sortGroupsBy(sortedGroups, focusOrderKey)
+  return sortedGroups
 })
+
+/** 稳定排序：按组内成员 key 的最小值升序 */
+function sortGroupsBy(list, keyOf) {
+  const minKey = (g) => [g.header, ...g.children].map(keyOf).sort()[0]
+  return list
+    .map((g, index) => ({ g, index, key: minKey(g) }))
+    .sort((a, b) => (a.key === b.key ? a.index - b.index : a.key < b.key ? -1 : 1))
+    .map((x) => x.g)
+}
+
+/** 补货视图：首批在临近窗口内的 SKU 按首批日期置顶，其余保持原顺序 */
+function planUrgencyKey(row) {
+  const s = rowPlan(row)?.summary
+  return s?.urgent ? `0-${s.firstDate}` : '1'
+}
+
+/** 重点视图：按 focusProducts.json 里的顺序 */
+function focusOrderKey(row) {
+  const i = focusOrder.value.get(rowShopId(row))?.get(String(row?.asin || '').trim())
+  return i == null ? 'z' : String(i).padStart(5, '0')
+}
 
 const visibleRows = computed(() => {
   const rows = []
@@ -1073,9 +1293,26 @@ const numericColumns = computed(() => {
   return result
 })
 
+/** 表头第一行：勾选列 + 固定列合成一格，其余按 COL_GROUPS 合并相邻同组列 */
+const headerGroups = computed(() => {
+  const out = []
+  for (const col of displayCols.value) {
+    if (col.fixed) continue
+    const name = GROUP_OF_COL[col.name] || ''
+    const last = out[out.length - 1]
+    if (last && last.name === name && name) last.span += 1
+    else out.push({ name, span: 1, first: col.name })
+  }
+  return out
+})
+const groupStartCols = computed(() => new Set(headerGroups.value.map((g) => g.first)))
+const fixedSpan = computed(() => displayCols.value.filter((c) => c.fixed).length + 1)
+
 const groupCount = computed(() => groups.value.length)
 const asinCount = computed(() => tableRows.value.length)
 const shopNames = computed(() => shops.value.map((s) => s.name))
+const shopOptions = computed(() => [{ value: '__all__', label: '全部' }, ...shopNames.value.map((n) => ({ value: n, label: n }))])
+const categoryOptions = [{ value: '__all__', label: '全部' }, ...CATEGORY_OPTIONS.map((c) => ({ value: c, label: c }))]
 const shopMdNameByName = computed(() => {
   const map = new Map()
   for (const shop of shops.value) {
@@ -1086,10 +1323,8 @@ const shopMdNameByName = computed(() => {
 })
 
 function fixedLeft(displayIndex) {
-  let left = compact13Mode.value ? 38 : SELECT_COL_WIDTH
-  const widthMap = compact13Mode.value
-    ? { 亚马逊主图: 76, 品名: 260, ASIN: 150 }
-    : FIXED_WIDTHS
+  let left = compact13Mode.value ? SELECT_COL_WIDTH_COMPACT : SELECT_COL_WIDTH
+  const widthMap = compact13Mode.value ? FIXED_WIDTHS_COMPACT : FIXED_WIDTHS
   for (let i = 0; i < displayIndex; i++) {
     const name = FIXED_COLS[i]
     left += widthMap[name] ?? 120
@@ -1098,9 +1333,7 @@ function fixedLeft(displayIndex) {
 }
 
 function fixedColStyle(displayIndex, colName) {
-  const widthMap = compact13Mode.value
-    ? { 亚马逊主图: 76, 品名: 260, ASIN: 150 }
-    : FIXED_WIDTHS
+  const widthMap = compact13Mode.value ? FIXED_WIDTHS_COMPACT : FIXED_WIDTHS
   const width = widthMap[colName] ?? 120
   return {
     left: fixedLeft(displayIndex),
@@ -1108,6 +1341,93 @@ function fixedColStyle(displayIndex, colName) {
     minWidth: width + 'px',
     maxWidth: width + 'px',
   }
+}
+
+/* ================= 重点关注 ================= */
+/** 当前筛选下的重点 ASIN 最新周合计，与上一周比 */
+const focusSummary = computed(() => {
+  if (viewMode.value !== 'focus') return null
+  const rows = visibleRows.value
+  const weeksAsc = trendWeeks.value
+  if (!rows.length || !weeksAsc.length) return null
+  const lastTwo = weeksAsc.slice(-2)
+  const seriesList = rows.map((row) => buildSeries(lastTwo, rowShopName(row), String(row.asin || '').trim()))
+  const cur = lastTwo.length - 1
+  return ['sales', 'revenue', 'profit', 'adSpend'].map((key) => {
+    const metric = METRIC_BY_KEY[key]
+    const now = sumMetric(seriesList, cur, key)
+    const prev = cur > 0 ? sumMetric(seriesList, cur - 1, key) : NaN
+    return { key, label: `${metric.label}合计`, value: fmtMetric(metric, now), delta: deltaOf(metric, now, prev) }
+  })
+})
+
+/** 复制当前筛选下的重点 ASIN，顺序与表格一致 */
+async function copyFocusAsins() {
+  const asins = visibleAsinList.value
+  if (!asins.length) {
+    showToast('当前没有可导出的重点关注 ASIN', 'warn')
+    return
+  }
+  try {
+    await writeClipboard(asins.join('\n'))
+    showToast(`已复制 ${asins.length} 个重点关注 ASIN`)
+  } catch {
+    showToast('复制失败，请重试', 'error')
+  }
+}
+
+/* ================= 补货批次 ================= */
+async function toggleRowShipped(row, batch) {
+  const entry = rowPlan(row)
+  if (!entry) return
+  const { plan, item } = entry
+  const shipped = !cellShipped(plan.shop, item.asin, batch.date)
+  const ok = await saveShipped(plan.shop, [{ asin: item.asin, date: batch.date }], shipped)
+  if (ok) showToast(`${item.sku} · ${batch.key} ${shipped ? '已标记发货' : '已撤销发货'}`)
+}
+
+async function markPlanBatch(batch, shipped) {
+  const plan = activePlan.value
+  if (!plan || !batch) return
+  const entries = plan.items
+    .filter((item) => item.asin && item.qtyByBatch[batch.key] && cellShipped(plan.shop, item.asin, batch.date) !== shipped)
+    .map((item) => ({ asin: item.asin, date: batch.date }))
+  if (!entries.length) return
+  const verb = shipped ? '标记为已发货' : '撤销已发货'
+  if (!confirm(`把 ${batch.key} 批次的 ${entries.length} 个 SKU ${verb}？`)) return
+  const ok = await saveShipped(plan.shop, entries, shipped)
+  if (ok) showToast(`${batch.key} 批次 ${entries.length} 个 SKU 已${shipped ? '标记发货' : '撤销发货'}`)
+}
+
+async function copyPlanBatch(batch) {
+  const plan = activePlan.value
+  if (!plan || !batch) return
+  const items = plan.items.filter((item) => item.qtyByBatch[batch.key])
+  const lines = [
+    ['SKU', '品名', 'ASIN', '件数'].join('\t'),
+    ...items.map((item) => [item.sku, item.name, item.asin, item.qtyByBatch[batch.key]].join('\t')),
+    ['合计', '', '', batch.plannedQty].join('\t'),
+  ]
+  try {
+    await writeClipboard(lines.join('\n'))
+    showToast(`已复制 ${batch.key} 批次 ${items.length} 个 SKU`)
+  } catch {
+    showToast('复制失败，请重试', 'error')
+  }
+}
+
+/* ================= 展开行 ================= */
+function rowTrendSeries(row) {
+  return buildSeries(trendWeeks.value, rowShopName(row), String(row?.asin || '').trim())
+}
+
+function isDetailTabDisabled(row, tab) {
+  return tab === 'plan' && !rowPlan(row)
+}
+
+/** 当前 Tab 在这一行不可用时（没有补货计划）退回库存详情 */
+function rowDetailTab(row) {
+  return isDetailTabDisabled(row, detailTab.value) ? 'inventory' : detailTab.value
 }
 
 /* ================= 加载 ================= */
@@ -1146,8 +1466,21 @@ async function loadCurrentWeek() {
       currentWeek.value.notes = {}
     }
     mergeCustomCols(currentWeek.value.columns)
+    seedTrendWeek(currentWeekId.value, currentWeek.value)
   } else {
     currentWeek.value = null
+  }
+}
+
+/** 整页只看最新一周（weeks.json 按时间倒序，第一条即最新） */
+async function loadLatestWeek() {
+  currentWeekId.value = weeks.value[0]?.id || ''
+  await loadCurrentWeek()
+}
+
+function ensurePlanShop() {
+  if (!orderedPlans.value.some((p) => p.shop === planShop.value)) {
+    planShop.value = orderedPlans.value[0]?.shop || ''
   }
 }
 
@@ -1155,12 +1488,12 @@ async function bootstrap() {
   try {
     status.value = '正在加载...'
     await Promise.all([loadShops(), loadProducts(), loadWeeks(), loadRestockConfig()])
-
-    // 选择当前周：localStorage > 最新
-    const stored = localStorage.getItem(WEEK_KEY)
-    const preferred = weeks.value.find((w) => w.id === stored)
-    currentWeekId.value = preferred?.id || weeks.value[0]?.id || ''
-    await loadCurrentWeek()
+    await Promise.all([
+      loadLatestWeek(),
+      loadReplenishment().catch((e) => showToast('补货计划加载失败：' + (e.message || e), 'error')),
+    ])
+    ensurePlanShop()
+    if (viewMode.value === 'focus') ensureTrendWeeks()
 
     updateStatus()
   } catch (e) {
@@ -1180,7 +1513,8 @@ function updateStatus() {
       ordered: '已经下单的',
       'local-warehouse': '本地仓库有的',
     }[supplyFilter.value]
-    status.value = `订单 ${allRows.value.length} 行 · 当前 ${filteredRows.value.length} 行 · 店铺 ${shops.value.length} · ASIN ${products.value.length} · 补货筛选 ${supplyFilterText}`
+    const viewText = VIEWS.find((v) => v.id === viewMode.value)?.label || '全部'
+    status.value = `订单 ${allRows.value.length} 行 · 当前 ${filteredRows.value.length} 行 · 店铺 ${shops.value.length} · ASIN ${products.value.length} · 视图 ${viewText} · 补货筛选 ${supplyFilterText}`
   }
 }
 
@@ -1544,6 +1878,33 @@ async function applyBatchCategoryChange() {
   }
 }
 
+/** 浮动操作条：选一个分类直接批量修改（会联动子体，先确认） */
+async function applyBatchCategory(category) {
+  if (!confirm(`把勾选的 ${selectedAsinCount.value} 个 ASIN 改为「${category}」？`)) return
+  batchCategoryValue.value = category
+  await applyBatchCategoryChange()
+  batchCategoryValue.value = ''
+}
+
+async function copySelectedAsins() {
+  const asins = Array.from(selectedAsins.value)
+  try {
+    await writeClipboard(asins.join('\n'))
+    showToast(`已复制 ${asins.length} 个 ASIN`)
+  } catch {
+    showToast('复制失败，请手动复制', 'error')
+  }
+}
+
+/** 顶部「更多」菜单 */
+function onMoreCommand(command) {
+  if (command === 'shops') showShopPanel.value = true
+  else if (command === 'products') showProductPanel.value = true
+  else if (command === 'fields') showFieldPanel.value = true
+  else if (command === 'copy-non-abandoned') copyNonAbandonedAsins()
+  else if (command === 'export-pdf') exportLocalWarehousePdf()
+}
+
 async function markOrderedArrived(row) {
   const asin = String(row?.asin || '').trim()
   if (!asin) return
@@ -1615,11 +1976,8 @@ async function doImport(weekIds) {
     const data = await r.json()
     importResult.value = data.results
     await Promise.all([loadShops(), loadProducts(), loadWeeks(), loadRestockConfig()])
-    // 自动切到最新导入的一周
-    if (weeks.value.length) {
-      currentWeekId.value = weeks.value[0].id
-      await loadCurrentWeek()
-    }
+    resetTrendWeeks()
+    await loadLatestWeek()
     // 刷新扫描列表
     const r2 = await fetch('/api/scan', { cache: 'no-store' })
     const scanData = r2.ok ? await r2.json() : { unimported: [], imported: [] }
@@ -1774,10 +2132,8 @@ async function deleteWeek(week) {
   const r = await fetch(`/api/weeks/${encodeURIComponent(week.id)}`, { method: 'DELETE' })
   if (r.ok) {
     await loadWeeks()
-    if (currentWeekId.value === week.id) {
-      currentWeekId.value = weeks.value[0]?.id || ''
-      await loadCurrentWeek()
-    }
+    resetTrendWeeks()
+    await loadLatestWeek()
     const r2 = await fetch('/api/scan', { cache: 'no-store' })
     const scanData = r2.ok ? await r2.json() : { unimported: [], imported: [] }
     importScan.value = prepareImportScan(scanData)
@@ -1803,15 +2159,18 @@ watch(supplyFilter, (v) => {
   }
   updateStatus()
 })
-watch(currentWeekId, async (v) => {
-  if (!v) return
-  try {
-    localStorage.setItem(WEEK_KEY, v)
-  } catch {
-    /* ignore */
-  }
-  await loadCurrentWeek()
+watch(viewMode, (v) => {
+  writeStored(VIEW_KEY, v)
+  if (v === 'focus') ensureTrendWeeks()
   updateStatus()
+})
+watch(planShop, (v) => {
+  writeStored(PLAN_SHOP_KEY, v)
+  planBatch.value = ''
+  if (planRowFilter.value === 'batch') planRowFilter.value = 'all'
+})
+watch(detailTab, (tab) => {
+  if (tab === 'trend') ensureTrendWeeks()
 })
 
 watch(visibleAsinList, (list) => {
@@ -1854,150 +2213,114 @@ onBeforeUnmount(() => {
       <span>{{ toast.text }}</span>
     </div>
     <header class="topbar">
-      <div class="topbar-left">
-        <span class="crumb">订单利润分析</span>
-        <span class="crumb-sep">/</span>
-        <span class="title">
-          <span class="title-badge">OPA</span>
-          周订单利润
-        </span>
+      <div class="brand">
+        <span class="title-badge">OPA</span>
+        <strong>ASIN 工作台</strong>
       </div>
-    </header>
-
-    <div class="toolbar toolbar-modern">
-      <div class="filter-bar">
-        <button class="filter-toggle-btn" @click="filtersCollapsed = !filtersCollapsed">
-          <svg v-if="filtersCollapsed" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 4h10M4 7h6M6 10h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          <svg v-else width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 4h10M4 7h6M6 10h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          <span>{{ filtersCollapsed ? '筛选' : '筛选' }}</span>
-          <span v-if="activeFilterCount > 0" class="filter-active-badge">{{ activeFilterCount }}</span>
-        </button>
-
-        <transition name="filter-fade">
-          <div v-show="!filtersCollapsed" class="toolbar-filter-group">
-            <div class="filter-item filter-item-week">
-              <span class="tool-label">周次</span>
-              <el-select v-model="currentWeekId" class="tool-ep-select" placeholder="选择周次" :disabled="!weeks.length" filterable>
-                <el-option v-if="!weeks.length" label="暂无" value="" />
-                <el-option
-                  v-for="w in weeks"
-                  :key="w.id"
-                  :label="`${w.id} · ${w.startDate} ~ ${w.endDate}（${w.rowCount} 行）`"
-                  :value="w.id"
-                />
-              </el-select>
-            </div>
-
-            <div class="filter-item filter-item-shop" :class="{ 'filter-item-active': shopFilter !== '__all__' }">
-              <span class="tool-label">店铺</span>
-              <el-select v-model="shopFilter" class="tool-ep-select" :disabled="!shopNames.length" filterable>
-                <el-option :label="`全部店铺（${shopNames.length}）`" value="__all__" />
-                <el-option v-for="s in shopNames" :key="s" :label="s" :value="s" />
-              </el-select>
-            </div>
-
-            <div class="filter-item filter-item-supply" :class="{ 'filter-item-active': supplyFilter !== '__all__' }">
-              <span class="tool-label">补货</span>
-              <el-select v-model="supplyFilter" class="tool-ep-select" filterable>
-                <el-option label="全部" value="__all__" />
-                <el-option label="需要补货" value="need-restock" />
-                <el-option label="需补货未下单" value="need-restock-no-local-no-ordered" />
-                <el-option label="不需要补货" value="no-restock" />
-                <el-option label="已下单" value="ordered" />
-                <el-option label="本地仓有货" value="local-warehouse" />
-              </el-select>
-            </div>
-
-            <div class="filter-item filter-item-category" :class="{ 'filter-item-active': categoryFilter !== '__all__' }">
-              <span class="tool-label">分类</span>
-              <el-select v-model="categoryFilter" class="tool-ep-select" filterable>
-                <el-option label="全部分类" value="__all__" />
-                <el-option v-for="opt in CATEGORY_OPTIONS" :key="opt" :label="opt" :value="opt" />
-              </el-select>
-            </div>
-
-            <div class="filter-item filter-item-health" :class="{ 'filter-item-active': inventoryHealthFilter !== '__all__' }">
-              <span class="tool-label">库存健康</span>
-              <el-select v-model="inventoryHealthFilter" class="tool-ep-select">
-                <el-option label="全部" value="__all__" />
-                <el-option label="健康" value="健康" />
-                <el-option label="不足" value="不足" />
-              </el-select>
-            </div>
-
-            <div class="filter-item filter-item-search" :class="{ 'filter-item-active': asinSearch.trim() }">
-              <span class="tool-label">ASIN / FNSKU</span>
-              <el-input
-                v-model="asinSearch"
-                class="tool-ep-input"
-                placeholder="搜索…"
-                clearable
-              />
-            </div>
-
-            <button
-              v-if="shopFilter !== '__all__' || supplyFilter !== '__all__' || categoryFilter !== '__all__' || inventoryHealthFilter !== '__all__' || asinSearch.trim()"
-              class="filter-reset-btn"
-              title="清空所有筛选条件"
-              @click="resetFilters"
-            >
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-              重置
-            </button>
-          </div>
-        </transition>
-      </div>
-
+      <span v-if="currentWeekMeta" class="latest-week-tag">
+        最新周 {{ currentWeekMeta.id }} · {{ currentWeekMeta.startDate.slice(5).replace('-', '/') }}–{{ currentWeekMeta.endDate.slice(5).replace('-', '/') }}
+      </span>
+      <el-radio-group v-model="viewMode" class="view-switch">
+        <el-radio-button v-for="v in VIEWS" :key="v.id" :value="v.id">{{ v.label }}</el-radio-button>
+      </el-radio-group>
+      <span class="topbar-spacer" />
+      <el-input v-model="asinSearch" class="top-search" placeholder="搜索 ASIN / FNSKU / 品名" clearable />
+      <el-dropdown trigger="click" @command="onMoreCommand">
+        <el-button>⋯ 更多</el-button>
+        <template #dropdown>
+          <el-dropdown-menu>
+            <el-dropdown-item command="shops">店铺管理</el-dropdown-item>
+            <el-dropdown-item command="products">ASIN 主数据</el-dropdown-item>
+            <el-dropdown-item command="fields">字段设置</el-dropdown-item>
+            <el-dropdown-item command="copy-non-abandoned" :disabled="!nonAbandonedVisibleAsins.length" divided>
+              复制非放弃 ASIN（{{ nonAbandonedVisibleAsins.length }}）
+            </el-dropdown-item>
+            <el-dropdown-item command="export-pdf" :disabled="!canExportLocalWarehousePdf || exportPdfBusy">
+              <div class="more-item">
+                <span>{{ exportPdfBusy ? '导出 PDF 中...' : '导出本地仓库 PDF' }}</span>
+                <small v-if="!canExportLocalWarehousePdf">{{ exportLocalWarehouseDisabledReason }}</small>
+              </div>
+            </el-dropdown-item>
+          </el-dropdown-menu>
+        </template>
+      </el-dropdown>
       <el-button type="primary" :loading="importLoading || importBusy" :disabled="importLoading || importBusy" @click="openImport">
         {{ importLoading ? '扫描中...' : importBusy ? '导入中...' : '扫描并导入' }}
       </el-button>
-      <el-button @click="showShopPanel = true">店铺</el-button>
-      <el-button @click="showProductPanel = true">ASIN</el-button>
-      <el-button :disabled="!nonAbandonedVisibleAsins.length" @click="copyNonAbandonedAsins">
-        复制非放弃ASIN（{{ nonAbandonedVisibleAsins.length }}）
-      </el-button>
-      <el-button :disabled="!selectedPackageAndOrderedRows.length" @click="copySelectedPackageAndOrdered">
-        复制飞机盒包装信息（{{ selectedPackageAndOrderedRows.length }}）
-      </el-button>
-      <span class="tool-label">批量分类</span>
-      <el-select v-model="batchCategoryValue" class="tool-ep-select" style="width: 122px" placeholder="选择分类">
-        <el-option value="" label="选择分类" />
-        <el-option v-for="opt in CATEGORY_OPTIONS" :key="`batch-${opt}`" :value="opt" :label="opt" />
-      </el-select>
-      <el-button :disabled="!selectedAsinCount || !batchCategoryValue || batchCategoryBusy" @click="applyBatchCategoryChange">
-        {{ batchCategoryBusy ? '批量修改中...' : `批量改分类（${selectedAsinCount}）` }}
-      </el-button>
-      <el-button :disabled="!selectedAsinCount" @click="clearSelectedAsins">清空勾选</el-button>
-      <div class="export-tip-wrap">
-        <el-button :disabled="!canExportLocalWarehousePdf || exportPdfBusy" @click="exportLocalWarehousePdf">
-          {{ exportPdfBusy ? '导出PDF中...' : '导出本地仓库PDF' }}
-        </el-button>
-        <span v-if="!canExportLocalWarehousePdf" class="export-tip-bubble">{{ exportLocalWarehouseDisabledReason }}</span>
+    </header>
+
+    <div class="filter-row">
+      <FilterChip v-if="viewMode !== 'plan'" v-model="shopFilter" label="店铺" :options="shopOptions" />
+      <FilterChip v-model="categoryFilter" label="分类" :options="categoryOptions" />
+      <FilterChip v-model="supplyFilter" label="补货" :options="SUPPLY_OPTIONS" />
+      <FilterChip v-model="inventoryHealthFilter" label="库存健康" :options="HEALTH_OPTIONS" />
+      <button v-if="hasActiveFilters" type="button" class="filter-reset" @click="resetFilters">重置</button>
+      <span class="topbar-spacer" />
+      <span class="result-count"><strong>{{ groupCount }}</strong> 个父组 · <strong>{{ asinCount }}</strong> 个 ASIN</span>
+      <el-button size="small" @click="showFieldPanel = true">字段</el-button>
+    </div>
+
+    <section v-if="viewMode === 'focus'" class="focus-bar">
+      <div class="focus-bar-head">
+        <strong>重点产品汇总</strong>
+        <span>当前筛选下 {{ asinCount }} 个重点 ASIN · {{ currentWeekId }} 对比上一周</span>
+        <span class="focus-bar-spacer" />
+        <el-button :disabled="!asinCount" title="复制当前筛选下的重点关注 ASIN，每行一个" @click="copyFocusAsins">一键导出ASIN</el-button>
       </div>
+      <div v-if="focusSummary" class="focus-bar-grid">
+        <div v-for="it in focusSummary" :key="it.key" class="focus-bar-kpi">
+          <div class="focus-bar-label">{{ it.label }}</div>
+          <div class="focus-bar-value">{{ it.value }}</div>
+          <div v-if="it.delta" class="focus-bar-delta" :class="`trend-${it.delta.tone}`">
+            {{ it.delta.arrow }} {{ it.delta.text }} <span class="muted">环比</span>
+          </div>
+        </div>
+      </div>
+      <div v-else class="muted">{{ trendLoading ? '正在加载上一周数据…' : '当前筛选下没有重点关注 ASIN' }}</div>
+    </section>
 
-      <span class="tool-divider"></span>
-
-      <el-button type="primary" plain @click="showFieldPanel = true">字段设置</el-button>
-    </div>
-
-    <div class="metabar">
-      <el-tag effect="light" round>父ASIN组 {{ groupCount }}</el-tag>
-      <el-tag effect="light" round>ASIN {{ asinCount }}</el-tag>
-      <el-tag v-if="shopFilter !== '__all__'" type="success" effect="light" round>当前店铺：{{ shopFilter }}</el-tag>
-      <div class="status">{{ status }}</div>
-    </div>
+    <PlanOverview
+      v-if="viewMode === 'plan'"
+      v-model:shop="planShop"
+      v-model:batch="planBatch"
+      v-model:row-filter="planRowFilter"
+      v-model:collapsed="planOverviewCollapsed"
+      :plans="orderedPlans"
+      :plan="activePlan"
+      :summary="activePlanSummary"
+      :warnings="planWarnings"
+      :today="today"
+      :saving="planSaving"
+      :shop-label="planShopLabel"
+      @mark="markPlanBatch"
+      @copy="copyPlanBatch"
+    />
 
     <div class="table-wrap">
       <div v-if="!currentWeek || !tableRows.length" class="empty">
         {{
-          !weeks.length
-            ? '尚未导入任何周数据，点击右上「扫描并导入」开始'
-            : '当前筛选条件下没有数据'
+          status === '正在加载...'
+            ? '正在加载…'
+            : !weeks.length
+              ? '尚未导入任何周数据，点击右上「扫描并导入」开始'
+              : '当前筛选条件下没有数据'
         }}
       </div>
       <table v-else>
         <thead>
-          <tr>
+          <tr class="group-row">
+            <th :colspan="fixedSpan" class="group-head-fixed"></th>
+            <th
+              v-for="g in headerGroups"
+              :key="g.first"
+              :colspan="g.span"
+              class="group-head"
+              :class="{ 'group-start': g.name }"
+            >
+              {{ g.name }}
+            </th>
+          </tr>
+          <tr class="col-row">
             <th class="select-col">
               <input
                 type="checkbox"
@@ -2009,10 +2332,15 @@ onBeforeUnmount(() => {
             <th
               v-for="(col, i) in displayCols"
               :key="col.name"
-              :class="{ 'fix-left': col.fixed, 'fix-last': col.fixed && col.name === 'ASIN' }"
+              :class="{
+                'fix-left': col.fixed,
+                'fix-last': col.fixed && col.name === 'ASIN',
+                num: numericColumns[col.name] || GROUP_OF_COL[col.name] === '补货',
+                'group-start': !col.fixed && groupStartCols.has(col.name),
+              }"
               :style="col.fixed ? fixedColStyle(i, col.name) : null"
             >
-              {{ displayColName(col.name) }}
+              {{ col.name === '品名' ? '产品' : displayColName(col.name) }}
             </th>
           </tr>
         </thead>
@@ -2024,25 +2352,38 @@ onBeforeUnmount(() => {
                 isInventoryRowExpanded(item.row.asin) ? 'row-inventory-open' : '',
                 isAbandoned(item.row) ? 'row-abandoned' : '',
                 hasRestockNeed(item.row) ? 'row-need-restock' : '',
+                isAsinSelected(item.row.asin) ? 'row-selected' : '',
               ]"
             >
               <td class="select-col">
-                <input
-                  type="checkbox"
-                  :checked="isAsinSelected(item.row.asin)"
-                  @change="toggleAsinSelected(item.row.asin, $event.target.checked)"
-                />
+                <div class="select-cell">
+                  <input
+                    type="checkbox"
+                    :checked="isAsinSelected(item.row.asin)"
+                    @change="toggleAsinSelected(item.row.asin, $event.target.checked)"
+                  />
+                  <button
+                    type="button"
+                    class="row-caret"
+                    :class="{ open: isInventoryRowExpanded(item.row.asin) }"
+                    :title="isInventoryRowExpanded(item.row.asin) ? '收起详情' : '展开详情'"
+                    @click="toggleInventoryRow(item.row.asin)"
+                  >
+                    ▸
+                  </button>
+                </div>
               </td>
               <td
                 v-for="(col, i) in displayCols"
                 :key="col.name + '-' + (item.row.asin || item.row._rowIndex)"
-                :class="[cellAlertClass(item.row, col.name), {
+                :class="{
                   'fix-left': col.fixed,
                   'fix-last': col.fixed && col.name === 'ASIN',
-                  num: numericColumns[col.name],
+                  num: numericColumns[col.name] || GROUP_OF_COL[col.name] === '补货',
                   'cell-name': col.name === '品名',
                   'cell-edit': isEditableCol(col.name),
-                }]"
+                  'group-start': !col.fixed && groupStartCols.has(col.name),
+                }"
                 :style="col.fixed ? fixedColStyle(i, col.name) : null"
               >
                 <template v-if="editColKey(col.name) === 'category'">
@@ -2055,28 +2396,25 @@ onBeforeUnmount(() => {
                     <el-option v-for="opt in CATEGORY_OPTIONS" :key="opt" :value="opt" :label="opt" />
                   </el-select>
                 </template>
-                <template v-else-if="col.name === '亚马逊主图'">
-                  <div class="amazon-main-cell">
-                    <button
-                      v-if="amazonMainImageUrl(item.row)"
-                      class="name-image-btn"
-                      type="button"
-                      @click="openImagePreview(item.row, 0)"
-                    >
-                      <img
-                        :src="amazonMainImageUrl(item.row)"
-                        :alt="displayProductName(item.row) || displayProductTitle(item.row) || asinValue(item.row)"
-                        class="name-image-thumb"
-                        loading="lazy"
-                      />
-                    </button>
-                    <div v-else class="name-image-placeholder">—</div>
-                  </div>
-                </template>
                 <template v-else-if="col.name === '品名'">
+                  <div class="product-cell">
+                  <button
+                    v-if="amazonMainImageUrl(item.row)"
+                    class="name-image-btn"
+                    type="button"
+                    @click="openImagePreview(item.row, 0)"
+                  >
+                    <img
+                      :src="amazonMainImageUrl(item.row)"
+                      :alt="displayProductName(item.row) || asinValue(item.row)"
+                      class="name-image-thumb"
+                      loading="lazy"
+                    />
+                  </button>
+                  <div v-else class="name-image-placeholder">—</div>
                   <div class="name-cell-stack">
                     <input
-                      class="cell-input"
+                      class="cell-input cell-input-name"
                       type="text"
                       :value="rowProduct(item.row)?.name ?? ''"
                       @change="commitEditableText(item.row, 'name', $event)"
@@ -2084,14 +2422,16 @@ onBeforeUnmount(() => {
                     />
                     <div class="title-tooltip-wrap name-title-subrow">
                       <input
-                        class="cell-input"
+                        class="cell-input cell-input-title"
                         type="text"
                         :value="displayProductTitle(item.row)"
+                        :title="displayProductTitle(item.row)"
                         placeholder="产品标题"
                         @change="commitEditableText(item.row, 'productTitle', $event)"
                         @blur="commitEditableText(item.row, 'productTitle', $event)"
                       />
                     </div>
+                  </div>
                   </div>
                 </template>
                 <template v-else-if="editColKey(col.name) === 'productTitle'">
@@ -2131,35 +2471,27 @@ onBeforeUnmount(() => {
                   </div>
                 </template>
                 <template v-else-if="col.name === 'ASIN'">
-                  <div v-if="asinValue(item.row)" class="asin-cell">
-                    <a
-                      v-if="asinUrl(item.row)"
-                      class="asin-link"
-                      :href="asinUrl(item.row)"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {{ asinValue(item.row) }}
-                    </a>
-                    <button
-                      class="asin-copy-btn"
-                      :class="{ copied: isAsinCopied(item.row) }"
-                      type="button"
-                      @click="copyAsin(item.row)"
-                    >
-                      {{ isAsinCopied(item.row) ? '已复制' : '复制' }}
-                    </button>
-                    <button
-                      class="asin-copy-btn"
-                      :class="{
-                        copied: isInventoryRowExpanded(item.row.asin),
-                        'restock-alert': hasRestockNeed(item.row),
-                      }"
-                      type="button"
-                      @click="toggleInventoryRow(item.row.asin)"
-                    >
-                      {{ isInventoryRowExpanded(item.row.asin) ? '收起库存' : '库存详情' }}
-                    </button>
+                  <div v-if="asinValue(item.row)" class="asin-block">
+                    <div class="asin-line">
+                      <span v-if="isFocus(item.row)" class="focus-star" title="重点关注（src/data/focusProducts.json）">★</span>
+                      <a
+                        v-if="asinUrl(item.row)"
+                        class="asin-link"
+                        :href="asinUrl(item.row)"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >{{ asinValue(item.row) }}</a>
+                      <button
+                        class="asin-copy-icon"
+                        :class="{ copied: isAsinCopied(item.row) }"
+                        type="button"
+                        :title="isAsinCopied(item.row) ? '已复制' : '复制 ASIN'"
+                        @click="copyAsin(item.row)"
+                      >
+                        {{ isAsinCopied(item.row) ? '✓' : '⧉' }}
+                      </button>
+                    </div>
+                    <span class="shop-code">{{ shopCodeOf(rowShopName(item.row)) }}</span>
                   </div>
                 </template>
                 <template v-else-if="col.name === '产品图片'">
@@ -2176,11 +2508,73 @@ onBeforeUnmount(() => {
                   </div>
                   <span v-else>—</span>
                 </template>
-                <template v-else>{{ getCell(item.row, col.name) }}</template>
+                <template v-else-if="col.name === '建议补货'">
+                  <button
+                    v-if="rowPlan(item.row)"
+                    type="button"
+                    class="suggest-cell"
+                    :class="`tone-${suggestedView(item.row).tone}`"
+                    :title="suggestedTitle(item.row)"
+                    @click="toggleInventoryRow(item.row.asin, 'plan')"
+                  >
+                    <strong v-if="suggestedView(item.row).qty">{{ suggestedView(item.row).qty }}</strong>
+                    <small>{{ suggestedView(item.row).sub }}</small>
+                  </button>
+                  <span v-else class="v-dim" title="没有补货批次计划">—</span>
+                </template>
+                <template v-else-if="col.name === '静态补货'">
+                  <span v-if="hasRestockNeed(item.row)" class="v-amber">{{ getCell(item.row, col.name) }}</span>
+                  <span v-else class="v-dim" :title="getCell(item.row, col.name)">—</span>
+                </template>
+                <template v-else-if="col.name === '批次进度'">
+                  <div v-if="progressView(item.row)" class="progress-cell" :class="{ overdue: cellAlertClass(item.row, col.name) }">
+                    <small>{{ progressView(item.row).text }}</small>
+                    <span class="progress-bar"><i :style="{ width: `${progressView(item.row).pct}%` }" /></span>
+                  </div>
+                  <span v-else class="v-dim">—</span>
+                </template>
+                <template v-else>
+                  <span :class="cellView(item.row, col.name).cls">{{ cellView(item.row, col.name).text }}</span>
+                </template>
               </td>
             </tr>
             <tr v-if="isInventoryRowExpanded(item.row.asin)" class="inventory-row">
               <td :colspan="displayCols.length + 1" class="inventory-detail-cell">
+                <div class="detail-sticky">
+                <div class="detail-tabs">
+                  <button
+                    v-for="t in DETAIL_TABS"
+                    :key="t.id"
+                    type="button"
+                    class="detail-tab"
+                    :class="{ active: rowDetailTab(item.row) === t.id }"
+                    :disabled="isDetailTabDisabled(item.row, t.id)"
+                    :title="isDetailTabDisabled(item.row, t.id) ? '这个 ASIN 没有补货批次计划' : ''"
+                    @click="detailTab = t.id"
+                  >
+                    {{ t.label }}
+                  </button>
+                </div>
+
+                <TrendPanel
+                  v-if="rowDetailTab(item.row) === 'trend'"
+                  :series="rowTrendSeries(item.row)"
+                  :loading="trendLoading"
+                />
+
+                <PlanDetail
+                  v-else-if="rowDetailTab(item.row) === 'plan'"
+                  :plan="rowPlan(item.row).plan"
+                  :item="rowPlan(item.row).item"
+                  :summary="rowPlan(item.row).summary"
+                  :batches="planSummaries[rowPlan(item.row).plan.shop]?.batches || []"
+                  :is-shipped="(date) => cellShipped(rowPlan(item.row).plan.shop, rowPlan(item.row).item.asin, date)"
+                  :shipped-at="(date) => shippedAt(rowPlan(item.row).plan.shop, rowPlan(item.row).item.asin, date)"
+                  :saving="planSaving"
+                  @toggle="toggleRowShipped(item.row, $event)"
+                />
+
+                <template v-else>
                 <div class="inventory-detail-grid">
                   <div class="inventory-item">
                     <span>库存健康</span>
@@ -2241,7 +2635,8 @@ onBeforeUnmount(() => {
                       @blur="commitEditableNumber(item.row, 'restockCycle', $event)"
                     />
                   </label>
-                  <div class="inventory-item"><span>补货数量</span><strong>{{ getCell(item.row, '补货数量') || '—' }}</strong></div>
+                  <div class="inventory-item"><span>静态补货</span><strong>{{ getCell(item.row, '静态补货') || '—' }}</strong></div>
+                  <div class="inventory-item"><span>建议补货</span><strong :title="suggestedTitle(item.row)">{{ getCell(item.row, '建议补货') || '—' }}</strong></div>
                 </div>
                 <div class="inventory-footer-bar">
                   <div class="inventory-item inventory-item-image inventory-item-image-footer">
@@ -2278,12 +2673,39 @@ onBeforeUnmount(() => {
                     </button>
                   </div>
                 </div>
+                </template>
+                </div>
               </td>
             </tr>
           </template>
         </tbody>
       </table>
     </div>
+
+    <transition name="selbar">
+      <div v-if="selectedAsinCount" class="selbar">
+        <strong>已选 {{ selectedAsinCount }} 个 ASIN</strong>
+        <el-dropdown trigger="click" :disabled="batchCategoryBusy" @command="applyBatchCategory">
+          <button type="button" class="selbar-btn">{{ batchCategoryBusy ? '修改中...' : '改分类 ▾' }}</button>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item v-for="opt in CATEGORY_OPTIONS" :key="`batch-${opt}`" :command="opt">{{ opt }}</el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
+        <button type="button" class="selbar-btn" @click="copySelectedAsins">复制 ASIN</button>
+        <button
+          type="button"
+          class="selbar-btn"
+          :disabled="!selectedPackageAndOrderedRows.length"
+          :title="selectedPackageAndOrderedRows.length ? '' : '勾选里没有飞机盒包装的产品'"
+          @click="copySelectedPackageAndOrdered"
+        >
+          复制飞机盒包装（{{ selectedPackageAndOrderedRows.length }}）
+        </button>
+        <button type="button" class="selbar-close" title="清空勾选" @click="clearSelectedAsins">✕</button>
+      </div>
+    </transition>
 
     <el-dialog
       :model-value="imagePreview.show"

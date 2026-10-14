@@ -1,14 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import {
   applyShippedChange,
+  buildPlanIndex,
   buildShippingSummary,
   findInvalidShippedEntries,
+  findPlanAsinIssues,
+  findShopByCode,
   inferBatchDates,
   isShipped,
   parseBatchHeader,
   parseCsv,
   parseReplenishmentPlan,
   sortByUrgency,
+  suggestedRestock,
 } from '../src/lib/replenishmentPlan.js'
 
 const HEADER = [
@@ -128,7 +132,7 @@ describe('shipping state', () => {
   const plan = parseReplenishmentPlan(parseCsv(CSV), { refDate: new Date(2026, 8, 19) })
 
   it('summarises batch and SKU progress, including overdue batches', () => {
-    const shipped = { 'SKU-A': { '12/26': 't' } }
+    const shipped = { B0AAAA: { '2026-12-26': 't' } }
     const s = buildShippingSummary(plan, shipped, '2027-01-10')
     expect(s.batches.map((b) => [b.key, b.status, b.overdue, b.shippedQty, b.plannedQty])).toEqual([
       ['12/26', 'done', false, 220, 220],
@@ -167,12 +171,14 @@ describe('shipping state', () => {
   it('reports partial, empty and fully shipped plans', () => {
     const twoSkuPlan = { ...plan, batches: [...plan.batches, { key: '02/06', date: '2027-02-06' }] }
     twoSkuPlan.items = plan.items.map((i) => ({ ...i, qtyByBatch: { ...i.qtyByBatch, '12/26': 10 } }))
-    const partial = buildShippingSummary(twoSkuPlan, { 'SKU-A': { '12/26': 't' } }, '2027-01-01')
+    const partial = buildShippingSummary(twoSkuPlan, { B0AAAA: { '2026-12-26': 't' } }, '2027-01-01')
     expect(partial.batches[0]).toMatchObject({ status: 'partial', overdue: true, shippedSkus: 1, plannedSkus: 2 })
     expect(partial.batches[3]).toMatchObject({ status: 'empty', overdue: false })
 
     const all = {}
-    for (const item of plan.items) for (const key of Object.keys(item.qtyByBatch)) all[item.sku] = { ...all[item.sku], [key]: 't' }
+    for (const item of plan.items) {
+      for (const b of plan.batches) if (item.qtyByBatch[b.key]) all[item.asin] = { ...all[item.asin], [b.date]: 't' }
+    }
     const done = buildShippingSummary(plan, all)
     expect(done.nextBatch).toBeNull()
     expect(done.batches.every((b) => b.status === 'done' && !b.overdue)).toBe(true)
@@ -202,43 +208,118 @@ describe('shipping state', () => {
     const before = buildShippingSummary(plan, {}, '2027-01-10')
     const orderBefore = sortByUrgency(plan.items, before).map((i) => i.sku)
     // 把 SKU-A 最近的待发批次标记为已发货：dueBatch 往后走，但置顶依据（firstDate）不变
-    const after = buildShippingSummary(plan, { 'SKU-A': { '12/26': 't' } }, '2027-01-10')
+    const after = buildShippingSummary(plan, { B0AAAA: { '2026-12-26': 't' } }, '2027-01-10')
     expect(after.items['SKU-A']).toMatchObject({ firstBatch: '12/26', dueBatch: '01/16', urgent: true })
     expect(sortByUrgency(plan.items, after).map((i) => i.sku)).toEqual(orderBefore)
 
     // 窗口内的批次全部发完 → nearTermDone，但仍然置顶
-    const done = buildShippingSummary(plan, { 'SKU-B': { '01/02': 't' } }, '2027-01-10', 3)
+    const done = buildShippingSummary(plan, { B0BBBB: { '2027-01-02': 't' } }, '2027-01-10', 3)
     expect(done.items['SKU-B']).toMatchObject({ urgent: true, nearTermDone: true, dueInDays: null })
     expect(sortByUrgency(plan.items, done).map((i) => i.sku)).toEqual(orderBefore)
   })
 
   it('checks and validates entries against the plan', () => {
-    expect(isShipped({ A: { '12/26': 't' } }, 'A', '12/26')).toBe(true)
-    expect(isShipped(undefined, 'A', '12/26')).toBe(false)
+    expect(isShipped({ B0A: { '2026-12-26': 't' } }, 'B0A', '2026-12-26')).toBe(true)
+    // 同一个“MM/DD”换了年份就是另一个批次
+    expect(isShipped({ B0A: { '2026-12-26': 't' } }, 'B0A', '2027-12-26')).toBe(false)
+    expect(isShipped(undefined, 'B0A', '2026-12-26')).toBe(false)
+    expect(isShipped({ '': { '2026-12-26': 't' } }, '', '2026-12-26')).toBe(false)
     expect(
       findInvalidShippedEntries(plan, [
+        { asin: 'B0AAAA', date: '2026-12-26' },
+        { asin: 'B0AAAA', date: '2027-01-02' },
+        { asin: 'B0AAAA', date: '2027-12-26' },
+        { asin: 'NOPE', date: '2026-12-26' },
         { sku: 'SKU-A', batch: '12/26' },
-        { sku: 'SKU-A', batch: '01/02' },
-        { sku: 'NOPE', batch: '12/26' },
         null,
       ]),
-    ).toEqual([{ sku: 'SKU-A', batch: '01/02' }, { sku: 'NOPE', batch: '12/26' }, null])
+    ).toEqual([
+      { asin: 'B0AAAA', date: '2027-01-02' },
+      { asin: 'B0AAAA', date: '2027-12-26' },
+      { asin: 'NOPE', date: '2026-12-26' },
+      { sku: 'SKU-A', batch: '12/26' },
+      null,
+    ])
     expect(findInvalidShippedEntries(plan, 'bad')).toEqual([])
   })
 
+  it('reports SKUs without an ASIN and ASINs shared by two SKUs', () => {
+    expect(findPlanAsinIssues(plan)).toEqual([])
+    const broken = {
+      items: [
+        { sku: 'S1', asin: 'B0X' },
+        { sku: 'S2', asin: '' },
+        { sku: 'S3', asin: 'B0X' },
+      ],
+    }
+    expect(findPlanAsinIssues(broken)).toEqual(['S2 没有 ASIN，无法标记已发货', 'B0X 同时出现在 S1 和 S3，已发货标记会共用'])
+    expect(findPlanAsinIssues(null)).toEqual([])
+  })
+
   it('applies and reverts marks immutably, keeping the first timestamp', () => {
-    const before = { LPH: { X: { '10/10': 'old' } } }
-    const marked = applyShippedChange(before, 'TZH', [{ sku: 'A', batch: '12/26' }, { sku: 'A', batch: '01/02' }], true, 't1')
-    expect(marked).toEqual({ LPH: { X: { '10/10': 'old' } }, TZH: { A: { '12/26': 't1', '01/02': 't1' } } })
-    expect(before).toEqual({ LPH: { X: { '10/10': 'old' } } })
+    const before = { LPH: { B0X: { '2026-10-10': 'old' } } }
+    const entries = [
+      { asin: 'B0A', date: '2026-12-26' },
+      { asin: 'B0A', date: '2027-01-02' },
+    ]
+    const marked = applyShippedChange(before, 'TZH', entries, true, 't1')
+    expect(marked).toEqual({
+      LPH: { B0X: { '2026-10-10': 'old' } },
+      TZH: { B0A: { '2026-12-26': 't1', '2027-01-02': 't1' } },
+    })
+    expect(before).toEqual({ LPH: { B0X: { '2026-10-10': 'old' } } })
 
-    const again = applyShippedChange(marked, 'TZH', [{ sku: 'A', batch: '12/26' }], true, 't2')
-    expect(again.TZH.A['12/26']).toBe('t1')
+    const again = applyShippedChange(marked, 'TZH', [entries[0]], true, 't2')
+    expect(again.TZH.B0A['2026-12-26']).toBe('t1')
 
-    const partlyUndone = applyShippedChange(again, 'TZH', [{ sku: 'A', batch: '12/26' }], false)
-    expect(partlyUndone.TZH).toEqual({ A: { '01/02': 't1' } })
-    const undone = applyShippedChange(partlyUndone, 'TZH', [{ sku: 'A', batch: '01/02' }], false)
-    expect(undone).toEqual({ LPH: { X: { '10/10': 'old' } } })
-    expect(applyShippedChange(null, 'TZH', [{ sku: 'A', batch: '01/02' }], false)).toEqual({})
+    const partlyUndone = applyShippedChange(again, 'TZH', [entries[0]], false)
+    expect(partlyUndone.TZH).toEqual({ B0A: { '2027-01-02': 't1' } })
+    const undone = applyShippedChange(partlyUndone, 'TZH', [entries[1]], false)
+    expect(undone).toEqual({ LPH: { B0X: { '2026-10-10': 'old' } } })
+    expect(applyShippedChange(null, 'TZH', [entries[1]], false)).toEqual({})
+  })
+})
+
+describe('joining plans to the weekly table', () => {
+  const plan = parseReplenishmentPlan(parseCsv(CSV), { refDate: new Date(2026, 8, 19) })
+  const SHOPS = [
+    { id: 'shop-1', name: 'CZH-主店一号' },
+    { id: 'shop-2', name: 'TZH-主店二号' },
+  ]
+
+  it('maps CSV shop codes to shops.json entries', () => {
+    expect(findShopByCode(SHOPS, 'TZH').id).toBe('shop-2')
+    expect(findShopByCode(SHOPS, 'TZH-主店二号').id).toBe('shop-2')
+    expect(findShopByCode(SHOPS, 'LPH')).toBeNull()
+    expect(findShopByCode(null, 'TZH')).toBeNull()
+  })
+
+  it('indexes plan items by shopId and ASIN, reporting unknown shops', () => {
+    const lph = { ...plan, shop: 'LPH' }
+    const { index, unmatchedShops } = buildPlanIndex([plan, lph], SHOPS)
+    expect([...index.keys()]).toEqual(['shop-2::B0AAAA', 'shop-2::B0BBBB'])
+    expect(index.get('shop-2::B0AAAA').item.sku).toBe('SKU-A')
+    expect(unmatchedShops).toEqual(['LPH'])
+    expect(buildPlanIndex(null, SHOPS).index.size).toBe(0)
+  })
+
+  it('suggests the next batch that has not been shipped yet', () => {
+    const [itemA, itemB] = plan.items
+    const fresh = buildShippingSummary(plan, {}, '2026-12-20')
+    expect(suggestedRestock(itemA, fresh.items['SKU-A'])).toEqual({
+      state: 'pending',
+      qty: 220,
+      batch: '12/26',
+      date: '2026-12-26',
+      inDays: 6,
+      overdue: false,
+    })
+
+    const late = buildShippingSummary(plan, { B0AAAA: { '2026-12-26': 't', '2027-01-16': 't' } }, '2027-01-10')
+    expect(suggestedRestock(itemA, late.items['SKU-A'])).toEqual({ state: 'done', qty: 0 })
+    expect(suggestedRestock(itemB, late.items['SKU-B'])).toMatchObject({ state: 'pending', qty: 30, overdue: true })
+
+    expect(suggestedRestock(itemA, null)).toEqual({ state: 'none' })
+    expect(suggestedRestock(itemA, { plannedQty: 0 })).toEqual({ state: 'none' })
   })
 })

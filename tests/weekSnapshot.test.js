@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildColIndex,
-  buildRowByAsin,
-  groupWeekFields,
+  formatRoi,
   inventoryHealthText,
   isWeekFieldAlert,
   pairedText,
+  shopCodeOf,
   toNum,
   weekCell,
   weekRoi,
@@ -14,7 +14,6 @@ import {
 
 const COLUMNS = ['ASIN', '店铺', '销量', '销售额', '毛利润', '广告费率', '退货率', '采购成本', '备注列']
 const ROW = { asin: 'B0AAA', values: ['B0AAA', 'TZH-主店二号', '52', '1223.49', '576.44', '0.00%', '0.00%', '-169.57', 'x'] }
-const WEEK = { columns: COLUMNS, rows: [ROW, { asin: 'B0AAA', values: [] }, { asin: 'B0BBB', values: [] }] }
 
 describe('toNum', () => {
   it('strips $ , % and blanks out non-numbers', () => {
@@ -25,12 +24,9 @@ describe('toNum', () => {
 })
 
 describe('week row reading', () => {
-  it('indexes columns and keeps the first row per ASIN', () => {
+  it('indexes columns', () => {
     expect(buildColIndex(COLUMNS)['毛利润']).toBe(4)
-    const byAsin = buildRowByAsin(WEEK)
-    expect(byAsin.get('B0AAA')).toBe(ROW)
-    expect([...byAsin.keys()]).toEqual(['B0AAA', 'B0BBB'])
-    expect(buildRowByAsin(null).size).toBe(0)
+    expect(buildColIndex(null)).toEqual({})
   })
 
   it('reads cells and shows 采购成本 as a positive number', () => {
@@ -40,23 +36,18 @@ describe('week row reading', () => {
     expect(weekCell(ROW, idx, '不存在的列')).toBe('')
   })
 
-  it('computes ROI as 毛利润 / 采购成本', () => {
+  it('computes ROI as 毛利润 / 采购成本 without rounding', () => {
     const idx = buildColIndex(COLUMNS)
-    expect(weekRoi(ROW, idx)).toBe('3.40')
-    expect(weekRoi({ values: ['B0AAA', '', '', '', '10', '', '', '0', ''] }, idx)).toBe('')
+    expect(weekRoi(ROW, idx)).toBeCloseTo(576.44 / 169.57, 10)
+    expect(formatRoi(weekRoi(ROW, idx))).toBe('3.40')
+    expect(weekRoi({ values: ['B0AAA', '', '', '', '10', '', '', '0', ''] }, idx)).toBeNaN()
+    expect(formatRoi(NaN)).toBe('')
   })
 
-  it('groups every column, leftovers included', () => {
-    const groups = groupWeekFields(COLUMNS, ROW, [
-      { title: '销售', cols: ['销量', '销售额', '缺失列'] },
-      { title: '空组', cols: ['缺失列'] },
-    ])
-    expect(groups.map((g) => g.title)).toEqual(['销售', '其它'])
-    expect(groups[0].fields).toEqual([
-      { name: '销量', value: '52' },
-      { name: '销售额', value: '1223.49' },
-    ])
-    expect(groups[1].fields.map((f) => f.name)).toEqual(['ASIN', '店铺', '毛利润', '广告费率', '退货率', '采购成本', '备注列'])
+  it('maps full shop names to CSV shop codes', () => {
+    expect(shopCodeOf('TZH-主店二号')).toBe('TZH')
+    expect(shopCodeOf('LPH')).toBe('LPH')
+    expect(shopCodeOf(null)).toBe('')
   })
 })
 
@@ -67,6 +58,10 @@ describe('alerts and product fields', () => {
     expect(isWeekFieldAlert('退款率', '10.5%')).toBe(true)
     expect(isWeekFieldAlert('毛利润', '-1')).toBe(true)
     expect(isWeekFieldAlert('ROI', '3.40')).toBe(false)
+    // ROI 不取整：-0.004 展示为 -0.00，但仍按负数告警
+    expect(isWeekFieldAlert('ROI', -0.004)).toBe(true)
+    expect(isWeekFieldAlert('退货率', '10%')).toBe(false)
+    expect(isWeekFieldAlert('毛利率', '-5%')).toBe(false)
     expect(isWeekFieldAlert('销量', '-3')).toBe(false)
     expect(isWeekFieldAlert('毛利润', '')).toBe(false)
   })

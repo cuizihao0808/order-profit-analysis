@@ -494,6 +494,8 @@ describe('import api integration', () => {
     const header = '店铺,SKU,品名,ASIN,09/26(仅现货),10/03,春节前合计'
     await mkdir(dir, { recursive: true })
     await writeFile(path.join(dir, 'TZH补货清单.csv'), `﻿${header}\r\nTZH,SKU-A,品名A,B0A,10,5,15\r\nTZH,每周合计件数,,,10,5,15\r\n`, 'utf8')
+    // 批次年份由文件时间推断，固定下来让测试不随运行日期变化
+    await utimes(path.join(dir, 'TZH补货清单.csv'), new Date('2026-09-20'), new Date('2026-09-20'))
     await writeFile(path.join(dir, 'TZH补货清单-旧.csv'), `${header}\nTZH,SKU-OLD,旧,B0O,1,,1\n`, 'utf8')
     await utimes(path.join(dir, 'TZH补货清单-旧.csv'), new Date('2026-01-01'), new Date('2026-01-01'))
     await writeFile(path.join(dir, '坏文件.csv'), '店铺,品名\nTZH,x\n', 'utf8')
@@ -509,24 +511,34 @@ describe('import api integration', () => {
     ])
     expect(listed.shipped).toEqual({})
 
+    expect(listed.plans[0].batches.map((b) => b.date)).toEqual(['2026-09-26', '2026-10-03'])
+
     const put = (body) => fetch(`${baseUrl}/api/replenishment/shipped`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
     })
-    expect((await put({ entries: [{ sku: 'SKU-A', batch: '09/26' }], shipped: true })).status).toBe(400)
-    expect((await put({ shop: 'TZH', entries: [{ sku: 'SKU-A', batch: '09/26' }], shipped: 'yes' })).status).toBe(400)
+    const first = { asin: 'B0A', date: '2026-09-26' }
+    const second = { asin: 'B0A', date: '2026-10-03' }
+    expect((await put({ entries: [first], shipped: true })).status).toBe(400)
+    expect((await put({ shop: 'TZH', entries: [first], shipped: 'yes' })).status).toBe(400)
     expect((await put({ shop: 'TZH', entries: [], shipped: true })).status).toBe(400)
-    expect((await put({ shop: 'LPH', entries: [{ sku: 'SKU-A', batch: '09/26' }], shipped: true })).status).toBe(404)
-    const invalid = await put({ shop: 'TZH', entries: [{ sku: 'SKU-A', batch: '10/10' }], shipped: true })
+    expect((await put({ shop: 'LPH', entries: [first], shipped: true })).status).toBe(404)
+    // 旧格式（SKU + MM/DD）和计划里没有的日期都会被拒绝
+    const invalid = await put({ shop: 'TZH', entries: [{ sku: 'SKU-A', batch: '09/26' }, { asin: 'B0A', date: '2027-09-26' }], shipped: true })
     expect(invalid.status).toBe(400)
-    expect((await invalid.json()).invalid).toEqual([{ sku: 'SKU-A', batch: '10/10' }])
+    expect((await invalid.json()).invalid).toEqual([{ asin: '', date: '' }, { asin: 'B0A', date: '2027-09-26' }])
 
-    const marked = await put({ shop: 'TZH', entries: [{ sku: 'SKU-A', batch: '09/26' }, { sku: 'SKU-A', batch: '10/03' }], shipped: true })
+    const marked = await put({ shop: 'TZH', entries: [first, second], shipped: true })
     expect(marked.status).toBe(200)
-    expect(Object.keys((await marked.json()).shipped['SKU-A'])).toEqual(['09/26', '10/03'])
+    expect(Object.keys((await marked.json()).shipped.B0A)).toEqual(['2026-09-26', '2026-10-03'])
 
-    const undone = await put({ shop: 'TZH', entries: [{ sku: 'SKU-A', batch: '09/26' }], shipped: false })
-    expect(Object.keys((await undone.json()).shipped['SKU-A'])).toEqual(['10/03'])
+    const undone = await put({ shop: 'TZH', entries: [first], shipped: false })
+    expect(Object.keys((await undone.json()).shipped.B0A)).toEqual(['2026-10-03'])
     const stored = JSON.parse(await readFile(path.join(dir, 'shipped.json'), 'utf-8'))
-    expect(Object.keys(stored.TZH['SKU-A'])).toEqual(['10/03'])
+    expect(Object.keys(stored.TZH.B0A)).toEqual(['2026-10-03'])
+
+    // shipped.json 里残留旧格式标记时提示
+    await writeFile(path.join(dir, 'shipped.json'), JSON.stringify({ TZH: { 'SKU-A': { '09/26': 't' } } }), 'utf8')
+    const withLegacy = await (await fetch(`${baseUrl}/api/replenishment`)).json()
+    expect(withLegacy.warnings).toContain('shipped.json 里有旧格式（SKU + MM/DD）的已发货标记，已不再生效，请重新标记')
   })
 })

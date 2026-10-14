@@ -29,6 +29,7 @@ import {
 import {
   applyShippedChange,
   findInvalidShippedEntries,
+  findPlanAsinIssues,
   parseCsv,
   parseReplenishmentPlan,
 } from './src/lib/replenishmentPlan.js'
@@ -151,6 +152,7 @@ function readReplenishmentPlans() {
     try {
       const rows = parseCsv(readFileSync(fp(REPLENISH_DIR, file), 'utf-8'))
       const plan = { ...parseReplenishmentPlan(rows, { refDate: stat.mtime }), file, updatedAt: stat.mtime.toISOString() }
+      for (const issue of findPlanAsinIssues(plan)) warnings.push(`${file}：${issue}`)
       const existing = byShop.get(plan.shop)
       if (existing) {
         const [keep, drop] = existing.updatedAt >= plan.updatedAt ? [existing, plan] : [plan, existing]
@@ -1750,13 +1752,19 @@ function apiPlugin() {
           /* ---------- 补货批次计划 ---------- */
           if (url === '/replenishment' && req.method === 'GET') {
             const { plans, warnings } = readReplenishmentPlans()
-            return sendJson(res, 200, { plans, warnings, shipped: readJson(REPLENISH_SHIPPED_FILE, {}) })
+            const shipped = readJson(REPLENISH_SHIPPED_FILE, {})
+            // 旧版按 SKU + “MM/DD” 记录，新版按 ASIN + “YYYY-MM-DD”；旧标记不再生效，提示一下
+            const legacy = Object.values(shipped).some((byAsin) =>
+              Object.values(byAsin || {}).some((byDate) => Object.keys(byDate || {}).some((k) => !/^\d{4}-\d{2}-\d{2}$/.test(k))),
+            )
+            if (legacy) warnings.push('shipped.json 里有旧格式（SKU + MM/DD）的已发货标记，已不再生效，请重新标记')
+            return sendJson(res, 200, { plans, warnings, shipped })
           }
           if (url === '/replenishment/shipped' && req.method === 'PUT') {
             const body = (await readBody(req)) || {}
             const shop = String(body.shop || '').trim()
             const entries = Array.isArray(body.entries)
-              ? body.entries.map((e) => ({ sku: String(e?.sku ?? '').trim(), batch: String(e?.batch ?? '').trim() }))
+              ? body.entries.map((e) => ({ asin: String(e?.asin ?? '').trim(), date: String(e?.date ?? '').trim() }))
               : []
             if (!shop) return sendJson(res, 400, { error: 'shop required' })
             if (typeof body.shipped !== 'boolean') return sendJson(res, 400, { error: 'shipped 必须为 true 或 false' })
@@ -1764,7 +1772,7 @@ function apiPlugin() {
             const plan = readReplenishmentPlans().plans.find((p) => p.shop === shop)
             if (!plan) return sendJson(res, 404, { error: `没有店铺 ${shop} 的补货清单` })
             const invalid = findInvalidShippedEntries(plan, entries)
-            if (invalid.length) return sendJson(res, 400, { error: '计划中不存在的 SKU / 批次', invalid })
+            if (invalid.length) return sendJson(res, 400, { error: '计划中不存在的 ASIN / 批次日期', invalid })
             const next = applyShippedChange(
               readJson(REPLENISH_SHIPPED_FILE, {}),
               shop,

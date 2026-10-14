@@ -1,5 +1,5 @@
 /**
- * 周订单利润快照的共用读数逻辑（App.vue 与补货批次计划页共用）。
+ * 周订单利润快照的共用读数逻辑。
  * 周数据形如 { id, columns: string[], rows: [{ asin, values }], notes: { [asin]: string } }，
  * 产品主数据来自 src/data/products/{shopId}.json。
  */
@@ -62,16 +62,6 @@ export function buildColIndex(columns) {
   return idx
 }
 
-/** ASIN → 行；同 ASIN 取第一条 */
-export function buildRowByAsin(week) {
-  const map = new Map()
-  for (const row of week?.rows || []) {
-    const asin = String(row?.asin || '').trim()
-    if (asin && !map.has(asin)) map.set(asin, row)
-  }
-  return map
-}
-
 /** 读一格；采购成本在 xlsx 里是负数，按正数展示（与周订单利润页一致） */
 export function weekCell(row, colIndex, name) {
   const i = colIndex?.[name]
@@ -84,44 +74,30 @@ export function weekCell(row, colIndex, name) {
   return raw
 }
 
-/** 毛利润 / 采购成本，保留两位；算不出返回 '' */
+/** 毛利润 / 采购成本，不取整；算不出返回 NaN */
 export function weekRoi(row, colIndex) {
   const profit = toNum(weekCell(row, colIndex, '毛利润'))
   const cost = Math.abs(toNum(weekCell(row, colIndex, '采购成本')))
-  if (!Number.isFinite(profit) || !Number.isFinite(cost) || cost === 0) return ''
-  return (Math.round((profit / cost) * 100) / 100).toFixed(2)
+  if (!Number.isFinite(profit) || !Number.isFinite(cost) || cost === 0) return NaN
+  return profit / cost
 }
 
-/** 需要标红的值：广告费率>15%、退货/退款率>10%、毛利润/毛利率/ROI 为负（与周订单利润页一致） */
+/** ROI 展示两位小数；算不出返回 '' */
+export function formatRoi(roi) {
+  return Number.isFinite(roi) ? roi.toFixed(2) : ''
+}
+
+/** 需要标红的值：广告费率>15、退货/退款率>10、毛利润/ROI 为负 */
 export function isWeekFieldAlert(name, value) {
-  const n = toNum(value)
+  const n = typeof value === 'number' ? value : toNum(value)
   if (!Number.isFinite(n)) return false
   if (name === '广告费率') return n > 15
   if (name === '退货率' || name === '退款率') return n > 10
-  if (name === '毛利润' || name === '毛利率' || name === '净毛利率' || name === 'ROI') return n < 0
+  if (name === '毛利润' || name === 'ROI') return n < 0
   return false
 }
 
-/**
- * 按分组把整行拆成 [{ title, fields: [{ name, value }] }]。
- * 不在任何分组里的列进“其它”，保证“所有列都看得到”。
- */
-export function groupWeekFields(columns, row, groups) {
-  const colIndex = buildColIndex(columns)
-  const used = new Set()
-  const out = []
-  for (const g of groups) {
-    const fields = []
-    for (const name of g.cols) {
-      if (colIndex[name] == null) continue
-      used.add(name)
-      fields.push({ name, value: weekCell(row, colIndex, name) })
-    }
-    if (fields.length) out.push({ title: g.title, fields })
-  }
-  const rest = (columns || []).filter((name) => !used.has(name))
-  if (rest.length) {
-    out.push({ title: '其它', fields: rest.map((name) => ({ name, value: weekCell(row, colIndex, name) })) })
-  }
-  return out
+/** 店铺全称 “TZH-主店二号” → 简码 “TZH”（补货清单 CSV 用简码） */
+export function shopCodeOf(name) {
+  return String(name || '').split('-')[0].trim()
 }

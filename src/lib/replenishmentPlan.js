@@ -3,7 +3,8 @@
  *
  * 一个 CSV 对应一个店铺：每行一个 SKU，“MM/DD” 形式的列是每周批次的发货件数；
  * SKU 以“每周”开头的行是每周合计（件数 / 采购金额 / 净重 / SKU 数）。
- * 已发货状态单独保存：{ [shop]: { [sku]: { [batchKey]: ISO 时间 } } }
+ * 已发货状态单独保存：{ [shop]: { [ASIN]: { [YYYY-MM-DD 批次日期]: ISO 时间 } } }
+ * 按 ASIN + 完整日期记录，换新版清单时 SKU 改名或跨年都不会串号。
  */
 
 /** 最小 CSV 解析：支持 BOM、引号字段、"" 转义、CRLF；丢弃全空行 */
@@ -182,8 +183,23 @@ export function parseReplenishmentPlan(rows, { refDate = new Date() } = {}) {
   return { shop, batches, items, weekly, weeklyNotes, labels }
 }
 
-export function isShipped(shopShipped, sku, batchKey) {
-  return !!shopShipped?.[sku]?.[batchKey]
+export function isShipped(shopShipped, asin, date) {
+  return !!(asin && date && shopShipped?.[asin]?.[date])
+}
+
+/** 已发货按 ASIN 记录，所以一个计划里 ASIN 必须有且唯一；返回需要提示的问题 */
+export function findPlanAsinIssues(plan) {
+  const issues = []
+  const seen = new Map()
+  for (const item of plan?.items || []) {
+    if (!item.asin) {
+      issues.push(`${item.sku} 没有 ASIN，无法标记已发货`)
+      continue
+    }
+    if (seen.has(item.asin)) issues.push(`${item.asin} 同时出现在 ${seen.get(item.asin)} 和 ${item.sku}，已发货标记会共用`)
+    else seen.set(item.asin, item.sku)
+  }
+  return issues
 }
 
 /** 未来多少天内还要发货的 SKU 视为“临近补货”，需要置顶 */
@@ -214,7 +230,7 @@ export function buildShippingSummary(plan, shopShipped = {}, today = '', urgentW
       if (!qty) continue
       plannedQty += qty
       plannedSkus += 1
-      if (isShipped(shopShipped, item.sku, b.key)) {
+      if (isShipped(shopShipped, item.asin, b.date)) {
         shippedQty += qty
         shippedSkus += 1
       }
@@ -238,7 +254,7 @@ export function buildShippingSummary(plan, shopShipped = {}, today = '', urgentW
       if (!qty) continue
       plannedQty += qty
       if (!firstBatch) firstBatch = b
-      if (isShipped(shopShipped, item.sku, b.key)) shippedQty += qty
+      if (isShipped(shopShipped, item.asin, b.date)) shippedQty += qty
       else if (!dueBatch) dueBatch = b
     }
     const firstInDays = firstBatch && today ? diffDays(today, firstBatch.date) : null
@@ -264,12 +280,13 @@ export function buildShippingSummary(plan, shopShipped = {}, today = '', urgentW
   return { batches, items, plannedQty, shippedQty, nextBatch }
 }
 
-/** 过滤出计划里真实存在（该 SKU 在该批次件数 > 0）的条目，返回无效条目 */
+/** 过滤出计划里真实存在（该 ASIN 在该日期的批次件数 > 0）的条目，返回无效条目 */
 export function findInvalidShippedEntries(plan, entries) {
-  const bySku = new Map(plan.items.map((item) => [item.sku, item]))
+  const keyByDate = new Map(plan.batches.map((b) => [b.date, b.key]))
   return (Array.isArray(entries) ? entries : []).filter((entry) => {
-    const item = bySku.get(String(entry?.sku ?? ''))
-    return !item || !item.qtyByBatch[String(entry?.batch ?? '')]
+    const asin = String(entry?.asin ?? '')
+    const key = keyByDate.get(String(entry?.date ?? ''))
+    return !asin || !key || !plan.items.some((item) => item.asin === asin && item.qtyByBatch[key])
   })
 }
 
@@ -277,12 +294,12 @@ export function findInvalidShippedEntries(plan, entries) {
 export function applyShippedChange(state, shop, entries, shipped, timestamp) {
   const next = { ...(state || {}) }
   const shopState = { ...(next[shop] || {}) }
-  for (const { sku, batch } of entries) {
-    const skuState = { ...(shopState[sku] || {}) }
-    if (shipped) skuState[batch] = skuState[batch] || timestamp
-    else delete skuState[batch]
-    if (Object.keys(skuState).length) shopState[sku] = skuState
-    else delete shopState[sku]
+  for (const { asin, date } of entries) {
+    const asinState = { ...(shopState[asin] || {}) }
+    if (shipped) asinState[date] = asinState[date] || timestamp
+    else delete asinState[date]
+    if (Object.keys(asinState).length) shopState[asin] = asinState
+    else delete shopState[asin]
   }
   if (Object.keys(shopState).length) next[shop] = shopState
   else delete next[shop]
@@ -305,4 +322,47 @@ export function sortByUrgency(items, summary) {
       return a.index - b.index
     })
     .map((x) => x.item)
+}
+
+/** CSV 里的店铺是简码（TZH），shops.json 里是全称（TZH-主店二号） */
+export function findShopByCode(shops, code) {
+  return (shops || []).find((s) => s.name === code || String(s.name).split('-')[0].trim() === code) || null
+}
+
+/**
+ * 按「shopId::ASIN」索引补货计划条目，供主表按行查找。
+ * 找不到对应店铺的计划会被跳过（返回在 unmatchedShops 里）。
+ */
+export function buildPlanIndex(plans, shops) {
+  const index = new Map()
+  const unmatchedShops = []
+  for (const plan of plans || []) {
+    const shop = findShopByCode(shops, plan.shop)
+    if (!shop) {
+      unmatchedShops.push(plan.shop)
+      continue
+    }
+    for (const item of plan.items) {
+      if (item.asin) index.set(`${shop.id}::${item.asin}`, { plan, item })
+    }
+  }
+  return { index, unmatchedShops }
+}
+
+/**
+ * 建议补货：最近一个还没标记发货的批次。
+ * 返回 { state: 'pending' | 'done' | 'none', qty, batch, date, inDays, overdue }
+ */
+export function suggestedRestock(item, itemSummary) {
+  if (!item || !itemSummary || !itemSummary.plannedQty) return { state: 'none' }
+  if (!itemSummary.dueBatch) return { state: 'done', qty: 0 }
+  const inDays = itemSummary.dueInDays
+  return {
+    state: 'pending',
+    qty: item.qtyByBatch[itemSummary.dueBatch],
+    batch: itemSummary.dueBatch,
+    date: itemSummary.dueDate,
+    inDays,
+    overdue: inDays != null && inDays < 0,
+  }
 }
