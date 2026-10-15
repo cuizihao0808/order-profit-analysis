@@ -14,6 +14,6 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm test
+      # 覆盖率任务会跑全部测试，不再单独跑一遍 npm test
       - run: npm run test:coverage
       - run: npm run build

@@ -248,20 +248,43 @@ npm run cleanup:dup-asin
 # 全部单元、集成和界面测试
 npm test
 
-# 生成 src/lib 业务规则的覆盖率报告
+# 跑全部测试并生成覆盖率报告（CI 用这个）
 npm run test:coverage
 
 # 仅运行本地 API 集成测试
 npm run test:api
 
-# 仅运行导入弹窗界面测试
+# 仅运行界面测试（*.ui.test.js：页面冒烟、组件、导入弹窗）
 npm run test:ui
 
 # 构建前端生产产物
 npm run build
 ```
 
-覆盖率只统计 `src/lib/` 下的业务规则模块，`App.vue` 和 `vite.config.js` 不在统计范围内。阈值为行 90%、函数 90%、语句 90%、分支 85%，低于阈值会失败。仓库中的 CI 会在推送和 Pull Request 时运行测试、覆盖率检查与生产构建。
+测试分四层：
+
+| 层 | 文件 | 内容 |
+|----|------|------|
+| 业务规则 | `tests/{dataPipeline,restockRules,productUpdates,importScan,weekSnapshot,trendMetrics,replenishmentPlan,tableView}.test.js` | `src/lib/` 的纯函数 |
+| composables | `tests/composables.test.js` | 补货计划加载 / 已发货标记、8 周快照按需加载，fetch 用模拟数据 |
+| 组件 | `tests/components.ui.test.js`、`tests/importDialog.ui.test.js` | 用真实 Element Plus 挂载单个组件 |
+| 页面 | `tests/app.ui.test.js`、`tests/app.actions.ui.test.js` | 挂载整页，接口用 `tests/helpers/appHarness.js` 里有状态的模拟 API（写操作会改内存数据并记录请求）。覆盖视图切换、搜索、展开行三个 Tab、内联编辑与失败回滚、批量改分类、复制包装表格、更多菜单（导出 PDF、列设置）、店铺 / ASIN 增删改、导入与归属确认、删除周次、图片预览、整批标记发货 |
+| 本地 API | `tests/importApi.integration.test.js` | 起一个真实 Vite 中间件，在临时目录里读写 JSON / CSV；包括 PDF 导出（只抓公网 https 图片、超 5MB 拒绝、失败占位、多页）和删除 / 导入前的自动备份（只留最新 10 份） |
+
+覆盖率统计整个 `src/`（不含 `main.js` 和 `src/data/`），按目录设门槛，低于门槛会失败：
+
+| 范围 | 行 / 语句 | 函数 | 分支 |
+|------|-----------|------|------|
+| `src/lib/**` | 95% | 95% | 90% |
+| `src/composables/**` | 95% | 95% | 85% |
+| `src/components/**` | 90% | 60% | 80% |
+| 整体（含 `App.vue`） | 90% | 80% | 80% |
+
+`vite.config.js` 里的本地 API 由集成测试覆盖，但不计入覆盖率（Vite 会先打包配置文件再执行，覆盖率工具对不上源码行号）。
+
+测试文件并行跑，每个文件一个独立进程，全部测试约 5 秒。测试里的“今天”都用假时钟固定，CSV 的修改时间也固定，结果不随运行日期变化。
+
+仓库中的 CI 会在推送和 Pull Request 时运行 `npm run test:coverage`（包含全部测试）和生产构建。
 
 ## 数据结构
 
@@ -747,8 +770,9 @@ PDF 生成依赖系统中文字体，按以下顺序查找，用第一个存在�
   - `weekSnapshot.js` 周快照读数、ROI、告警规则、库存健康、重量类型
   - `trendMetrics.js` 趋势指标、环比、趋势图坐标
   - `replenishmentPlan.js` 补货清单 CSV 解析、批次日期推断、发货进度汇总、已发货标记、按店铺 + ASIN 关联、建议补货
+  - `tableView.js` 主表的列配置合并与排序、补货筛选、父 ASIN 分组排序、表头分组、建议补货 / 批次进度展示、剪贴板表格
 
-新增业务规则时优先放进 `src/lib/`，这样才会被覆盖率统计和单元测试覆盖。
+新增业务规则时优先放进 `src/lib/` 写成纯函数，`App.vue` 只负责取值和渲染，这样规则才能被单元测试直接覆盖。
 
 ## 备注
 

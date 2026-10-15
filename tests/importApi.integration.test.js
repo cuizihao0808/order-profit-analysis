@@ -1,7 +1,7 @@
 import { createServer } from 'vite'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { createServer as createHttpServer } from 'node:http'
-import { mkdtemp, mkdir, readdir, readFile, utimes, writeFile } from 'node:fs/promises'
+import { mkdtemp, mkdir, readdir, readFile, stat, utimes, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -540,5 +540,172 @@ describe('import api integration', () => {
     await writeFile(path.join(dir, 'shipped.json'), JSON.stringify({ TZH: { 'SKU-A': { '09/26': 't' } } }), 'utf8')
     const withLegacy = await (await fetch(`${baseUrl}/api/replenishment`)).json()
     expect(withLegacy.warnings).toContain('shipped.json 里有旧格式（SKU + MM/DD）的已发货标记，已不再生效，请重新标记')
+  })
+
+  it('serves the dev session id, restock config and a data scan signature that tracks file changes', async () => {
+    const session = await (await fetch(`${baseUrl}/api/dev-session`)).json()
+    expect(session.sessionId).toMatch(/^\d+$/)
+
+    const config = await (await fetch(`${baseUrl}/api/restock-config`)).json()
+    expect(config).toMatchObject({ restockMonths: 8, restockMultiplier: 8 })
+
+    const signature = async () => (await (await fetch(`${baseUrl}/api/scan-signature`)).json()).scanSignature
+    const before = await signature()
+    expect(before).toContain('32周(8-2~8-8)/订单利润-ASIN-2026-08-02~2026-08-08-test.xlsx')
+    expect(await signature()).toBe(before)
+    const folder = path.join(tmpRoot, 'public/data/33周(8-9~8-15)')
+    await mkdir(folder, { recursive: true })
+    await writeFile(path.join(folder, 'Listing销售库存_x.csv'), 'ASIN\nB0X\n', 'utf8')
+    await writeFile(path.join(folder, '说明.txt'), '非表格文件不计入', 'utf8')
+    const after = await signature()
+    expect(after).not.toBe(before)
+    expect(after).toContain('33周(8-9~8-15)/Listing销售库存_x.csv')
+    expect(after).not.toContain('说明.txt')
+  })
+
+  it('backs up src/data before deleting a week and keeps only the latest 10 backups', async () => {
+    const backupRoot = path.join(tmpRoot, '.opa-backups')
+    // 预先放 11 份更早的备份，删除周次后应只剩最新的 10 份
+    for (let i = 0; i < 11; i++) await mkdir(path.join(backupRoot, `2000-01-${String(i + 1).padStart(2, '0')}-old`), { recursive: true })
+    await writeFile(path.join(backupRoot, 'not-a-dir.txt'), 'x', 'utf8')
+
+    await writeJson(path.join(tmpRoot, 'src/data/weeks/90周.json'), { id: '90周', notes: { B0X: '要删的周' } })
+    const weeks = JSON.parse(await readFile(path.join(tmpRoot, 'src/data/weeks.json'), 'utf8'))
+    await writeJson(path.join(tmpRoot, 'src/data/weeks.json'), [...weeks, { id: '90周', filename: '90周/x.xlsx' }])
+
+    const res = await fetch(`${baseUrl}/api/weeks/${encodeURIComponent('90周')}`, { method: 'DELETE' })
+    expect(res.status).toBe(200)
+
+    const dirs = (await readdir(backupRoot, { withFileTypes: true })).filter((d) => d.isDirectory()).map((d) => d.name).sort()
+    expect(dirs).toHaveLength(10)
+    expect(dirs).not.toContain('2000-01-01-old')
+    expect(dirs).not.toContain('2000-01-02-old')
+    const latest = dirs.find((d) => d.endsWith('delete-week-90周'))
+    expect(latest).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z-delete-week-90周$/)
+    // 备份的是删除前的数据：周快照还在
+    const backedUp = JSON.parse(await readFile(path.join(backupRoot, latest, 'weeks/90周.json'), 'utf8'))
+    expect(backedUp.notes.B0X).toBe('要删的周')
+    expect((await stat(path.join(backupRoot, 'not-a-dir.txt'))).isFile()).toBe(true)
+
+    // 删除本身生效
+    const after = JSON.parse(await readFile(path.join(tmpRoot, 'src/data/weeks.json'), 'utf8'))
+    expect(after.map((w) => w.id)).not.toContain('90周')
+    expect((await fetch(`${baseUrl}/api/weeks/${encodeURIComponent('90周')}`)).status).toBe(404)
+    // 带路径分隔符的周次 ID 会被拒绝，不会删到别的目录
+    expect((await fetch(`${baseUrl}/api/weeks/a%2Fb`, { method: 'DELETE' })).status).toBe(400)
+  })
+
+  describe('local warehouse PDF export', () => {
+    // 1×1 PNG
+    const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64')
+    const BIG = 6 * 1024 * 1024
+    let imageRequests = []
+
+    // 服务端和测试在同一个进程：拦截图片请求，发往本地 API 的请求照常放行
+    function stubImageFetch() {
+      const realFetch = globalThis.fetch
+      imageRequests = []
+      vi.stubGlobal('fetch', (url, init) => {
+        const href = String(url)
+        if (href.startsWith(baseUrl)) return realFetch(url, init)
+        imageRequests.push(href)
+        if (href.endsWith('/ok.png')) return Promise.resolve(new Response(PNG, { headers: { 'content-type': 'image/png' } }))
+        if (href.endsWith('/declared-big.png')) {
+          return Promise.resolve(new Response(PNG, { headers: { 'content-length': String(BIG) } }))
+        }
+        if (href.endsWith('/streamed-big.png')) return Promise.resolve(new Response(new Uint8Array(BIG)))
+        if (href.endsWith('/not-an-image.png')) return Promise.resolve(new Response('<html>oops</html>'))
+        if (href.endsWith('/timeout.png')) return Promise.reject(new Error('timeout'))
+        return Promise.resolve(new Response('missing', { status: 404 }))
+      })
+    }
+
+    afterEach(() => vi.unstubAllGlobals())
+
+    const exportPdf = (body) =>
+      fetch(`${baseUrl}/api/export/local-warehouse-pdf`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+
+    it('rejects an empty export', async () => {
+      expect((await exportPdf({ weekId: '41周', shopName: '一号店', rows: [] })).status).toBe(400)
+      expect((await exportPdf({})).status).toBe(400)
+    })
+
+    it('renders a downloadable PDF, fetching only safe https images once each', async () => {
+      stubImageFetch()
+      const images = [
+        'https://img.test/ok.png',
+        'https://img.test/ok.png',
+        'https://img.test/missing.png',
+        'https://img.test/declared-big.png',
+        'https://img.test/streamed-big.png',
+        'https://img.test/not-an-image.png',
+        'https://img.test/timeout.png',
+        'http://img.test/insecure.png',
+        'https://localhost/a.png',
+        'https://127.0.0.1/a.png',
+        'https://10.0.0.8/a.png',
+        'https://172.20.0.1/a.png',
+        'https://user:pw@img.test/a.png',
+        'not a url',
+      ]
+      const res = await exportPdf({
+        weekId: '41周',
+        shopName: '一号/店',
+        rows: [
+          {
+            asin: 'B0A1',
+            fnsku: 'X001',
+            name: '黑垫高块',
+            localWarehouse: 120,
+            packageSize: '20×15×10',
+            itemWeight: '600',
+            packageType: '飞机盒',
+            note: '10整箱',
+            images,
+          },
+          { asin: 'B0A2', name: '', localWarehouse: '', images: [] },
+        ],
+      })
+      expect(res.status).toBe(200)
+      expect(res.headers.get('content-type')).toBe('application/pdf')
+      // 文件名里的非法字符被替换
+      expect(decodeURIComponent(res.headers.get('content-disposition'))).toContain("filename*=UTF-8''41周-一号-店-本地仓库.pdf")
+      const pdf = Buffer.from(await res.arrayBuffer())
+      expect(pdf.subarray(0, 5).toString()).toBe('%PDF-')
+
+      // 同一张图只下载一次；http、内网地址、带账号的地址不发请求
+      expect(imageRequests.sort()).toEqual([
+        'https://img.test/declared-big.png',
+        'https://img.test/missing.png',
+        'https://img.test/not-an-image.png',
+        'https://img.test/ok.png',
+        'https://img.test/streamed-big.png',
+        'https://img.test/timeout.png',
+      ])
+    })
+
+    it('allows public 172.x hosts and spreads many rows over several pages', async () => {
+      stubImageFetch()
+      const rows = Array.from({ length: 40 }, (_, i) => ({
+        asin: `B0${i}`,
+        name: `产品 ${i}`,
+        localWarehouse: i,
+        packageSize: '1×1',
+        itemWeight: i % 2 ? '100' : '',
+        weightType: i === 3 ? '实重' : '',
+        images: i === 0 ? ['https://172.15.0.1/ok.png', 'https://172.32.0.1/ok.png'] : [],
+      }))
+      const res = await exportPdf({ rows })
+      expect(res.status).toBe(200)
+      expect(decodeURIComponent(res.headers.get('content-disposition'))).toContain('周次-店铺-本地仓库.pdf')
+      const pdf = Buffer.from(await res.arrayBuffer()).toString('latin1')
+      const pages = pdf.match(/\/Type \/Page\b(?!s)/g) || []
+      expect(pages.length).toBeGreaterThan(1)
+      expect(imageRequests).toEqual(['https://172.15.0.1/ok.png', 'https://172.32.0.1/ok.png'])
+    })
   })
 })

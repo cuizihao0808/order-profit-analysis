@@ -3,7 +3,23 @@ import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch 
 import focusConfig from './data/focusProducts.json'
 import { computeRestockQty } from './lib/restockRules.js'
 import { prepareImportScan } from './lib/importScan.js'
-import { buildProductPatchTargets, sortFullCartonFirst } from './lib/productUpdates.js'
+import { buildProductPatchTargets } from './lib/productUpdates.js'
+import {
+  buildClipboardTableHtml,
+  buildClipboardTableText,
+  buildHeaderGroups,
+  ensureColumnsOrder,
+  flattenGroups,
+  groupByParent,
+  isRestockQty,
+  matchesSupplyFilter,
+  mergeColumnConfig,
+  moveItem,
+  normalizeAsinKey,
+  progressView as buildProgressView,
+  sortGroupsBy,
+  suggestedView as buildSuggestedView,
+} from './lib/tableView.js'
 import { findShopByCode, suggestedRestock } from './lib/replenishmentPlan.js'
 import { METRIC_BY_KEY, buildSeries, deltaOf, fmtMetric, sumMetric } from './lib/trendMetrics.js'
 import {
@@ -34,10 +50,10 @@ const SUPPLY_FILTER_KEY = 'opa:supply-filter:v1'
 const VIEW_KEY = 'opa:view:v1'
 const PLAN_SHOP_KEY = 'opa:plan-shop:v1'
 const DEV_SESSION_KEY = 'opa:dev-session:v1'
-const FIXED_WIDTHS = { 品名: 340, ASIN: 150 }
-const FIXED_WIDTHS_COMPACT = { 品名: 300, ASIN: 140 }
-const SELECT_COL_WIDTH = 60 // 勾选框 + 展开箭头
-const SELECT_COL_WIDTH_COMPACT = 54
+const FIXED_WIDTHS = { 品名: 300, ASIN: 150 }
+const FIXED_WIDTHS_COMPACT = { 品名: 224, ASIN: 136 }
+const SELECT_COL_WIDTH = 40 // 勾选框
+const SELECT_COL_WIDTH_COMPACT = 36
 
 /** 表头分组：列名 → 组名；相邻同组的列合并成一个组头，不在表里的列不显示组名 */
 const COL_GROUPS = {
@@ -141,6 +157,15 @@ function displayColName(name) {
   return name === '销量' ? '周销量' : name
 }
 
+/** 表头拆成两半，中间放 <wbr>：空间够时一行，屏幕窄时折成两行，不会逐字断开 */
+function headerParts(name) {
+  const label = name === '品名' ? '产品' : displayColName(name)
+  if (/^[\u4e00-\u9fa5]{3}$/.test(label)) return [label.slice(0, 1), label.slice(1)]
+  if (label.length < 4) return [label, '']
+  const mid = Math.ceil(label.length / 2)
+  return [label.slice(0, mid), label.slice(mid)]
+}
+
 /** 默认可见列（不含固定列），遵守需求顺序 */
 const DEFAULT_VISIBLE_ORDER = [
   '产品分类',
@@ -161,42 +186,6 @@ const DEFAULT_VISIBLE_ORDER = [
   '批次进度',
   '备注',
 ]
-const DEFAULT_VISIBLE_SET = new Set(DEFAULT_VISIBLE_ORDER)
-
-function ensureColumnsOrder(cols) {
-  const arr = Array.isArray(cols) ? cols.slice() : []
-
-  const salesIdx = arr.findIndex((c) => c?.name === '销量')
-  if (salesIdx >= 0) {
-    const tailNames = ['月销量', '月销售额', '月订单数', '日均销量', 'Vine赠品销量']
-    const picked = []
-    for (const name of tailNames) {
-      const idx = arr.findIndex((c) => c?.name === name)
-      if (idx >= 0) picked.push(arr.splice(idx, 1)[0])
-    }
-    arr.splice(salesIdx + 1, 0, ...picked)
-  }
-
-  // 退货率、退款率跟在广告费率后面（同属“运营”组）；没有广告费率时跟在 ROI 后面
-  const picked = []
-  for (const name of ['退货率', '退款率']) {
-    const idx = arr.findIndex((c) => c?.name === name)
-    if (idx >= 0) picked.push(arr.splice(idx, 1)[0])
-  }
-  if (picked.length) {
-    let anchor = arr.findIndex((c) => c?.name === '广告费率')
-    if (anchor < 0) anchor = arr.findIndex((c) => c?.name === 'ROI')
-    arr.splice(anchor < 0 ? arr.length : anchor + 1, 0, ...picked)
-  }
-
-  const noteIdx = arr.findIndex((c) => c?.name === '备注')
-  if (noteIdx >= 0) {
-    const [noteCol] = arr.splice(noteIdx, 1)
-    arr.push(noteCol)
-  }
-
-  return arr
-}
 
 function weightTypeText(row) {
   return productWeightTypeText(rowProduct(row))
@@ -246,6 +235,8 @@ const toast = ref({ show: false, text: '', type: 'success' })
 const copiedAsinMap = ref({})
 const noteOverflowMap = ref({})
 const expandedInventoryRows = ref(new Set())
+/** 正在播放收起动画的行：动画结束前详情行还留在 DOM 里 */
+const closingInventoryRows = ref(new Set())
 const selectedAsins = ref(new Set())
 const batchCategoryValue = ref('')
 const batchCategoryBusy = ref(false)
@@ -310,7 +301,8 @@ const copyResetTimers = new Map()
 
 function updateCompact13Mode() {
   if (typeof window === 'undefined') return
-  compact13Mode.value = window.innerWidth <= 1512 && window.innerHeight <= 982
+  // 14 寸 MacBook 的各档缩放（≤1800 宽）都用紧凑表格，避免出现横向滚动条
+  compact13Mode.value = window.innerWidth <= 1800
 }
 
 /* ================= 派生数据 ================= */
@@ -422,26 +414,11 @@ const allRows = computed(() => currentWeek.value?.rows ?? [])
 
 function rowMatchesSupplyFilter(row) {
   const product = rowProduct(row)
-  const localWarehouse = toNum(product?.localWarehouse)
-  const orderedQty = toNum(product?.orderedQty)
-  const hasLocalWarehouse = Number.isFinite(localWarehouse) && localWarehouse > 0
-  const hasOrderedQty = Number.isFinite(orderedQty) && orderedQty > 0
-  const needRestock = hasRestockNeed(row)
-
-  switch (supplyFilter.value) {
-    case 'need-restock':
-      return needRestock
-    case 'no-restock':
-      return !needRestock
-    case 'ordered':
-      return hasOrderedQty
-    case 'local-warehouse':
-      return hasLocalWarehouse
-    case 'need-restock-no-local-no-ordered':
-      return needRestock && !hasLocalWarehouse && !hasOrderedQty
-    default:
-      return true
-  }
+  return matchesSupplyFilter(supplyFilter.value, {
+    localWarehouse: product?.localWarehouse,
+    orderedQty: product?.orderedQty,
+    needRestock: hasRestockNeed(row),
+  })
 }
 
 const filteredRows = computed(() => {
@@ -767,58 +744,59 @@ function shouldShowNoteTooltip(asin) {
   return !!note && !!noteOverflowMap.value[asin]
 }
 
+const DETAIL_CLOSE_MS = 200
+
+/** 系统开了“减弱动态效果”或环境不支持（测试）时直接收起，不等动画 */
+function prefersInstantMotion() {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return true
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+
+/** 把当前展开的行收起：先标记 closing 播放动画，动画结束再从 DOM 里移掉 */
+function closeExpandedRows() {
+  const closing = [...expandedInventoryRows.value]
+  expandedInventoryRows.value = new Set()
+  if (!closing.length || prefersInstantMotion()) return
+  closingInventoryRows.value = new Set([...closingInventoryRows.value, ...closing])
+  setTimeout(() => {
+    const next = new Set(closingInventoryRows.value)
+    closing.forEach((a) => next.delete(a))
+    closingInventoryRows.value = next
+  }, DETAIL_CLOSE_MS)
+}
+
 /** 同时只展开一行；tab 指定时直接打开该 Tab（再次点同一 Tab 收起） */
 function toggleInventoryRow(asin, tab) {
   if (!asin) return
   const current = expandedInventoryRows.value
   if (current.has(asin) && (!tab || tab === detailTab.value)) {
-    expandedInventoryRows.value = new Set()
+    closeExpandedRows()
     return
   }
   if (tab) detailTab.value = tab
+  if (!current.has(asin)) closeExpandedRows()
+  if (closingInventoryRows.value.has(asin)) {
+    const next = new Set(closingInventoryRows.value)
+    next.delete(asin)
+    closingInventoryRows.value = next
+  }
   expandedInventoryRows.value = new Set([asin])
+}
+
+function isInventoryRowClosing(asin) {
+  return !!(asin && closingInventoryRows.value.has(asin))
+}
+
+/** 点行里的空白处展开 / 收起详情；点到输入框、按钮、下拉等控件或正在选中文字时不触发 */
+const ROW_CLICK_IGNORE = 'input, textarea, select, button, a, label, [role="button"], .el-select, .el-input, .el-radio-group'
+function onRowClick(asin, event) {
+  if (event.target instanceof Element && event.target.closest(ROW_CLICK_IGNORE)) return
+  if (window.getSelection?.()?.toString()) return
+  toggleInventoryRow(asin)
 }
 
 function isInventoryRowExpanded(asin) {
   return !!(asin && expandedInventoryRows.value.has(asin))
-}
-
-function escapeHtml(text) {
-  return String(text)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-}
-
-function buildClipboardTableHtml(header, rows) {
-  const cellStyle = 'border:1px solid #999;padding:4px 8px;'
-  const headHtml = header
-    .map((h) => `<th style="${cellStyle}background:#f0f0f0;font-weight:bold;">${escapeHtml(h)}</th>`)
-    .join('')
-  const bodyHtml = rows
-    .map((row) => `<tr>${row.map((v) => `<td style="${cellStyle}">${escapeHtml(v)}</td>`).join('')}</tr>`)
-    .join('')
-  return `<table style="border-collapse:collapse;"><thead><tr>${headHtml}</tr></thead><tbody>${bodyHtml}</tbody></table>`
-}
-
-/** 转为全角字符：聊天框多为非等宽字体，只有全角字符宽度一致，才能保证各列对齐 */
-function toFullWidth(text) {
-  return String(text)
-    .replace(/[\u0021-\u007E]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) + 0xfee0))
-    .replace(/ /g, '\u3000')
-    .replace(/×/g, 'ｘ')
-    .replace(/—/g, '－')
-}
-
-/** 生成纯文本表格：所有字符全角，每列用全角空格补齐到同一长度 */
-function buildClipboardTableText(header, rows) {
-  const cells = [header, ...rows].map((row) => row.map(toFullWidth))
-  const widths = header.map((_, i) => Math.max(...cells.map((row) => [...row[i]].length)))
-  const pad = (v, i) => v + '\u3000'.repeat(widths[i] - [...v].length)
-  const line = (row) => row.map(pad).join('｜')
-  const divider = widths.map((w) => '－'.repeat(w)).join('＋')
-  return [line(cells[0]), divider, ...cells.slice(1).map(line)].join('\n')
 }
 
 /** 同时写入 HTML 表格和纯文本表格：Word/Excel 等识别 HTML，纯文本聊天框使用全角对齐文本 */
@@ -899,47 +877,16 @@ function cellView(row, colName) {
   return { text, cls: '' }
 }
 
-/** 建议补货：第一行件数，第二行「N 天后 · 批次」；7 天内琥珀色、逾期红色 */
 function suggestedView(row) {
-  const s = rowSuggested(row)
-  if (s.state === 'pending') {
-    let when = ''
-    let tone = ''
-    if (s.inDays != null && s.inDays < 0) {
-      when = `逾期 ${-s.inDays} 天 · `
-      tone = 'bad'
-    } else if (s.inDays != null && s.inDays <= 7) {
-      when = s.inDays === 0 ? '今天 · ' : `${s.inDays} 天后 · `
-      tone = 'soon'
-    }
-    return { qty: `${s.qty} 件`, sub: `${when}${s.batch}`, tone }
-  }
-  if (s.state === 'done') return { qty: '', sub: '已发完', tone: 'done' }
-  return { qty: '', sub: rowPlan(row) ? '计划不补' : '', tone: '' }
+  return buildSuggestedView(rowSuggested(row), !!rowPlan(row))
 }
 
 function progressView(row) {
-  const s = rowPlan(row)?.summary
-  if (!s?.plannedQty) return null
-  return { text: `${s.shippedQty} / ${s.plannedQty.toLocaleString('en-US')}`, pct: (s.shippedQty / s.plannedQty) * 100 }
+  return buildProgressView(rowPlan(row)?.summary)
 }
 
 function hasRestockNeed(row) {
-  if (!row) return false
-  const v = getCell(row, '静态补货')
-  return v !== '' && v !== '无需补货' && Number.isFinite(toNum(v))
-}
-
-function profitValue(row) {
-  if (!row) return Number.NEGATIVE_INFINITY
-  const n = toNum(getCell(row, '毛利润'))
-  return Number.isFinite(n) ? n : Number.NEGATIVE_INFINITY
-}
-
-function normalizeAsinKey(v) {
-  return String(v || '')
-    .trim()
-    .toUpperCase()
+  return !!row && isRestockQty(getCell(row, '静态补货'))
 }
 
 function groupParentKey(row) {
@@ -952,61 +899,24 @@ function groupParentKey(row) {
   return normalizeAsinKey(row.asin) || normalizeAsinKey(getCell(row, 'ASIN'))
 }
 
-function rowAsinKey(row) {
-  return normalizeAsinKey(row?.asin)
-}
-
 function rowPackingMode(row) {
   return rowProduct(row)?.packingMode === 'full' ? 'full' : 'mixed'
 }
 
-/**
- * 按 父ASIN 分组
- * - 同父 ASIN 的记录强制聚合为同一组
- * - 主表不展示「放弃」分类的 ASIN
- */
+/** 按父 ASIN 分组；主表不展示「放弃」分类的 ASIN。补货 / 重点视图再按各自的顺序重排 */
 const groups = computed(() => {
-  const list = filteredRows.value.filter((row) => !isAbandoned(row))
-  if (!list.length) return []
-
-  const map = new Map()
-  for (const row of list) {
-    const parent = groupParentKey(row)
-    if (!parent) continue
-    if (!map.has(parent)) map.set(parent, [])
-    map.get(parent).push(row)
-  }
-
-  const result = []
-  for (const [key, rows] of map) {
-    const profitSorted = rows.slice().sort((a, b) => profitValue(b) - profitValue(a))
-    const sorted = sortFullCartonFirst(profitSorted, rowPackingMode)
-    let headerRow = sorted.find((r) => rowAsinKey(r) === key)
-    if (!headerRow) headerRow = sorted[0]
-    let children
-    children = sorted.filter((r) => r !== headerRow)
-    result.push({ key, header: headerRow, children })
-  }
-  const profitSortedGroups = result.sort((a, b) => profitValue(b.header) - profitValue(a.header))
-  const sortedGroups = sortFullCartonFirst(profitSortedGroups, (group) => {
-    const hasFullCarton = [group.header, ...group.children].some(
-      (row) => rowPackingMode(row) === 'full',
-    )
-    return hasFullCarton ? 'full' : 'mixed'
-  })
-  if (viewMode.value === 'plan') return sortGroupsBy(sortedGroups, planUrgencyKey)
-  if (viewMode.value === 'focus') return sortGroupsBy(sortedGroups, focusOrderKey)
-  return sortedGroups
+  const sorted = groupByParent(
+    filteredRows.value.filter((row) => !isAbandoned(row)),
+    {
+      parentKey: groupParentKey,
+      profit: (row) => toNum(getCell(row, '毛利润')),
+      packingMode: rowPackingMode,
+    },
+  )
+  if (viewMode.value === 'plan') return sortGroupsBy(sorted, planUrgencyKey)
+  if (viewMode.value === 'focus') return sortGroupsBy(sorted, focusOrderKey)
+  return sorted
 })
-
-/** 稳定排序：按组内成员 key 的最小值升序 */
-function sortGroupsBy(list, keyOf) {
-  const minKey = (g) => [g.header, ...g.children].map(keyOf).sort()[0]
-  return list
-    .map((g, index) => ({ g, index, key: minKey(g) }))
-    .sort((a, b) => (a.key === b.key ? a.index - b.index : a.key < b.key ? -1 : 1))
-    .map((x) => x.g)
-}
 
 /** 补货视图：首批在临近窗口内的 SKU 按首批日期置顶，其余保持原顺序 */
 function planUrgencyKey(row) {
@@ -1029,20 +939,7 @@ const visibleRows = computed(() => {
   return rows
 })
 
-const tableRows = computed(() => {
-  const rows = []
-  for (const g of groups.value) {
-    let members = [g.header, ...g.children]
-    if (members.length > 1) {
-      members = members.filter((r) => rowAsinKey(r) !== g.key)
-      if (!members.length) members = [g.header, ...g.children]
-    }
-    members.forEach((row, idx) => {
-      rows.push({ row, isGroupHead: idx === 0, groupSize: members.length })
-    })
-  }
-  return rows
-})
+const tableRows = computed(() => flattenGroups(groups.value))
 
 const visibleAsinList = computed(() => {
   const list = []
@@ -1294,17 +1191,7 @@ const numericColumns = computed(() => {
 })
 
 /** 表头第一行：勾选列 + 固定列合成一格，其余按 COL_GROUPS 合并相邻同组列 */
-const headerGroups = computed(() => {
-  const out = []
-  for (const col of displayCols.value) {
-    if (col.fixed) continue
-    const name = GROUP_OF_COL[col.name] || ''
-    const last = out[out.length - 1]
-    if (last && last.name === name && name) last.span += 1
-    else out.push({ name, span: 1, first: col.name })
-  }
-  return out
-})
+const headerGroups = computed(() => buildHeaderGroups(displayCols.value, GROUP_OF_COL))
 const groupStartCols = computed(() => new Set(headerGroups.value.map((g) => g.first)))
 const fixedSpan = computed(() => displayCols.value.filter((c) => c.fixed).length + 1)
 
@@ -1570,48 +1457,19 @@ function saveCustomCols() {
   }
 }
 
-function mergeCustomCols(xlsxCols) {
-  const available = [
-    ...(xlsxCols || []).filter((h) => h && !FIXED_COLS.includes(h)),
-    ...EXTRA_COL_NAMES,
-  ]
-  const availableSet = new Set(available)
-  const stored = loadStoredConfig()
+/** 当前周可配置的列：周表的列（去掉固定列）+ 扩展列 */
+function availableCols(xlsxCols) {
+  return [...(xlsxCols || []).filter((h) => h && !FIXED_COLS.includes(h)), ...EXTRA_COL_NAMES]
+}
 
-  const merged = []
-  const seen = new Set()
-  for (const item of stored) {
-    if (availableSet.has(item.name) && !seen.has(item.name)) {
-      merged.push({ name: item.name, visible: item.visible !== false })
-      seen.add(item.name)
-    }
-  }
-  // 首次加载：按默认顺序先插入默认可见列，其余默认隐藏
-  if (!stored.length) {
-    for (const name of DEFAULT_VISIBLE_ORDER) {
-      if (availableSet.has(name) && !seen.has(name)) {
-        merged.push({ name, visible: true })
-        seen.add(name)
-      }
-    }
-  }
-  for (const name of available) {
-    if (!seen.has(name)) {
-      merged.push({ name, visible: DEFAULT_VISIBLE_SET.has(name) })
-    }
-  }
-  customCols.value = ensureColumnsOrder(merged)
+function mergeCustomCols(xlsxCols) {
+  customCols.value = mergeColumnConfig(availableCols(xlsxCols), loadStoredConfig(), DEFAULT_VISIBLE_ORDER)
 }
 
 /* ================= 交互 ================= */
 
 function moveCol(idx, delta) {
-  const next = idx + delta
-  if (next < 0 || next >= customCols.value.length) return
-  const arr = customCols.value.slice()
-  const [item] = arr.splice(idx, 1)
-  arr.splice(next, 0, item)
-  customCols.value = arr
+  customCols.value = moveItem(customCols.value, idx, delta)
 }
 function toggleColVisible(idx) {
   const arr = customCols.value.slice()
@@ -1622,24 +1480,7 @@ function setAllColsVisible(visible) {
   customCols.value = customCols.value.map((c) => ({ ...c, visible }))
 }
 function resetColConfig() {
-  const xlsxCols = currentWeek.value?.columns ?? []
-  const available = [
-    ...xlsxCols.filter((h) => h && !FIXED_COLS.includes(h)),
-    ...EXTRA_COL_NAMES,
-  ]
-  const availableSet = new Set(available)
-  const list = []
-  const seen = new Set()
-  for (const name of DEFAULT_VISIBLE_ORDER) {
-    if (availableSet.has(name) && !seen.has(name)) {
-      list.push({ name, visible: true })
-      seen.add(name)
-    }
-  }
-  for (const name of available) {
-    if (!seen.has(name)) list.push({ name, visible: false })
-  }
-  customCols.value = ensureColumnsOrder(list)
+  customCols.value = mergeColumnConfig(availableCols(currentWeek.value?.columns), [], DEFAULT_VISIBLE_ORDER)
 }
 
 /* ================= 店铺 CRUD ================= */
@@ -2250,14 +2091,14 @@ onBeforeUnmount(() => {
     </header>
 
     <div class="filter-row">
+      <span class="result-count"><strong>{{ groupCount }}</strong> 个父组 · <strong>{{ asinCount }}</strong> 个 ASIN</span>
+      <el-button size="small" @click="showFieldPanel = true">字段</el-button>
+      <span class="topbar-spacer" />
+      <button v-if="hasActiveFilters" type="button" class="filter-reset" @click="resetFilters">重置</button>
       <FilterChip v-if="viewMode !== 'plan'" v-model="shopFilter" label="店铺" :options="shopOptions" />
       <FilterChip v-model="categoryFilter" label="分类" :options="categoryOptions" />
       <FilterChip v-model="supplyFilter" label="补货" :options="SUPPLY_OPTIONS" />
       <FilterChip v-model="inventoryHealthFilter" label="库存健康" :options="HEALTH_OPTIONS" />
-      <button v-if="hasActiveFilters" type="button" class="filter-reset" @click="resetFilters">重置</button>
-      <span class="topbar-spacer" />
-      <span class="result-count"><strong>{{ groupCount }}</strong> 个父组 · <strong>{{ asinCount }}</strong> 个 ASIN</span>
-      <el-button size="small" @click="showFieldPanel = true">字段</el-button>
     </div>
 
     <section v-if="viewMode === 'focus'" class="focus-bar">
@@ -2340,7 +2181,7 @@ onBeforeUnmount(() => {
               }"
               :style="col.fixed ? fixedColStyle(i, col.name) : null"
             >
-              {{ col.name === '品名' ? '产品' : displayColName(col.name) }}
+              {{ headerParts(col.name)[0] }}<wbr />{{ headerParts(col.name)[1] }}
             </th>
           </tr>
         </thead>
@@ -2354,6 +2195,7 @@ onBeforeUnmount(() => {
                 hasRestockNeed(item.row) ? 'row-need-restock' : '',
                 isAsinSelected(item.row.asin) ? 'row-selected' : '',
               ]"
+              @click="onRowClick(item.row.asin, $event)"
             >
               <td class="select-col">
                 <div class="select-cell">
@@ -2362,15 +2204,6 @@ onBeforeUnmount(() => {
                     :checked="isAsinSelected(item.row.asin)"
                     @change="toggleAsinSelected(item.row.asin, $event.target.checked)"
                   />
-                  <button
-                    type="button"
-                    class="row-caret"
-                    :class="{ open: isInventoryRowExpanded(item.row.asin) }"
-                    :title="isInventoryRowExpanded(item.row.asin) ? '收起详情' : '展开详情'"
-                    @click="toggleInventoryRow(item.row.asin)"
-                  >
-                    ▸
-                  </button>
                 </div>
               </td>
               <td
@@ -2538,8 +2371,13 @@ onBeforeUnmount(() => {
                 </template>
               </td>
             </tr>
-            <tr v-if="isInventoryRowExpanded(item.row.asin)" class="inventory-row">
+            <tr
+              v-if="isInventoryRowExpanded(item.row.asin) || isInventoryRowClosing(item.row.asin)"
+              class="inventory-row"
+            >
               <td :colspan="displayCols.length + 1" class="inventory-detail-cell">
+                <div class="detail-collapse" :class="{ closing: isInventoryRowClosing(item.row.asin) }">
+                <div class="detail-collapse-inner">
                 <div class="detail-sticky">
                 <div class="detail-tabs">
                   <button
@@ -2605,14 +2443,15 @@ onBeforeUnmount(() => {
                       <el-radio-button value="mixed">混装</el-radio-button>
                     </el-radio-group>
                   </div>
+                  <div class="inventory-item"><span>静态补货</span><strong>{{ getCell(item.row, '静态补货') || '—' }}</strong></div>
                   <label class="inventory-item inventory-input-item">
-                    <span>本地仓库</span>
+                    <span>补货用时</span>
                     <input
                       class="cell-input"
                       type="number"
-                      :value="rowProduct(item.row)?.localWarehouse ?? 0"
-                      @change="commitEditableNumber(item.row, 'localWarehouse', $event)"
-                      @blur="commitEditableNumber(item.row, 'localWarehouse', $event)"
+                      :value="rowProduct(item.row)?.restockCycle ?? ''"
+                      @change="commitEditableNumber(item.row, 'restockCycle', $event)"
+                      @blur="commitEditableNumber(item.row, 'restockCycle', $event)"
                     />
                   </label>
                   <label class="inventory-item inventory-input-item">
@@ -2626,16 +2465,15 @@ onBeforeUnmount(() => {
                     />
                   </label>
                   <label class="inventory-item inventory-input-item">
-                    <span>补货用时</span>
+                    <span>本地仓库</span>
                     <input
                       class="cell-input"
                       type="number"
-                      :value="rowProduct(item.row)?.restockCycle ?? ''"
-                      @change="commitEditableNumber(item.row, 'restockCycle', $event)"
-                      @blur="commitEditableNumber(item.row, 'restockCycle', $event)"
+                      :value="rowProduct(item.row)?.localWarehouse ?? 0"
+                      @change="commitEditableNumber(item.row, 'localWarehouse', $event)"
+                      @blur="commitEditableNumber(item.row, 'localWarehouse', $event)"
                     />
                   </label>
-                  <div class="inventory-item"><span>静态补货</span><strong>{{ getCell(item.row, '静态补货') || '—' }}</strong></div>
                   <div class="inventory-item"><span>建议补货</span><strong :title="suggestedTitle(item.row)">{{ getCell(item.row, '建议补货') || '—' }}</strong></div>
                 </div>
                 <div class="inventory-footer-bar">
@@ -2674,6 +2512,8 @@ onBeforeUnmount(() => {
                   </div>
                 </div>
                 </template>
+                </div>
+                </div>
                 </div>
               </td>
             </tr>

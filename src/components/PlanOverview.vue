@@ -112,65 +112,69 @@ function batchStatusText(b) {
       还没有补货清单。把“补货清单_周批次版” CSV 放到 src/data/replenishment/ 后刷新页面
     </div>
 
-    <template v-else-if="!collapsed">
-      <div class="po-kpis">
-        <div class="po-kpi">
-          <div class="po-kpi-label">春节前计划</div>
-          <div class="po-kpi-value">{{ fmtNum(summary.plannedQty) }}<small>件</small></div>
-          <div class="po-kpi-sub">{{ summary.batches.filter((b) => b.status !== 'empty').length }} 个批次</div>
-        </div>
-        <div class="po-kpi">
-          <div class="po-kpi-label">已发货</div>
-          <div class="po-kpi-value">{{ fmtNum(summary.shippedQty) }}<small>件</small></div>
-          <div class="po-progress"><i :style="{ width: `${shippedPct}%` }" /></div>
-          <div class="po-kpi-sub">完成 {{ shippedPct }}%，待发 {{ fmtNum(summary.plannedQty - summary.shippedQty) }} 件</div>
-        </div>
-        <div class="po-kpi" :class="{ 'po-kpi-warn': summary.nextBatch?.overdue }">
-          <div class="po-kpi-label">下一批</div>
-          <div class="po-kpi-value">{{ summary.nextBatch ? summary.nextBatch.key : '—' }}</div>
-          <div class="po-kpi-sub">{{ nextBatchText }}</div>
-        </div>
-        <div class="po-kpi">
-          <div class="po-kpi-label">采购金额参考</div>
-          <div class="po-kpi-value">{{ fmtMoney(totals.amount) }}</div>
-          <div class="po-kpi-sub">{{ plan.weeklyNotes.amount || '春节前合计' }}</div>
-        </div>
-        <div class="po-kpi">
-          <div class="po-kpi-label">净重参考</div>
-          <div class="po-kpi-value">{{ fmtNum(totals.weight, 1) }}<small>kg</small></div>
-          <div class="po-kpi-sub">{{ plan.weeklyNotes.weight || '春节前合计' }}</div>
-        </div>
-        <div class="po-kpi">
-          <div class="po-kpi-label">节后首班参考</div>
-          <div class="po-kpi-value">{{ fmtNum(totals.postHoliday) }}<small>件</small></div>
-          <div class="po-kpi-sub">须节前备好</div>
-        </div>
-      </div>
+    <Transition name="po-fold">
+      <div v-if="plan && !collapsed" class="po-fold">
+        <div class="po-fold-inner">
+          <div class="po-kpis">
+            <div class="po-kpi">
+              <div class="po-kpi-label">春节前计划</div>
+              <div class="po-kpi-value">{{ fmtNum(summary.plannedQty) }}<small>件</small></div>
+              <div class="po-kpi-sub">{{ summary.batches.filter((b) => b.status !== 'empty').length }} 个批次</div>
+            </div>
+            <div class="po-kpi">
+              <div class="po-kpi-label">已发货</div>
+              <div class="po-kpi-value">{{ fmtNum(summary.shippedQty) }}<small>件</small></div>
+              <div class="po-progress"><i :style="{ width: `${shippedPct}%` }" /></div>
+              <div class="po-kpi-sub">完成 {{ shippedPct }}%，待发 {{ fmtNum(summary.plannedQty - summary.shippedQty) }} 件</div>
+            </div>
+            <div class="po-kpi" :class="{ 'po-kpi-warn': summary.nextBatch?.overdue }">
+              <div class="po-kpi-label">下一批</div>
+              <div class="po-kpi-value">{{ summary.nextBatch ? summary.nextBatch.key : '—' }}</div>
+              <div class="po-kpi-sub">{{ nextBatchText }}</div>
+            </div>
+            <div class="po-kpi">
+              <div class="po-kpi-label">采购金额参考</div>
+              <div class="po-kpi-value">{{ fmtMoney(totals.amount) }}</div>
+              <div class="po-kpi-sub">{{ plan.weeklyNotes.amount || '春节前合计' }}</div>
+            </div>
+            <div class="po-kpi">
+              <div class="po-kpi-label">净重参考</div>
+              <div class="po-kpi-value">{{ fmtNum(totals.weight, 1) }}<small>kg</small></div>
+              <div class="po-kpi-sub">{{ plan.weeklyNotes.weight || '春节前合计' }}</div>
+            </div>
+            <div class="po-kpi">
+              <div class="po-kpi-label">节后首班参考</div>
+              <div class="po-kpi-value">{{ fmtNum(totals.postHoliday) }}<small>件</small></div>
+              <div class="po-kpi-sub">须节前备好</div>
+            </div>
+          </div>
 
-      <div class="po-strip">
-        <button
-          v-for="b in summary.batches"
-          :key="b.key"
-          type="button"
-          class="po-batch"
-          :class="[`is-${b.status}`, { active: b.key === activeBatch, overdue: b.overdue }]"
-          :disabled="b.status === 'empty'"
-          :title="`${b.date}${b.note ? ` · ${b.note}` : ''}`"
-          @click="selectBatch(b.key)"
-        >
-          <div class="po-batch-top">
-            <strong>{{ b.key }}</strong>
-            <span class="po-batch-status">{{ batchStatusText(b) }}</span>
+          <div class="po-strip">
+            <button
+              v-for="b in summary.batches"
+              :key="b.key"
+              type="button"
+              class="po-batch"
+              :class="[`is-${b.status}`, { active: b.key === activeBatch, overdue: b.overdue }]"
+              :disabled="b.status === 'empty'"
+              :title="`${b.date}${b.note ? ` · ${b.note}` : ''}`"
+              @click="selectBatch(b.key)"
+            >
+              <div class="po-batch-top">
+                <strong>{{ b.key }}</strong>
+                <span class="po-batch-status">{{ batchStatusText(b) }}</span>
+              </div>
+              <div class="po-batch-note">{{ b.note || ' ' }}</div>
+              <div class="po-batch-qty">{{ fmtNum(b.plannedQty) }}<small> 件 · {{ b.plannedSkus }} SKU</small></div>
+              <div class="po-batch-meta">{{ fmtMoney(plan.weekly.amount[b.key]) }} · {{ fmtNum(plan.weekly.weight[b.key], 1) }}kg</div>
+              <div class="po-progress">
+                <i :style="{ width: b.plannedQty ? `${(b.shippedQty / b.plannedQty) * 100}%` : '0%' }" />
+              </div>
+            </button>
           </div>
-          <div class="po-batch-note">{{ b.note || ' ' }}</div>
-          <div class="po-batch-qty">{{ fmtNum(b.plannedQty) }}<small> 件 · {{ b.plannedSkus }} SKU</small></div>
-          <div class="po-batch-meta">{{ fmtMoney(plan.weekly.amount[b.key]) }} · {{ fmtNum(plan.weekly.weight[b.key], 1) }}kg</div>
-          <div class="po-progress">
-            <i :style="{ width: b.plannedQty ? `${(b.shippedQty / b.plannedQty) * 100}%` : '0%' }" />
-          </div>
-        </button>
+        </div>
       </div>
-    </template>
+    </Transition>
 
     <div v-if="plan && activeBatchInfo" class="po-batch-bar">
       <div class="po-batch-bar-info">
@@ -201,6 +205,28 @@ function batchStatusText(b) {
 </template>
 
 <style scoped>
+/* 收起 / 展开汇总：高度从 0fr 过渡到 1fr，内容同时淡入 */
+.po-fold {
+  display: grid;
+  grid-template-rows: 1fr;
+}
+.po-fold-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  overflow: hidden;
+}
+.po-fold-enter-active,
+.po-fold-leave-active {
+  transition: grid-template-rows 0.24s ease, opacity 0.2s ease;
+}
+.po-fold-enter-from,
+.po-fold-leave-to {
+  grid-template-rows: 0fr;
+  opacity: 0;
+}
+
 .po {
   flex-shrink: 0;
   display: flex;

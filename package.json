@@ -11,7 +11,7 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:api": "vitest run tests/importApi.integration.test.js --coverage.enabled=false",
-    "test:ui": "vitest run tests/importDialog.ui.test.js --coverage.enabled=false",
+    "test:ui": "vitest run ui.test --coverage.enabled=false",
     "test:watch": "vitest"
   },
   "dependencies": {
