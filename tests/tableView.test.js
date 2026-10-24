@@ -204,12 +204,14 @@ describe('header and cells', () => {
   it('shows the static restock quantity with monthly sales, coverage and review flags only', () => {
     expect(restockView(decision())).toEqual({
       qty: '480',
+      boxes: '',
       status: '',
       sub: '月销 479 · 覆盖 1.5 月',
       subParts: ['月销 479', '覆盖 1.5 月'],
       flags: ['爆量'],
     })
     expect(restockView(decision({ text: '无需补货', qty: null })).status).toBe('')
+    expect(restockView(decision({ text: '360', qty: 360, boxes: 9 })).boxes).toBe('（9箱）')
     expect(restockView(decision({ text: '停滞-人工', qty: null, monthly: 0 }))).toMatchObject({ status: '停滞-人工', sub: '近 4 周没有销量' })
     expect(restockView({ text: '' })).toBeNull()
     expect(restockView(null)).toBeNull()

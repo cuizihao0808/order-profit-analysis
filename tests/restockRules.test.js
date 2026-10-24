@@ -192,6 +192,13 @@ describe('restockRules: roundShipQty', () => {
     expect(roundShipQty(10, 84)).toBe(84) // 不到一箱也发一箱
   })
 
+  it('ships at least 5 cartons for full-carton products', () => {
+    expect(roundShipQty(144, 16, undefined, 'full')).toBe(144) // 9 箱
+    expect(roundShipQty(30, 16, undefined, 'full')).toBe(80) // 不到 5 箱补到 5 箱
+    expect(roundShipQty(30, 16, undefined, 'mixed')).toBe(32)
+    expect(roundShipQty(30, '', undefined, 'full')).toBe(30) // 没有箱规时照常取 5 的倍数
+  })
+
   it('uses multiples of 5 without a carton size, at least 5', () => {
     expect(roundShipQty(1.2, '')).toBe(5)
     expect(roundShipQty(256, null)).toBe(260)
@@ -230,6 +237,8 @@ describe('restockRules: decideRestock', () => {
 
   it('rounds the shipment by carton', () => {
     expect(decideRestock({ ...base, cartonQty: 84 }).text).toBe('336')
+    expect(decideRestock({ ...base, cartonQty: 84, packingMode: 'full' })).toMatchObject({ text: '420', boxes: 5 })
+    expect(decideRestock({ ...base, cartonQty: 84 }).boxes).toBeNull()
   })
 
   it('returns empty for abandoned SKUs, missing basis or missing FBA stock', () => {

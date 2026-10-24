@@ -897,6 +897,7 @@ function decideRowRestock(row) {
     orderedQty: product?.orderedQty,
     cycle: product?.restockCycle,
     cartonQty: product?.maxCartonQty1,
+    packingMode: product?.packingMode,
     config: restockConfig.value,
   })
 }
@@ -2399,7 +2400,7 @@ onBeforeUnmount(() => {
                   <div v-if="restockCell(item.row).view" class="restock-cell" :title="restockCell(item.row).title">
                     <span class="restock-head">
                       <i v-for="f in restockCell(item.row).view.flags" :key="f" class="restock-flag">{{ f }}</i>
-                      <strong v-if="restockCell(item.row).view.qty" class="v-amber">{{ restockCell(item.row).view.qty }}<span class="restock-unit"> 件</span></strong>
+                      <strong v-if="restockCell(item.row).view.qty" class="v-amber">{{ restockCell(item.row).view.qty }}<span class="restock-unit"> 件</span><span v-if="restockCell(item.row).view.boxes" class="restock-boxes">{{ restockCell(item.row).view.boxes }}</span></strong>
                       <strong v-else-if="restockCell(item.row).view.status" class="v-amber">{{ restockCell(item.row).view.status }}</strong>
                       <span v-else class="v-dim">—</span>
                     </span>
@@ -2496,7 +2497,6 @@ onBeforeUnmount(() => {
                     </el-radio-group>
                   </div>
                   <div class="inventory-item"><span>静态补货</span><strong :title="restockCell(item.row).title">{{ getCell(item.row, '静态补货') || '—' }}</strong></div>
-                  <div class="inventory-item"><span>静态月销</span><strong :title="restockCell(item.row).title">{{ restockCell(item.row).view?.sub || '—' }}</strong></div>
                   <label class="inventory-item inventory-input-item">
                     <span>补货用时</span>
                     <input
@@ -2527,7 +2527,8 @@ onBeforeUnmount(() => {
                       @blur="commitEditableNumber(item.row, 'localWarehouse', $event)"
                     />
                   </label>
-                  <div class="inventory-item"><span>建议补货</span><strong :title="suggestedTitle(item.row)">{{ getCell(item.row, '建议补货') || '—' }}</strong></div>
+                  <div class="inventory-item"><span>静态月销</span><strong :title="restockCell(item.row).title">{{ restockCell(item.row).view?.sub || '—' }}</strong></div>
+                  <div class="inventory-item inventory-item-end"><span>建议补货</span><strong :title="suggestedTitle(item.row)">{{ getCell(item.row, '建议补货') || '—' }}</strong></div>
                 </div>
                 <div class="inventory-footer-bar">
                   <div class="inventory-item inventory-item-image inventory-item-image-footer">

@@ -225,6 +225,7 @@ export function restockView(decision) {
   const subParts = d.monthly > 0 ? [`月销 ${fmtQty(d.monthly)}`, `覆盖 ${d.coverMonths.toFixed(1)} 月`] : ['近 4 周没有销量']
   return {
     qty: d.qty ? String(d.qty) : '',
+    boxes: d.boxes ? `（${d.boxes}箱）` : '',
     status: d.qty ? '' : d.text === '无需补货' ? '' : d.text,
     sub: subParts.join(' · '),
     subParts,

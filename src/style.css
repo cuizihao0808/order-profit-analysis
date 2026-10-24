@@ -1215,6 +1215,11 @@ thead th.col-expand {
   gap: 8px;
 }
 
+/* 建议补货固定在最后一行最右边 */
+.inventory-item-end {
+  grid-column-end: -1;
+}
+
 .inventory-item {
   display: flex;
   align-items: center;
@@ -2842,6 +2847,16 @@ tbody tr:hover .asin-copy-icon,
 .app.compact-13 .restock-sep,
 .app.compact-13 .restock-unit {
   display: none;
+}
+.restock-boxes {
+  font-size: 11px;
+  font-weight: 500;
+}
+.app.compact-13 .restock-boxes {
+  letter-spacing: -0.5px;
+}
+.app.compact-13 .restock-cell .v-amber {
+  padding: 2px 4px;
 }
 .restock-flag {
   padding: 0 4px;

@@ -21,6 +21,7 @@ export const DEFAULT_RESTOCK_CONFIG = {
   surgeRatio: 2, // 上周 ≥ 前 4 周均 × 2 提示爆量
   newProductWeeks: 8, // 出单不超过几周提示新品
   cartonRoundUp: 0.3, // 箱数小数部分 ≥ 0.3 进一箱
+  fullCartonMinBoxes: 5, // 整箱装产品每次至少几箱
   mixedMultiple: 5, // 没有箱规时取几的倍数
   stockoutSalesRatio: 0.4, // 周销 < 前后 4 周中位数 × 0.4
   stockoutStockWeeks: 0.5, // 且周初或周末可售 < 半周销量 → 提示断货周
@@ -194,8 +195,11 @@ export function buildRestockBasis(history, config) {
   }
 }
 
-/** 发货量取整：有箱规按整箱（小数部分 ≥ 0.3 进一箱，至少 1 箱），没有箱规取 5 的倍数（至少 5） */
-export function roundShipQty(qty, cartonQty, config) {
+/**
+ * 发货量取整：有箱规按整箱（小数部分 ≥ 0.3 进一箱，至少 1 箱；整箱装产品至少 5 箱），
+ * 没有箱规取 5 的倍数（至少 5）
+ */
+export function roundShipQty(qty, cartonQty, config, packingMode) {
   const cfg = resolveRestockConfig(config)
   if (!(qty > 0)) return 0
   const carton = finite(cartonQty)
@@ -203,7 +207,8 @@ export function roundShipQty(qty, cartonQty, config) {
     const boxes = qty / carton
     let n = Math.floor(boxes)
     if (boxes - n >= cfg.cartonRoundUp - 1e-9) n += 1
-    return Math.max(n, 1) * carton
+    const minBoxes = packingMode === 'full' ? Math.max(cfg.fullCartonMinBoxes, 1) : 1
+    return Math.max(n, minBoxes) * carton
   }
   const m = cfg.mixedMultiple > 0 ? cfg.mixedMultiple : 1
   return Math.max(m, Math.ceil(qty / m - 1e-9) * m)
@@ -213,9 +218,9 @@ export function roundShipQty(qty, cartonQty, config) {
  * 静态补货结论。text：件数字符串 / '无需补货' / '停滞-人工' / ''（算不出）。
  * flags：需要人工看的提示（下滑 / 爆量 / 停滞 / 新品 / 断货周）。
  */
-export function decideRestock({ basis, category, fbaTotal, localWarehouse, orderedQty, cycle, cartonQty, config }) {
+export function decideRestock({ basis, category, fbaTotal, localWarehouse, orderedQty, cycle, cartonQty, packingMode, config }) {
   const cfg = resolveRestockConfig(config)
-  const empty = { text: '', qty: null, monthly: null, position: null, threshold: null, coverMonths: null, flags: [] }
+  const empty = { text: '', qty: null, boxes: null, monthly: null, position: null, threshold: null, coverMonths: null, flags: [] }
   const fba = finite(fbaTotal)
   if (category === '放弃' || !basis || !Number.isFinite(fba)) return empty
 
@@ -242,6 +247,8 @@ export function decideRestock({ basis, category, fbaTotal, localWarehouse, order
   }
   if (!(monthly > 0) || position >= threshold) return { ...result, text: '无需补货' }
   if (basis.stalled) return { ...result, text: '停滞-人工' }
-  const qty = roundShipQty(monthly * cfg.shipMonths, cartonQty, cfg)
-  return { ...result, text: String(qty), qty }
+  const qty = roundShipQty(monthly * cfg.shipMonths, cartonQty, cfg, packingMode)
+  const carton = finite(cartonQty)
+  const boxes = packingMode === 'full' && carton > 0 ? qty / carton : null
+  return { ...result, text: String(qty), qty, boxes }
 }
