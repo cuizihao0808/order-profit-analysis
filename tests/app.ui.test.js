@@ -36,7 +36,11 @@ describe('ASIN 工作台', () => {
     expect(a1.classes()).toContain('row-need-restock')
     expect(a1.find('.focus-star').exists()).toBe(true)
     expect(a1.find('.shop-code').text()).toBe('TZH')
-    expect(a1.find('.v-amber').text()).toBe('80')
+    // 周销 5 → 10，平滑后 6.5 件/周 ≈ 月销 28；库存位置 10 + 已下单 30 = 40 < 3 个月 + 2 周 → 发 1 个月，取 5 的倍数
+    expect(a1.find('.restock-cell strong').text()).toBe('30 件')
+    expect(a1.find('.restock-cell small').text()).toBe('月销 28 · 覆盖 1.4 月')
+    expect(a1.find('.restock-cell').attributes('title')).toContain('库存位置 40 = FBA 10 + 本地仓 0 + 已下单 30')
+    expect(rowOf(wrapper, 'B0B1').find('.restock-cell small').text()).toBe('月销 34 · 覆盖 14.6 月')
     expect(a1.findAll('.v-bad').map((c) => c.text())).toContain('20%')
     expect(a1.find('.suggest-cell').text()).toBe('30 件3 天后 · 10/17')
     expect(a1.find('.suggest-cell').attributes('title')).toContain('下一批 2026-10-17，3 天后')
@@ -47,6 +51,21 @@ describe('ASIN 工作台', () => {
     expect(b1.find('.suggest-cell').text()).toBe('8 件10/24')
     expect(rowOf(wrapper, 'B0A2').find('.suggest-cell').text()).toBe('计划不补')
     expect(rowOf(wrapper, 'B0C1').find('.suggest-cell').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('asks for a manual check on a stalled SKU instead of flagging it for restock', async () => {
+    const { buildRestockBasis } = await import('../src/lib/restockRules.js')
+    api.db.restockBasisOverride['shop-2::B0B1'] = buildRestockBasis(
+      [30, 30, 30, 30, 0, 0, 0, 0].map((sales, i) => ({ week: `${i + 1}周`, sales })),
+    )
+    api.db.products.find((p) => p.asin === 'B0B1').fbaTotal = 10
+    const wrapper = await mountApp()
+    const b1 = rowOf(wrapper, 'B0B1')
+    expect(b1.find('.restock-cell strong').text()).toBe('停滞-人工')
+    expect(b1.find('.restock-flag').text()).toBe('停滞')
+    expect(b1.find('.restock-cell').attributes('title')).toContain('停滞：近 4 周没有销量，人工确认是不是断货')
+    expect(b1.classes()).not.toContain('row-need-restock')
     wrapper.unmount()
   })
 
@@ -92,7 +111,8 @@ describe('ASIN 工作台', () => {
     await rowOf(wrapper, 'B0A1').find('td.num').trigger('click')
     const tabs = () => wrapper.findAll('.detail-tab')
     expect(tabs().map((t) => t.text())).toEqual(['库存详情', '8 周趋势', '补货批次'])
-    expect(wrapper.find('.inventory-detail-grid').text()).toContain('静态补货80')
+    expect(wrapper.find('.inventory-detail-grid').text()).toContain('静态补货30')
+    expect(wrapper.find('.inventory-detail-grid').text()).toContain('静态月销月销 28 · 覆盖 1.4 月')
 
     await tabs()[1].trigger('click')
     await settle()

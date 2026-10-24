@@ -547,7 +547,7 @@ describe('import api integration', () => {
     expect(session.sessionId).toMatch(/^\d+$/)
 
     const config = await (await fetch(`${baseUrl}/api/restock-config`)).json()
-    expect(config).toMatchObject({ restockMonths: 8, restockMultiplier: 8 })
+    expect(config).toMatchObject({ coverMonths: 3, shipMonths: 1, smoothingAlpha: 0.3, eventWeeks: ['41周'] })
 
     const signature = async () => (await (await fetch(`${baseUrl}/api/scan-signature`)).json()).scanSignature
     const before = await signature()
@@ -593,6 +593,55 @@ describe('import api integration', () => {
     expect((await fetch(`${baseUrl}/api/weeks/${encodeURIComponent('90周')}`)).status).toBe(404)
     // 带路径分隔符的周次 ID 会被拒绝，不会删到别的目录
     expect((await fetch(`${baseUrl}/api/weeks/a%2Fb`, { method: 'DELETE' })).status).toBe(400)
+  })
+
+  it('serves the static restock basis from every imported week plus that week’s Listing', async () => {
+    const weeksFile = path.join(tmpRoot, 'src/data/weeks.json')
+    const original = await readFile(weeksFile, 'utf8')
+    const ids = ['95周', '96周', '97周']
+    // 和真实导出一样带 UTF-8 BOM，否则 xlsx 会按 latin-1 读中文表头
+    const listing = (rows) =>
+      '\ufeff' + ['店铺,ASIN,销量,Vine赠品销量(已扣除),可售', ...rows.map((r) => r.join(','))].join('\n')
+    try {
+      const metas = ids.map((id, i) => ({
+        id,
+        filename: `${id}(t)/订单利润.xlsx`,
+        startDate: `2027-0${i + 1}-03`,
+        listingFiles: ['Listing销售库存_t.csv'],
+        importedAt: `2027-0${i + 1}-04T00:00:00.000Z`,
+      }))
+      const sales = { '95周': ['10', '40'], '96周': ['20', '40'], '97周': ['30', '40'] }
+      for (const id of ids) {
+        await writeJson(path.join(tmpRoot, `src/data/weeks/${id}.json`), {
+          id,
+          columns: ['ASIN', '店铺', '销量'],
+          rows: [
+            { asin: 'B0RESTOCK1', values: ['B0RESTOCK1', 'CZH-主店一号', sales[id][0]] },
+            { asin: 'B0RESTOCK2', values: ['B0RESTOCK2', 'LPH-主店三号', sales[id][1]] },
+          ],
+          notes: {},
+        })
+        const vine = id === '97周' ? '10' : '0'
+        await mkdir(path.join(tmpRoot, `public/data/${id}(t)`), { recursive: true })
+        await writeFile(
+          path.join(tmpRoot, `public/data/${id}(t)/Listing销售库存_t.csv`),
+          listing([['CZH-主店一号', 'B0RESTOCK1', '60', '0', '50'], ['LPH-主店三号-US', 'B0RESTOCK2', '30', vine, '80']]),
+          'utf8',
+        )
+      }
+      await writeJson(weeksFile, [...JSON.parse(original), ...metas])
+
+      const { weeks, basis } = await (await fetch(`${baseUrl}/api/restock-basis`)).json()
+      expect(weeks).toEqual(expect.arrayContaining(ids))
+      // 10 → 13 → 18.1 件/周
+      expect(basis['shop-1::B0RESTOCK1'].monthly).toBeCloseTo((18.1 * 30) / 7)
+      expect(basis['shop-1::B0RESTOCK1'].isNew).toBe(true)
+      // LPH 的 Listing 店名带 -US；97 周 Vine 占 10/(30+10)，周销 40 → 30
+      expect(basis['shop-3::B0RESTOCK2'].weekly).toBeCloseTo(37)
+      expect(basis['shop-3::B0RESTOCK2'].vineAdjusted).toBe(true)
+    } finally {
+      await writeFile(weeksFile, original, 'utf8')
+    }
   })
 
   describe('local warehouse PDF export', () => {

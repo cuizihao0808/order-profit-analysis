@@ -1,7 +1,7 @@
 <script setup>
 import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import focusConfig from './data/focusProducts.json'
-import { computeRestockQty } from './lib/restockRules.js'
+import { decideRestock } from './lib/restockRules.js'
 import { prepareImportScan } from './lib/importScan.js'
 import { buildProductPatchTargets } from './lib/productUpdates.js'
 import {
@@ -17,6 +17,8 @@ import {
   moveItem,
   normalizeAsinKey,
   progressView as buildProgressView,
+  restockTitle as buildRestockTitle,
+  restockView as buildRestockView,
   sortGroupsBy,
   suggestedView as buildSuggestedView,
 } from './lib/tableView.js'
@@ -158,6 +160,12 @@ function displayColName(name) {
 }
 
 /** 表头拆成两半，中间放 <wbr>：空间够时一行，屏幕窄时折成两行，不会逐字断开 */
+/** 表头悬停说明：两列补货口径不同，要说清楚 */
+const HEADER_TITLES = {
+  静态补货: '库存位置（FBA总量+本地仓+已下单）不够 3 个月 + 补货用时 → 发 1 个月；只做预警，实际发货以「建议补货」为准',
+  建议补货: '补货批次计划（CSV）：含季节系数、春节班期、人工例外，按它发货',
+}
+
 function headerParts(name) {
   const label = name === '品名' ? '产品' : displayColName(name)
   if (/^[\u4e00-\u9fa5]{3}$/.test(label)) return [label.slice(0, 1), label.slice(1)]
@@ -202,7 +210,8 @@ const weeks = ref([]) // [{ id, filename, startDate, endDate, rowCount, imported
 const currentWeekId = ref('') // 始终是最新一周（weeks[0]）
 const currentWeek = ref(null) // { columns, rows: [{ asin, values }] }
 const currentWeekMeta = computed(() => weeks.value.find((w) => w.id === currentWeekId.value) || null)
-const restockConfig = ref({}) // { monthlyMultiplier, quantityMultiplier, quantityDiscount }
+const restockConfig = ref({}) // { coverMonths, shipMonths, eventWeeks, ... }，见 src/data/restockConfig.js
+const restockBasis = ref({}) // 'shopId::ASIN' → 月销量和提示（中间件按全部周快照算好）
 
 const customCols = ref([]) // [{ name, visible }]
 const shopFilter = ref('__all__')
@@ -491,7 +500,7 @@ async function patchWeekNote(asin, note) {
  *  1. 主字段（品名/ASIN/父ASIN）优先取 products.json，其次 xlsx
  *  2. 扩展字段（产品分类/库存明细/补货用时）取 products.json
  *  3. ROI = 毛利润 / 采购成本（不取整，展示两位小数）
- *  4. 静态补货 = IF(FBA总量 < 销量*(8+补货用时), 销量*8, '无需补货')
+ *  4. 静态补货：库存位置不够 3 个月 + 补货用时 → 发 1 个月（见 lib/restockRules.js）
  *  5. 建议补货 / 批次进度 取补货批次计划 CSV
  *  6. 其余取 xlsx 快照
  */
@@ -539,14 +548,7 @@ function getCell(row, colName) {
         if (!summary?.plannedQty) return ''
         return `${summary.shippedQty}/${summary.plannedQty}`
       }
-      if (extra.key === 'restockQty') {
-        return computeRestockQty({
-          fbaTotal: toNum(product?.fbaTotal),
-          sales: toNum(row.values[colIndex.value['销量']]),
-          cycle: toNum(product?.restockCycle),
-          config: restockConfig.value,
-        })
-      }
+      if (extra.key === 'restockQty') return rowRestock(row).text
       return ''
     }
     // edit-*: 从 products.json 读
@@ -838,7 +840,7 @@ function isAbandoned(row) {
 
 /** 单元格告警高亮：
  *  - 广告费率 > 15、退款率 / 退货率 > 10、毛利润 / ROI 为负 → 红（规则见 isWeekFieldAlert）
- *  - 静态补货 是数字                                  → 黄
+ *  - 静态补货 是数字（库存位置不够 3 个月 + 补货用时） → 黄
  *  - 建议补货 / 批次进度：有逾期未发的批次 → 红；7 天内要发 → 黄
  */
 function cellAlertClass(row, colName) {
@@ -883,6 +885,38 @@ function suggestedView(row) {
 
 function progressView(row) {
   return buildProgressView(rowPlan(row)?.summary)
+}
+
+function decideRowRestock(row) {
+  const product = rowProduct(row)
+  return decideRestock({
+    basis: restockBasis.value[`${rowShopId(row)}::${String(row?.asin || '').trim()}`],
+    category: product?.category,
+    fbaTotal: product?.fbaTotal,
+    localWarehouse: product?.localWarehouse,
+    orderedQty: product?.orderedQty,
+    cycle: product?.restockCycle,
+    cartonQty: product?.maxCartonQty1,
+    config: restockConfig.value,
+  })
+}
+
+/** 最新周每行的静态补货结论；本地仓 / 已下单 / 补货用时改了会跟着重算 */
+const restockByRow = computed(() => {
+  const map = new Map()
+  for (const row of allRows.value) {
+    const decision = decideRowRestock(row)
+    map.set(row, { decision, view: buildRestockView(decision), title: buildRestockTitle(decision, restockConfig.value) })
+  }
+  return map
+})
+
+function rowRestock(row) {
+  return restockByRow.value.get(row)?.decision || decideRowRestock(row)
+}
+
+function restockCell(row) {
+  return restockByRow.value.get(row) || { view: null, title: '' }
 }
 
 function hasRestockNeed(row) {
@@ -1334,8 +1368,12 @@ async function loadWeeks() {
 }
 
 async function loadRestockConfig() {
-  const r = await fetch('/api/restock-config', { cache: 'no-store' })
+  const [r, basis] = await Promise.all([
+    fetch('/api/restock-config', { cache: 'no-store' }),
+    fetch('/api/restock-basis', { cache: 'no-store' }),
+  ])
   restockConfig.value = r.ok ? await r.json() : {}
+  restockBasis.value = basis.ok ? (await basis.json())?.basis || {} : {}
 }
 
 
@@ -1972,7 +2010,8 @@ async function deleteWeek(week) {
   if (!confirm(`确定删除周次「${week.filename}」的快照？（public/data 周目录文件不受影响，可再次导入）`)) return
   const r = await fetch(`/api/weeks/${encodeURIComponent(week.id)}`, { method: 'DELETE' })
   if (r.ok) {
-    await loadWeeks()
+    // 月销量按全部已导入周算，删了周要重新拉
+    await Promise.all([loadWeeks(), loadRestockConfig()])
     resetTrendWeeks()
     await loadLatestWeek()
     const r2 = await fetch('/api/scan', { cache: 'no-store' })
@@ -2180,6 +2219,7 @@ onBeforeUnmount(() => {
                 'group-start': !col.fixed && groupStartCols.has(col.name),
               }"
               :style="col.fixed ? fixedColStyle(i, col.name) : null"
+              :title="HEADER_TITLES[col.name]"
             >
               {{ headerParts(col.name)[0] }}<wbr />{{ headerParts(col.name)[1] }}
             </th>
@@ -2356,8 +2396,20 @@ onBeforeUnmount(() => {
                   <span v-else class="v-dim" title="没有补货批次计划">—</span>
                 </template>
                 <template v-else-if="col.name === '静态补货'">
-                  <span v-if="hasRestockNeed(item.row)" class="v-amber">{{ getCell(item.row, col.name) }}</span>
-                  <span v-else class="v-dim" :title="getCell(item.row, col.name)">—</span>
+                  <div v-if="restockCell(item.row).view" class="restock-cell" :title="restockCell(item.row).title">
+                    <span class="restock-head">
+                      <i v-for="f in restockCell(item.row).view.flags" :key="f" class="restock-flag">{{ f }}</i>
+                      <strong v-if="restockCell(item.row).view.qty" class="v-amber">{{ restockCell(item.row).view.qty }}<span class="restock-unit"> 件</span></strong>
+                      <strong v-else-if="restockCell(item.row).view.status" class="v-amber">{{ restockCell(item.row).view.status }}</strong>
+                      <span v-else class="v-dim">—</span>
+                    </span>
+                    <small class="restock-sub">
+                      <template v-for="(part, i) in restockCell(item.row).view.subParts" :key="i">
+                        <span v-if="i" class="restock-sep"> · </span><span>{{ part }}</span>
+                      </template>
+                    </small>
+                  </div>
+                  <span v-else class="v-dim" :title="restockCell(item.row).title">—</span>
                 </template>
                 <template v-else-if="col.name === '批次进度'">
                   <div v-if="progressView(item.row)" class="progress-cell" :class="{ overdue: cellAlertClass(item.row, col.name) }">
@@ -2443,7 +2495,8 @@ onBeforeUnmount(() => {
                       <el-radio-button value="mixed">混装</el-radio-button>
                     </el-radio-group>
                   </div>
-                  <div class="inventory-item"><span>静态补货</span><strong>{{ getCell(item.row, '静态补货') || '—' }}</strong></div>
+                  <div class="inventory-item"><span>静态补货</span><strong :title="restockCell(item.row).title">{{ getCell(item.row, '静态补货') || '—' }}</strong></div>
+                  <div class="inventory-item"><span>静态月销</span><strong :title="restockCell(item.row).title">{{ restockCell(item.row).view?.sub || '—' }}</strong></div>
                   <label class="inventory-item inventory-input-item">
                     <span>补货用时</span>
                     <input

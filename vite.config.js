@@ -17,6 +17,7 @@ import {
 } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { createRequire } from 'node:module'
+import { pathToFileURL } from 'node:url'
 import {
   buildListingRowRecord,
   choosePreferredFile,
@@ -33,6 +34,12 @@ import {
   parseCsv,
   parseReplenishmentPlan,
 } from './src/lib/replenishmentPlan.js'
+import {
+  DEFAULT_RESTOCK_CONFIG,
+  buildRestockBasis,
+  collectRestockHistories,
+  hasRestockColumns,
+} from './src/lib/restockRules.js'
 
 const require = createRequire(import.meta.url)
 const XLSX = require('xlsx')
@@ -54,24 +61,23 @@ const MAX_IMPORT_FILE_BYTES = 10 * 1024 * 1024
 const MAX_IMPORT_ROWS = 50_000
 const MAX_IMPORT_COLUMNS = 200
 
-// 导入补货配置
-let restockConfigData = {
-  restockMonths: 8,
-  restockMultiplier: 8,
-  monthlyThreshold: 1,
-  doubleRestockMultiplier: 8,
-  quantityDiscount: 1,
-}
-try {
+// 补货配置：按文件修改时间重新读，改 restockConfig.js（比如黑五后加大促周）不用重启
+let restockConfigCache = { mtimeMs: -1, data: { ...DEFAULT_RESTOCK_CONFIG } }
+
+async function loadRestockConfigData() {
   const configPath = fp(`${DATA_DIR}/restockConfig.js`)
-  if (existsSync(configPath)) {
-    const configModule = require(configPath)
-    if (configModule.restockConfig) {
-      restockConfigData = configModule.restockConfig
+  if (!existsSync(configPath)) return { ...DEFAULT_RESTOCK_CONFIG }
+  const { mtimeMs } = statSync(configPath)
+  if (mtimeMs !== restockConfigCache.mtimeMs) {
+    try {
+      const mod = await import(`${pathToFileURL(configPath).href}?v=${mtimeMs}`)
+      restockConfigCache = { mtimeMs, data: { ...DEFAULT_RESTOCK_CONFIG, ...(mod.restockConfig || {}) } }
+    } catch (e) {
+      console.warn(`[restock-config] 读取失败，沿用上一次的配置：${e.message}`)
+      restockConfigCache = { ...restockConfigCache, mtimeMs }
     }
   }
-} catch (e) {
-  // 使用默认值
+  return restockConfigCache.data
 }
 
 /* ============== 主数据字段定义（服务端与前端共享同一 schema） ============== */
@@ -861,6 +867,53 @@ function readImportedWeeksFallback() {
   rebuilt.sort(cmpWeekByDateDesc)
   if (rebuilt.length) writeJson(`${DATA_DIR}/weeks.json`, rebuilt)
   return rebuilt
+}
+
+/* ============== 静态补货：每个「店铺 + ASIN」的月销量 ============== */
+let restockBasisCache = { key: '', data: null }
+
+/** 读全部已导入周快照 + 各周 Listing，算每个 ASIN 的月销量；周次、导入时间、配置不变就用缓存 */
+function readRestockBasis(config) {
+  const weeks = readJson(`${DATA_DIR}/weeks.json`, [])
+  const shops = readJson(`${DATA_DIR}/shops.json`, [])
+  const key = JSON.stringify([
+    weeks.map((w) => [w.id, w.importedAt, w.filename, w.listingFiles]),
+    shops.map((s) => [s.id, s.name]),
+    config,
+  ])
+  if (restockBasisCache.key === key) return restockBasisCache.data
+
+  const shopIdByName = buildShopNameToIdMap(shops)
+  const snapshots = {}
+  const listings = {}
+  for (const w of weeks) {
+    if (!isSafePathSegment(w?.id)) continue
+    const snap = readJson(`${WEEKS_DIR}/${w.id}.json`, null)
+    if (!snap) continue
+    snapshots[w.id] = snap
+    const folder = String(w.filename || '').split('/')[0]
+    if (!isSafePathSegment(folder)) continue
+    try {
+      const { listingRowsByFile } = readListingDataForBundle(folder, w.listingFiles)
+      listings[w.id] = [...listingRowsByFile.values()].flatMap((rows) => [...rows].map(([asin, rec]) => ({ ...rec, asin })))
+    } catch {
+      // Listing 读不出来就只用周快照，这一周少了 Vine 扣减和断货周提示
+    }
+  }
+  const histories = collectRestockHistories({
+    weeks,
+    snapshots,
+    listings,
+    shopIdOf: (name) => shopIdByName.get(name) || shopIdByName.get(normalizeShopName(name)) || '',
+  })
+  const basis = {}
+  for (const [k, history] of Object.entries(histories)) {
+    const b = buildRestockBasis(history, config)
+    if (b) basis[k] = b
+  }
+  const data = { weeks: weeks.filter((w) => hasRestockColumns(snapshots[w.id])).map((w) => w.id), basis }
+  restockBasisCache = { key, data }
+  return data
 }
 
 function importWeekBundle(bundle) {
@@ -1786,7 +1839,10 @@ function apiPlugin() {
 
           /* ---------- 补货配置 ---------- */
           if (url === '/restock-config' && req.method === 'GET') {
-            return sendJson(res, 200, restockConfigData)
+            return sendJson(res, 200, await loadRestockConfigData())
+          }
+          if (url === '/restock-basis' && req.method === 'GET') {
+            return sendJson(res, 200, readRestockBasis(await loadRestockConfigData()))
           }
 
           /* ---------- 导入 ---------- */

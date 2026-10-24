@@ -211,6 +211,55 @@ export function suggestedView(suggested, hasPlan) {
   return { qty: '', sub: hasPlan ? '计划不补' : '', tone: '' }
 }
 
+/** 静态补货里要人工看的提示（新品、断货周只进悬停提示） */
+const RESTOCK_REVIEW_FLAGS = ['下滑', '爆量', '停滞']
+
+function fmtQty(n) {
+  return Math.round(n).toLocaleString('en-US')
+}
+
+/** 静态补货单元格：第一行件数（单位「件」由模板加）或状态 + 人工提示，第二行「月销 M · 覆盖 x.x 月」（紧凑模式拆两行）；算不出返回 null */
+export function restockView(decision) {
+  const d = decision || {}
+  if (!d.text) return null
+  const subParts = d.monthly > 0 ? [`月销 ${fmtQty(d.monthly)}`, `覆盖 ${d.coverMonths.toFixed(1)} 月`] : ['近 4 周没有销量']
+  return {
+    qty: d.qty ? String(d.qty) : '',
+    status: d.qty ? '' : d.text === '无需补货' ? '' : d.text,
+    sub: subParts.join(' · '),
+    subParts,
+    flags: (d.flags || []).filter((f) => RESTOCK_REVIEW_FLAGS.includes(f)),
+  }
+}
+
+/** 静态补货的悬停提示：怎么算出来的 + 需要人工看的点；config 是补货配置（3 个月 / 1 个月） */
+export function restockTitle(decision, config) {
+  const d = decision || {}
+  if (!d.text) return '没有周销量或 FBA 库存数据，算不出静态补货'
+  const b = d.basis || {}
+  const p = d.parts || {}
+  const cover = config?.coverMonths ?? 3
+  const lines = [
+    `月销 ${fmtQty(d.monthly)} 件（指数平滑周销 × 30/7${b.vineAdjusted ? '，已扣 Vine' : ''}）`,
+  ]
+  if (b.declining) {
+    lines.push(`下滑：近 4 周均折月 ${fmtQty(b.recentMonthly)}，比平滑值 ${fmtQty(b.smoothedMonthly)} 低，按低的算`)
+  }
+  lines.push(
+    `库存位置 ${fmtQty(d.position)} = FBA ${fmtQty(p.fbaTotal)} + 本地仓 ${fmtQty(p.localWarehouse)} + 已下单 ${fmtQty(p.orderedQty)}`,
+    `阈值 ${fmtQty(d.threshold)} = ${cover} 个月 + 补货用时 ${p.cycleWeeks} 周`,
+  )
+  if (d.coverMonths != null) lines.push(`覆盖 ${d.coverMonths.toFixed(1)} 个月`)
+  if (b.surge) lines.push('爆量：上周销量是前 4 周均的 2 倍以上，确认是否持续')
+  if (b.stalled) lines.push('停滞：近 4 周没有销量，人工确认是不是断货')
+  if (b.isNew) lines.push(`新品：出单 ${b.weeksOnSale} 周，爬坡期月销偏低`)
+  if (b.stockoutWeeks?.length) {
+    lines.push(`近 ${config?.stockoutLookbackWeeks ?? 8} 周断货周：${b.stockoutWeeks.join('、')}（没有剔除）`)
+  }
+  lines.push('只做预警，实际发货以「建议补货」为准')
+  return lines.join('\n')
+}
+
 /** 批次进度：已发 / 计划件数 + 百分比；没有计划件数返回 null */
 export function progressView(summary) {
   if (!summary?.plannedQty) return null

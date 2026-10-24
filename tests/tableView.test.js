@@ -12,6 +12,8 @@ import {
   moveItem,
   normalizeAsinKey,
   progressView,
+  restockTitle,
+  restockView,
   sortGroupsBy,
   suggestedView,
   toFullWidth,
@@ -73,7 +75,7 @@ describe('column config', () => {
 describe('supply filter', () => {
   it('recognises a real restock quantity', () => {
     expect(isRestockQty('320')).toBe(true)
-    expect(['', null, undefined, '无需补货', 'abc'].some(isRestockQty)).toBe(false)
+    expect(['', null, undefined, '无需补货', '停滞-人工', 'abc'].some(isRestockQty)).toBe(false)
   })
 
   it('matches each supply option', () => {
@@ -176,6 +178,56 @@ describe('header and cells', () => {
     expect(progressView({ shippedQty: 200, plannedQty: 1600 })).toEqual({ text: '200 / 1,600', pct: 12.5 })
     expect(progressView({ shippedQty: 0, plannedQty: 0 })).toBeNull()
     expect(progressView(null)).toBeNull()
+  })
+
+  const decision = (over = {}) => ({
+    text: '480',
+    qty: 480,
+    monthly: 478.5,
+    position: 731,
+    threshold: 1659.5,
+    coverMonths: 731 / 478.5,
+    flags: ['爆量', '断货周', '新品'],
+    basis: {
+      vineAdjusted: true,
+      surge: true,
+      isNew: true,
+      weeksOnSale: 4,
+      stockoutWeeks: ['36周', '37周'],
+      smoothedMonthly: 478.5,
+      recentMonthly: 400,
+    },
+    parts: { fbaTotal: 731, localWarehouse: 0, orderedQty: 0, cycleWeeks: 1 },
+    ...over,
+  })
+
+  it('shows the static restock quantity with monthly sales, coverage and review flags only', () => {
+    expect(restockView(decision())).toEqual({
+      qty: '480',
+      status: '',
+      sub: '月销 479 · 覆盖 1.5 月',
+      subParts: ['月销 479', '覆盖 1.5 月'],
+      flags: ['爆量'],
+    })
+    expect(restockView(decision({ text: '无需补货', qty: null })).status).toBe('')
+    expect(restockView(decision({ text: '停滞-人工', qty: null, monthly: 0 }))).toMatchObject({ status: '停滞-人工', sub: '近 4 周没有销量' })
+    expect(restockView({ text: '' })).toBeNull()
+    expect(restockView(null)).toBeNull()
+  })
+
+  it('explains how the static restock was worked out', () => {
+    const title = restockTitle(decision(), { coverMonths: 3 })
+    expect(title).toContain('月销 479 件（指数平滑周销 × 30/7，已扣 Vine）')
+    expect(title).toContain('库存位置 731 = FBA 731 + 本地仓 0 + 已下单 0')
+    expect(title).toContain('阈值 1,660 = 3 个月 + 补货用时 1 周')
+    expect(title).toContain('爆量')
+    expect(title).toContain('近 8 周断货周：36周、37周（没有剔除）')
+    expect(title).toContain('新品：出单 4 周')
+    expect(title).not.toContain('下滑')
+    expect(title.split('\n').at(-1)).toBe('只做预警，实际发货以「建议补货」为准')
+    const declining = restockTitle(decision({ basis: { declining: true, recentMonthly: 740, smoothedMonthly: 892 } }))
+    expect(declining).toContain('下滑：近 4 周均折月 740，比平滑值 892 低，按低的算')
+    expect(restockTitle({ text: '' })).toContain('算不出静态补货')
   })
 })
 

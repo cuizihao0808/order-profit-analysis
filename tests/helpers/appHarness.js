@@ -6,6 +6,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import ElementPlus from 'element-plus'
 import { vi } from 'vitest'
 import App from '../../src/App.vue'
+import { buildRestockBasis, collectRestockHistories } from '../../src/lib/restockRules.js'
 
 export const TZH = 'TZH-主店二号'
 export const CZH = 'CZH-主店一号'
@@ -85,8 +86,21 @@ function fixtures() {
       ],
     },
     shipped: {},
+    restockBasisOverride: {}, // 'shopId::ASIN' → basis，测试里直接塞特殊情况（停滞等）
     scan: { unimported: [{ weekId: '3周', importMode: 'new', folderName: '3周', listingFiles: ['listing.csv'] }], imported: [] },
   }
+}
+
+/** 和中间件一样，用全部周快照算每个「店铺 + ASIN」的月销量 */
+function restockBasis(db) {
+  const shopIdOf = (name) => db.shops.find((s) => s.name === name)?.id || ''
+  const histories = collectRestockHistories({ weeks: db.weeks, snapshots: db.snapshots, listings: {}, shopIdOf })
+  const basis = {}
+  for (const [key, history] of Object.entries(histories)) {
+    const b = buildRestockBasis(history)
+    if (b) basis[key] = b
+  }
+  return basis
 }
 
 function respond(data, status = 200) {
@@ -113,6 +127,9 @@ export function createApi() {
 
     if (path === '/api/dev-session') return respond({ sessionId: 'test' })
     if (path === '/api/restock-config') return respond({})
+    if (path === '/api/restock-basis') {
+      return respond({ weeks: db.weeks.map((w) => w.id), basis: { ...restockBasis(db), ...db.restockBasisOverride } })
+    }
     if (path === '/api/weeks' && method === 'GET') return respond(db.weeks)
     if (path === '/api/products' && method === 'GET') return respond(db.products)
     if (path === '/api/shops' && method === 'GET') return respond(db.shops)

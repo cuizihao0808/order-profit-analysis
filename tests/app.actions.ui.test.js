@@ -456,6 +456,9 @@ describe('import flow', () => {
     expect(api.calls('DELETE', '/api/weeks/2周')).toHaveLength(1)
     expect(wrapper.find('.latest-week-tag').text()).toContain('1周')
     expect(asins(wrapper)).toEqual(['B0A1'])
+    // 月销量按剩下的周重算：只剩 1 周卖 5 件
+    expect(api.requests.filter((r) => r.path === '/api/restock-basis')).toHaveLength(2)
+    expect(rowOf(wrapper, 'B0A1').find('.restock-cell small').text()).toBe('月销 21 · 覆盖 1.9 月')
     wrapper.unmount()
   })
 })
