@@ -88,17 +88,23 @@ export function isRestockQty(value) {
  * 补货筛选：
  * need-restock 需要补货 / no-restock 不需要 / ordered 已下单 / local-warehouse 本地仓有货 /
  * need-restock-no-local-no-ordered 需补货且本地仓、已下单都为 0
+ * 已下单数 ≥ 静态补货件数或建议补货件数，视为这次已经补上，不算「需要补货」
  */
-export function matchesSupplyFilter(filter, { localWarehouse, orderedQty, needRestock }) {
+export function matchesSupplyFilter(filter, { localWarehouse, orderedQty, needRestock, restockQty, suggestedQty }) {
   const local = toNum(localWarehouse)
   const ordered = toNum(orderedQty)
   const hasLocal = Number.isFinite(local) && local > 0
   const hasOrdered = Number.isFinite(ordered) && ordered > 0
+  const covers = (qty) => {
+    const n = toNum(qty)
+    return Number.isFinite(n) && n > 0 && ordered >= n
+  }
+  const stillNeed = needRestock && !(hasOrdered && (covers(restockQty) || covers(suggestedQty)))
   switch (filter) {
     case 'need-restock':
-      return needRestock
+      return stillNeed
     case 'no-restock':
-      return !needRestock
+      return !stillNeed
     case 'ordered':
       return hasOrdered
     case 'local-warehouse':

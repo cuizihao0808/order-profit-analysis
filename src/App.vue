@@ -423,10 +423,13 @@ const allRows = computed(() => currentWeek.value?.rows ?? [])
 
 function rowMatchesSupplyFilter(row) {
   const product = rowProduct(row)
+  const suggested = rowSuggested(row)
   return matchesSupplyFilter(supplyFilter.value, {
     localWarehouse: product?.localWarehouse,
     orderedQty: product?.orderedQty,
     needRestock: hasRestockNeed(row),
+    restockQty: getCell(row, '静态补货'),
+    suggestedQty: suggested.state === 'pending' ? suggested.qty : null,
   })
 }
 
@@ -2496,7 +2499,7 @@ onBeforeUnmount(() => {
                       <el-radio-button value="mixed">混装</el-radio-button>
                     </el-radio-group>
                   </div>
-                  <div class="inventory-item"><span>静态补货</span><strong :title="restockCell(item.row).title">{{ getCell(item.row, '静态补货') || '—' }}</strong></div>
+                  <div class="inventory-item"><span>静态补货</span><strong :title="restockCell(item.row).title">{{ getCell(item.row, '静态补货') || '—' }}{{ restockCell(item.row).view?.boxes || '' }}</strong></div>
                   <label class="inventory-item inventory-input-item">
                     <span>补货用时</span>
                     <input

@@ -90,6 +90,21 @@ describe('supply filter', () => {
     expect(pick('need-restock-no-local-no-ordered')).toEqual([true, false, false])
     expect(pick('__all__')).toEqual([true, true, true])
   })
+
+  it('drops rows whose order already covers the static or suggested quantity', () => {
+    const base = { localWarehouse: 0, needRestock: true, restockQty: '285', suggestedQty: 120 }
+    const pick = (filter, rows) => rows.map((r) => matchesSupplyFilter(filter, { ...base, ...r }))
+    const rows = [
+      { orderedQty: 300 }, // ≥ 静态补货
+      { orderedQty: 285 }, // 刚好等于静态补货
+      { orderedQty: 150 }, // 只够建议补货
+      { orderedQty: 100 }, // 两个都不够
+      { orderedQty: 100, suggestedQty: null }, // 没有建议补货，静态也不够
+      { orderedQty: 0 },
+    ]
+    expect(pick('need-restock', rows)).toEqual([false, false, false, true, true, true])
+    expect(pick('no-restock', rows)).toEqual([true, true, true, false, false, false])
+  })
 })
 
 describe('grouping', () => {
