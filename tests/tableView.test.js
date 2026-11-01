@@ -237,6 +237,8 @@ describe('header and cells', () => {
     expect(title).toContain('月销 479 件（指数平滑周销 × 30/7，已扣 Vine）')
     expect(title).toContain('库存位置 731 = FBA 731 + 本地仓 0 + 已下单 0')
     expect(title).toContain('阈值 1,660 = 3 个月 + 补货用时 1 周')
+    expect(restockTitle(decision({ threshold: 1435.5, parts: { fbaTotal: 731, localWarehouse: 0, orderedQty: 0, cycleWeeks: 0 } }), { coverMonths: 3 }))
+      .toContain('阈值 1,436 = 3 个月\n')
     expect(title).toContain('爆量')
     expect(title).toContain('近 8 周断货周：36周、37周（没有剔除）')
     expect(title).toContain('新品：出单 4 周')

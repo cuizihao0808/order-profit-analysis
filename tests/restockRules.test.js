@@ -228,11 +228,19 @@ describe('restockRules: decideRestock', () => {
     expect(decideRestock({ ...base, fbaTotal: 900 }).text).toBe('无需补货')
   })
 
-  it('adds the restock cycle (weeks × weekly sales) on top of three months', () => {
+  it('only looks at three months of cover by default, ignoring the restock cycle', () => {
     const d = decideRestock({ ...base, fbaTotal: 1000, cycle: 2 })
+    expect(d.threshold).toBeCloseTo(900)
+    expect(d.text).toBe('无需补货')
+    expect(d.parts.cycleWeeks).toBe(0)
+  })
+
+  it('adds the restock cycle (weeks × weekly sales) when restockCycleInThreshold is on', () => {
+    const config = { restockCycleInThreshold: true }
+    const d = decideRestock({ ...base, fbaTotal: 1000, cycle: 2, config })
     expect(d.threshold).toBeCloseTo(900 + 140)
     expect(d.text).toBe('300')
-    expect(decideRestock({ ...base, fbaTotal: 1000, cycle: '' }).text).toBe('无需补货')
+    expect(decideRestock({ ...base, fbaTotal: 1000, cycle: '', config }).text).toBe('无需补货')
   })
 
   it('rounds the shipment by carton', () => {

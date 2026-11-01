@@ -254,7 +254,7 @@ export function restockTitle(decision, config) {
   }
   lines.push(
     `库存位置 ${fmtQty(d.position)} = FBA ${fmtQty(p.fbaTotal)} + 本地仓 ${fmtQty(p.localWarehouse)} + 已下单 ${fmtQty(p.orderedQty)}`,
-    `阈值 ${fmtQty(d.threshold)} = ${cover} 个月 + 补货用时 ${p.cycleWeeks} 周`,
+    `阈值 ${fmtQty(d.threshold)} = ${cover} 个月${p.cycleWeeks ? ` + 补货用时 ${p.cycleWeeks} 周` : ''}`,
   )
   if (d.coverMonths != null) lines.push(`覆盖 ${d.coverMonths.toFixed(1)} 个月`)
   if (b.surge) lines.push('爆量：上周销量是前 4 周均的 2 倍以上，确认是否持续')

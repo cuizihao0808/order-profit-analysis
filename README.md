@@ -504,7 +504,7 @@ CSV 自己解析，不经过 SheetJS，因为 SheetJS 会把 `10/10` 这类表�
 | FBA总量 / 可售 / 入库中 / 不可售 / 预留 | `products/shop-x.json` | 否 | 来自 Listing 表 |
 | 本地仓库 | `products/shop-x.json` | 是 | 影响补货筛选和 PDF 导出 |
 | 已下单 | `products/shop-x.json` | 是 | 影响补货筛选 |
-| 补货用时 | `products/shop-x.json` | 是 | 默认 2，影响静态补货计算 |
+| 补货用时 | `products/shop-x.json` | 是 | 默认 2；静态补货默认不计入（`restockConfig.js` 的 `restockCycleInThreshold` 打开才加进阈值） |
 | 静态补货 | 公式 | 否 | 有具体数值时琥珀色标签 + 行首竖线 |
 | 建议补货 | 补货批次计划 CSV | 否 | 最近未发货批次的件数 · 日期；逾期标红，7 天内要发标黄 |
 | 批次进度 | 补货批次计划 CSV | 否 | 已发 / 计划件数；有逾期批次时标红 |

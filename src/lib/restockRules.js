@@ -3,7 +3,8 @@
  *
  *   月销量 M  = 指数平滑周销 × 30/7（从首次出单那周起算，周销扣掉 Vine）
  *   库存位置 = FBA总量 + 本地仓 + 已下单
- *   库存位置 < M × 3 + 补货用时(周) × 周销 → 发 1 个 M（有箱规按整箱，没有取 5 的倍数）
+ *   库存位置 < M × 3（覆盖不到 3 个月）→ 发 1 个 M（有箱规按整箱，没有取 5 的倍数）
+ *   2026-11-01 起补货用时不再加进阈值（restockCycleInThreshold 打开才加 补货用时(周) × 周销）
  *
  * - 会员日这类大促周用前后两周均值代替；大促周就是最新一周时先跳过
  * - 下滑（近 4 周均 < 前 4 周均 × 0.7）时 M 不超过近 4 周均
@@ -13,6 +14,7 @@
 export const DEFAULT_RESTOCK_CONFIG = {
   coverMonths: 3, // 库存位置不够几个月就补
   shipMonths: 1, // 每次补几个月
+  restockCycleInThreshold: false, // 阈值是否再加 补货用时(周) × 周销
   daysPerMonth: 30,
   smoothingAlpha: 0.3, // 本周销量在平滑值里的权重
   eventWeeks: ['41周'], // 大促周
@@ -232,7 +234,7 @@ export function decideRestock({ basis, category, fbaTotal, localWarehouse, order
   if (basis.stockoutWeeks?.length) flags.push('断货周')
 
   const position = fba + orZero(localWarehouse) + orZero(orderedQty)
-  const cycleWeeks = Math.max(0, orZero(cycle))
+  const cycleWeeks = cfg.restockCycleInThreshold ? Math.max(0, orZero(cycle)) : 0
   const monthly = basis.monthly
   const threshold = monthly * cfg.coverMonths + basis.weekly * cycleWeeks
   const result = {
