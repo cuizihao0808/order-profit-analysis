@@ -191,13 +191,13 @@ describe('selection and batch actions', () => {
 
   it('copies a single ASIN from its hover button', async () => {
     const wrapper = await mountApp()
-    await rowOf(wrapper, 'B0A1').find('.asin-copy-icon').trigger('click')
+    await rowOf(wrapper, 'B0A1').find('.asin-action-btn:not(.order):not(.disabled)').trigger('click')
     await settle()
     expect(browser.writeText).toHaveBeenCalledWith('B0A1')
-    expect(rowOf(wrapper, 'B0A1').find('.asin-copy-icon').classes()).toContain('copied')
+    expect(rowOf(wrapper, 'B0A1').find('.asin-action-btn:not(.order):not(.disabled)').classes()).toContain('copied')
 
     browser.writeText.mockRejectedValueOnce(new Error('denied'))
-    await rowOf(wrapper, 'B0B1').find('.asin-copy-icon').trigger('click')
+    await rowOf(wrapper, 'B0B1').find('.asin-action-btn:not(.order):not(.disabled)').trigger('click')
     await settle()
     expect(toastText(wrapper)).toContain('复制失败')
     wrapper.unmount()

@@ -52,8 +52,8 @@ const SUPPLY_FILTER_KEY = 'opa:supply-filter:v1'
 const VIEW_KEY = 'opa:view:v1'
 const PLAN_SHOP_KEY = 'opa:plan-shop:v1'
 const DEV_SESSION_KEY = 'opa:dev-session:v1'
-const FIXED_WIDTHS = { 品名: 300, ASIN: 150 }
-const FIXED_WIDTHS_COMPACT = { 品名: 224, ASIN: 136 }
+const FIXED_WIDTHS = { 品名: 300, ASIN: 186 }
+const FIXED_WIDTHS_COMPACT = { 品名: 224, ASIN: 176 }
 const SELECT_COL_WIDTH = 40 // 勾选框
 const SELECT_COL_WIDTH_COMPACT = 36
 
@@ -581,6 +581,12 @@ function asinValue(row) {
 function asinUrl(row) {
   const asin = asinValue(row)
   return asin ? `https://www.amazon.com/dp/${encodeURIComponent(asin)}` : ''
+}
+
+/** 后台 listing 规格页（listingUuid 存在 src/data/products/{shopId}.json） */
+function orderUrl(row) {
+  const id = String(rowProduct(row)?.listingUuid || '').trim()
+  return id ? `https://web.shuidongtech.com/main/amazon/listing/${encodeURIComponent(id)}?tab=specs` : ''
 }
 
 function productImageUrl(row) {
@@ -2358,17 +2364,24 @@ onBeforeUnmount(() => {
                         target="_blank"
                         rel="noopener noreferrer"
                       >{{ asinValue(item.row) }}</a>
+                    </div>
+                    <div class="asin-meta-line">
+                      <span class="shop-code">{{ shopCodeOf(rowShopName(item.row)) }}</span>
                       <button
-                        class="asin-copy-icon"
+                        class="asin-action-btn"
                         :class="{ copied: isAsinCopied(item.row) }"
                         type="button"
-                        :title="isAsinCopied(item.row) ? '已复制' : '复制 ASIN'"
                         @click="copyAsin(item.row)"
-                      >
-                        {{ isAsinCopied(item.row) ? '✓' : '⧉' }}
-                      </button>
+                      >{{ isAsinCopied(item.row) ? '✓ 已复制' : '复制ASIN' }}</button>
+                      <a
+                        v-if="orderUrl(item.row)"
+                        class="asin-action-btn order"
+                        :href="orderUrl(item.row)"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >去下单</a>
+                      <span v-else class="asin-action-btn disabled" title="产品数据里没有后台 listingUuid">去下单</span>
                     </div>
-                    <span class="shop-code">{{ shopCodeOf(rowShopName(item.row)) }}</span>
                   </div>
                 </template>
                 <template v-else-if="col.name === '产品图片'">

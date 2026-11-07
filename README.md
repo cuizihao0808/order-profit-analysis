@@ -87,6 +87,22 @@ public/data/36周(08-30~09-05)/
 
 如果某些 ASIN 只出现在 Listing 表、订单利润表里没有，导入结束后会弹出“归属确认”面板，需要你为这些 ASIN 逐个选择店铺，确认后才会写入对应的 `products/shop-x.json`。
 
+### 新品补后台 listingUuid（「去下单」按钮）
+
+ASIN 列的「去下单」按钮会新开标签页，跳到后台该 listing 的规格页：
+
+```
+https://web.shuidongtech.com/main/amazon/listing/{listingUuid}?tab=specs
+```
+
+`listingUuid` 是后台 listing 的 UUID，存在 `products/shop-x.json` 里每个产品的 `listingUuid` 字段。**导入周报不会带这个字段，MCP 工具也查不到它**，所以新品上架后需要手工补：
+
+1. 在后台打开新品的 listing 页，从地址栏复制 `/listing/` 后面那段 UUID
+2. 把「ASIN + UUID」贴给 AI，让它写进对应店铺的 `products/shop-x.json`
+3. 刷新页面，该行的「去下单」按钮就从灰色变成可点
+
+没有 `listingUuid` 的产品，「去下单」按钮显示为灰色、不可点。截至 45 周，有 10 个 ASIN 在后台查不到，暂时没有 UUID。
+
 ### 修改产品信息
 
 可以直接在表格里修改以下字段，失焦后会实时写入 JSON：
@@ -355,6 +371,7 @@ src/data/
 | `localWarehouse` | 本地仓库数量 |
 | `orderedQty` | 已下单数量 |
 | `packingMode` | 装箱方式，`full` 整箱 / `mixed` 混装 |
+| `listingUuid` | 后台 listing 的 UUID，「去下单」按钮用；新品需手工贴给 AI 补上，见上文“新品补后台 listingUuid” |
 
 **导入 Listing 表时刷新：**
 
@@ -513,7 +530,7 @@ CSV 自己解析，不经过 SheetJS，因为 SheetJS 会把 `10/10` 这类表�
 ### 固定列
 
 - 产品（主图 + 品名 + 产品标题，品名和标题可直接编辑）
-- ASIN（★ 重点关注、悬停出现复制按钮、下方店铺简码）
+- ASIN（★ 重点关注；下方一行是店铺简码 +「复制ASIN」+「去下单」按钮，「去下单」跳后台规格页，依赖 `listingUuid`）
 
 ### 默认展示列顺序
 
@@ -698,6 +715,10 @@ IF(FBA总量 < 周销量 * (restockMonths + 补货用时), 周销量 * restockMu
 3. 把分类从“放弃”改回“正常 / 观望 / 断货”
 
 如果在主表里找不到它，这是正常现象，需要在 ASIN 抽屉中恢复。
+
+### 为什么「去下单」按钮是灰的
+
+该产品在 `products/shop-x.json` 里没有 `listingUuid`。新品导入后不会自动带上，需要从后台 listing 页地址栏复制 UUID，连同 ASIN 一起贴给 AI 补上，见“新品补后台 listingUuid”。
 
 ### 为什么导出 PDF 按钮点不动
 

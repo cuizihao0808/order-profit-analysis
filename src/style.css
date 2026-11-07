@@ -2700,29 +2700,46 @@ tbody tr.row-selected td.fix-left {
   color: #f59e0b;
   font-size: 12px;
 }
-.asin-copy-icon {
-  width: 20px;
+.asin-meta-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.asin-action-btn {
+  display: inline-flex;
+  align-items: center;
   height: 20px;
-  border: 0;
+  padding: 0 8px;
+  border: 1px solid var(--line);
   border-radius: 4px;
-  background: none;
-  color: var(--muted);
-  font-size: 12px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
   cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.12s ease;
 }
-tbody tr:hover .asin-copy-icon,
-.asin-copy-icon.copied,
-.asin-copy-icon:focus-visible {
-  opacity: 1;
-}
-.asin-copy-icon:hover {
+.asin-action-btn:hover {
   background: var(--bg-soft);
   color: var(--text-strong);
 }
-.asin-copy-icon.copied {
+.asin-action-btn.copied {
+  border-color: var(--green);
   color: var(--green);
+}
+.asin-action-btn.order {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+.asin-action-btn.order:hover {
+  background: #2563eb;
+  color: #fff;
+}
+.asin-action-btn.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 .shop-code {
   padding: 0 5px;
