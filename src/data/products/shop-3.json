@@ -38,7 +38,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0FWJ6BW9K",
@@ -79,13 +80,14 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0FWKCXWY6",
     "parentAsin": "B0FWKCXWY6",
     "name": "12Pcs洗手液套装",
-    "category": "观望",
+    "category": "正常",
     "restockCycle": 2,
     "stock": 259,
     "firstSeenWeek": "订单利润-ASIN-2026-07-12~2026-07-18-937769247582007296",
@@ -120,7 +122,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": 42,
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0FY2WZLGG",
@@ -164,7 +167,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0FYF131Z1",
@@ -203,7 +207,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": 50,
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0FYFXX385",
@@ -241,7 +246,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0FZSY68B2",
@@ -282,7 +288,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0FZT4JBTF",
@@ -323,7 +330,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": 8,
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0G1474PZP",
@@ -361,7 +369,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0G2B1Y26Q",
@@ -399,7 +408,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0G2BL89SH",
@@ -443,7 +453,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": 24,
     "maxCartonQty2": "",
-    "packingMode": "full"
+    "packingMode": "full",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0G2BR58FK",
@@ -487,7 +498,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": 40,
     "maxCartonQty2": "",
-    "packingMode": "full"
+    "packingMode": "full",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0G5131JKM",
@@ -528,7 +540,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0G51DK4YX",
@@ -569,7 +582,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0G52GF51W",
@@ -613,7 +627,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0G57JYVXN",
@@ -659,7 +674,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0G58J9G7P",
@@ -700,7 +716,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0G8HN1Y93",
@@ -741,7 +758,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0G8XXCJ2X",
@@ -782,7 +800,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0G91V37GH",
@@ -826,7 +845,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "full"
+    "packingMode": "full",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0GCCRNMHK",
@@ -870,7 +890,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0GD6G5L61",
@@ -911,7 +932,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0GD6WFV99",
@@ -952,7 +974,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0GGHCPDV3",
@@ -993,7 +1016,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0GGHJCFHB",
@@ -1034,7 +1058,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0GGQRSCM1",
@@ -1075,7 +1100,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0GGRLM9Z9",
@@ -1116,7 +1142,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0GGZ1ZN5M",
@@ -1157,7 +1184,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0GH74B4RK",
@@ -1198,7 +1226,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0GHW55JGW",
@@ -1239,7 +1268,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0GHXZ3LWF",
@@ -1277,7 +1307,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0GKM9ZFHW",
@@ -1321,7 +1352,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0GKMFXBLN",
@@ -1365,7 +1397,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0GTLMH86Z",
@@ -1406,7 +1439,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0GYF5796P",
@@ -1447,7 +1481,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0GYF5YXXG",
@@ -1488,7 +1523,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0GYF7WK58",
@@ -1529,7 +1565,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "full"
+    "packingMode": "full",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0GYFDQ2CG",
@@ -1570,7 +1607,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": 84,
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0H4Z1VCGS",
@@ -1611,7 +1649,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0FSXJQ73Q",
@@ -1651,7 +1690,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": 100,
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0FWKD1L3W",
@@ -1691,7 +1731,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0FWKFH1H8",
@@ -1731,7 +1772,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0FY2XXG9F",
@@ -1771,7 +1813,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0FY31HN9D",
@@ -1811,7 +1854,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0FY31WV9L",
@@ -1851,7 +1895,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0FY32B4PW",
@@ -1891,7 +1936,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0FY32P4CL",
@@ -1931,7 +1977,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0FY34NY1V",
@@ -1971,7 +2018,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0FZSM95JC",
@@ -2011,7 +2059,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0G2BVWMMP",
@@ -2053,7 +2102,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0G2BYPP3C",
@@ -2093,7 +2143,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0G2C7D1SM",
@@ -2136,7 +2187,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0G4X9DYRD",
@@ -2176,7 +2228,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0G4ZW7HLD",
@@ -2216,7 +2269,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0G5132KBX",
@@ -2256,7 +2310,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0G517WLDZ",
@@ -2296,7 +2351,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0G52D3YWJ",
@@ -2339,7 +2395,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0G52H2CL5",
@@ -2379,7 +2436,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0GGH41FDJ",
@@ -2422,7 +2480,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0GGYSVPSX",
@@ -2462,7 +2521,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0GHQRM96K",
@@ -2502,7 +2562,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0GHYCGQ4C",
@@ -2542,7 +2603,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": 16,
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0GJ3M3G9D",
@@ -2585,7 +2647,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0GJDG4Q7C",
@@ -2628,7 +2691,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0GJDHSSVY",
@@ -2671,7 +2735,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0GKM2W6NK",
@@ -2714,7 +2779,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0GQ9CDWCP",
@@ -2754,7 +2820,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0GQB6R4FL",
@@ -2792,7 +2859,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0GQGQ8Z8F",
@@ -2832,7 +2900,8 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   },
   {
     "asin": "B0GQSP988T",
@@ -2872,6 +2941,7 @@
     "outerCartonSize2": "",
     "maxCartonQty1": "",
     "maxCartonQty2": "",
-    "packingMode": "mixed"
+    "packingMode": "mixed",
+    "invoiceStatus": ""
   }
 ]

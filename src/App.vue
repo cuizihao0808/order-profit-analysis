@@ -135,6 +135,7 @@ const DETAIL_TABS = [
   { id: 'inventory', label: '库存详情' },
   { id: 'trend', label: '8 周趋势' },
   { id: 'plan', label: '补货批次' },
+  { id: 'invoice', label: '发票获取' },
 ]
 const EXTRA_COL_NAMES = EXTRA_COLS.map((c) => c.name)
 const EXTRA_COL_BY_NAME = Object.fromEntries(EXTRA_COLS.map((c) => [c.name, c]))
@@ -2480,6 +2481,19 @@ onBeforeUnmount(() => {
                   :saving="planSaving"
                   @toggle="toggleRowShipped(item.row, $event)"
                 />
+
+                <label v-else-if="rowDetailTab(item.row) === 'invoice'" class="invoice-status-field">
+                  <span>发票获取</span>
+                  <textarea
+                    class="invoice-status-input"
+                    rows="4"
+                    placeholder="填写发票获取状态或说明"
+                    :value="rowProduct(item.row)?.invoiceStatus ?? ''"
+                    @change="commitEditableText(item.row, 'invoiceStatus', $event)"
+                    @blur="commitEditableText(item.row, 'invoiceStatus', $event)"
+                  ></textarea>
+                  <small>离开输入框后自动保存</small>
+                </label>
 
                 <template v-else>
                 <div class="inventory-detail-grid">

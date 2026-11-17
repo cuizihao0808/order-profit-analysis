@@ -103,14 +103,14 @@ describe('ASIN 工作台', () => {
     wrapper.unmount()
   })
 
-  it('expands a row into inventory, trend and plan tabs and marks a batch shipped', async () => {
+  it('expands a row into detail tabs, marks a batch shipped and saves invoice text', async () => {
     const wrapper = await mountApp()
     // 点勾选框不展开，点行里的空白单元格才展开
     await rowOf(wrapper, 'B0A1').find('.select-col input').trigger('click')
     expect(wrapper.find('.inventory-detail-grid').exists()).toBe(false)
     await rowOf(wrapper, 'B0A1').find('td.num').trigger('click')
     const tabs = () => wrapper.findAll('.detail-tab')
-    expect(tabs().map((t) => t.text())).toEqual(['库存详情', '8 周趋势', '补货批次'])
+    expect(tabs().map((t) => t.text())).toEqual(['库存详情', '8 周趋势', '补货批次', '发票获取'])
     expect(wrapper.find('.inventory-detail-grid').text()).toContain('静态补货30')
     expect(wrapper.find('.inventory-detail-grid').text()).toContain('静态月销月销 28 · 覆盖 1.4 月')
 
@@ -129,6 +129,19 @@ describe('ASIN 工作台', () => {
     await rowOf(wrapper, 'B0C1').find('td.num').trigger('click')
     expect(tabs()[2].attributes('disabled')).toBeDefined()
     expect(wrapper.find('.inventory-detail-grid').exists()).toBe(true)
+
+    await tabs()[3].trigger('click')
+    const invoice = () => wrapper.find('.invoice-status-input')
+    expect(invoice().element.value).toBe('')
+    await invoice().setValue('已联系供应商\n等待开票')
+    await invoice().trigger('blur')
+    await settle()
+    expect(api.calls('PUT', '/api/products/B0C1')).toEqual([
+      { invoiceStatus: '已联系供应商\n等待开票', shopId: 'shop-1' },
+    ])
+    await tabs()[0].trigger('click')
+    await tabs()[3].trigger('click')
+    expect(invoice().element.value).toBe('已联系供应商\n等待开票')
     wrapper.unmount()
   })
 

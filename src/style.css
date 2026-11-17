@@ -2345,6 +2345,38 @@ code {
   opacity: 0.45;
 }
 
+.invoice-status-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 640px;
+  max-width: 100%;
+  color: var(--text-strong);
+  font-weight: 500;
+}
+.invoice-status-input {
+  width: 100%;
+  min-height: 112px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  font-weight: 400;
+  line-height: 1.6;
+  resize: vertical;
+}
+.invoice-status-input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.invoice-status-field small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
 /* ===================================================================
  * 方案 A：黑白极简。颜色只留给状态（红 / 琥珀 / 绿），其余靠灰阶和留白分层。
  * 放在文件末尾，覆盖前面的旧规则。

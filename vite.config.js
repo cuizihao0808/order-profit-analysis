@@ -1655,6 +1655,7 @@ function apiPlugin() {
               parentAsin: body.parentAsin ?? '',
               name: body.name ?? '',
               productTitle: body.productTitle ?? '',
+              invoiceStatus: body.invoiceStatus ?? '',
               category: body.category ?? '正常',
               restockCycle:
                 body.restockCycle == null || body.restockCycle === ''

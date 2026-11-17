@@ -294,7 +294,7 @@ describe('import api integration', () => {
     expect(missingAsin.status).toBe(400)
     const createdProduct = await fetch(`${baseUrl}/api/products`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ asin: 'B0CRUD', name: '待迁移产品', shopId: 'shop-1' }),
+      body: JSON.stringify({ asin: 'B0CRUD', name: '待迁移产品', shopId: 'shop-1', invoiceStatus: '待供应商开票' }),
     })
     expect(createdProduct.status).toBe(201)
     const duplicateProduct = await fetch(`${baseUrl}/api/products`, {
@@ -311,7 +311,7 @@ describe('import api integration', () => {
     expect((await moved.json()).shopId).toBe('shop-2')
     const products = await (await fetch(`${baseUrl}/api/products`)).json()
     expect(products.filter((product) => product.asin === 'B0CRUD')).toEqual([
-      expect.objectContaining({ shopId: 'shop-2', name: '已迁移产品' }),
+      expect.objectContaining({ shopId: 'shop-2', name: '已迁移产品', invoiceStatus: '待供应商开票' }),
     ])
     const deletedProduct = await fetch(`${baseUrl}/api/products/B0CRUD`, { method: 'DELETE' })
     expect(deletedProduct.status).toBe(200)
@@ -409,10 +409,14 @@ describe('import api integration', () => {
     const packingModeResp = await fetch(`${baseUrl}/api/products/B0HBKJFMMR`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ shopId: 'shop-1', packingMode: 'full' }),
+      body: JSON.stringify({ shopId: 'shop-1', packingMode: 'full', invoiceStatus: '已获取，待核对抬头' }),
     })
     expect(packingModeResp.status).toBe(200)
-    expect((await packingModeResp.json()).packingMode).toBe('full')
+    expect(await packingModeResp.json()).toMatchObject({ packingMode: 'full', invoiceStatus: '已获取，待核对抬头' })
+    const savedProducts = await (await fetch(`${baseUrl}/api/products`)).json()
+    expect(savedProducts.find((p) => p.asin === 'B0HBKJFMMR' && p.shopId === 'shop-1')?.invoiceStatus).toBe('已获取，待核对抬头')
+    const savedShop1 = JSON.parse(await readFile(path.join(tmpRoot, 'src/data/products/shop-1.json'), 'utf8'))
+    expect(savedShop1.find((p) => p.asin === 'B0HBKJFMMR')?.invoiceStatus).toBe('已获取，待核对抬头')
 
     week.notes.B0HBKJFMMR = '本周修改后的备注'
     await writeJson(path.join(tmpRoot, 'src/data/weeks/32周.json'), week)
@@ -428,6 +432,7 @@ describe('import api integration', () => {
       await readFile(path.join(tmpRoot, 'src/data/products/shop-1.json'), 'utf8'),
     )
     expect(reimportedShop1.find((p) => p.asin === 'B0HBKJFMMR')?.packingMode).toBe('full')
+    expect(reimportedShop1.find((p) => p.asin === 'B0HBKJFMMR')?.invoiceStatus).toBe('已获取，待核对抬头')
   }, 30000)
 
   it('classifies new and changed folders, and rejects invalid import requests', async () => {

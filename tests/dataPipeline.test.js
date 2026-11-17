@@ -48,6 +48,7 @@ describe('dataPipeline: product normalization', () => {
     expect(next.outerCartonSize1).toBe('50×40×30')
     expect(next.maxCartonQty1).toBe(24)
     expect(next.packingMode).toBe('mixed')
+    expect(next.invoiceStatus).toBe('')
     expect(next.itemWeight).toBe(250)
   })
 
@@ -58,12 +59,14 @@ describe('dataPipeline: product normalization', () => {
       packageSize: 'A',
       packageType: 'B',
       productImage: ' https://img ',
+      invoiceStatus: ' 已获取，待核对抬头 ',
     })
 
     expect(next.fbaTotal).toBe(123)
     expect(next.packageSize).toBe('A')
     expect(next.packageType).toBe('B')
     expect(next.productImage).toBe('https://img')
+    expect(next.invoiceStatus).toBe('已获取，待核对抬头')
   })
 
   it('normalizes amazonMainImage and merges image candidates', () => {

@@ -26,7 +26,7 @@
 - 支持店铺、产品分类、补货状态、库存健康四个筛选，外加 ASIN / FNSKU / 品名搜索
 - 支持父子 ASIN 折叠、固定列、列显隐和列排序
 - 支持在表格内直接编辑品名、产品分类、本地仓库、已下单、补货用时、每周备注
-- 支持行内展开详情，分“库存详情 / 8 周趋势 / 补货批次”三个 Tab
+- 支持行内展开详情，分“库存详情 / 8 周趋势 / 补货批次 / 发票获取”四个 Tab
 - 支持勾选多行后批量改分类、复制 ASIN、复制包装尺寸和已下单数量
 - 支持“已到库”“已发出”一键流转本地仓库和已下单数量
 - 支持产品分类联动：父体标记为“放弃”时，子体自动放弃并隐藏
@@ -118,7 +118,7 @@ https://web.shuidongtech.com/main/amazon/listing/{listingUuid}?tab=specs
 
 ### 展开行详情
 
-点击行首的 ▸ 箭头（或点“建议补货”单元格直接打开补货批次），在行下方展开面板，同时只展开一行。面板有三个 Tab：
+点击行首的 ▸ 箭头（或点“建议补货”单元格直接打开补货批次），在行下方展开面板，同时只展开一行。面板有四个 Tab：
 
 **库存详情**
 
@@ -147,6 +147,11 @@ https://web.shuidongtech.com/main/amazon/listing/{listingUuid}?tab=specs
 - 该 SKU 在每个批次的件数，点击即标记已发货（变绿带 ✓），再点撤销；鼠标悬停可看批次日期和标记时间
 - 春节前合计、节后首班参考、采购金额、净重、生成时可用 / 在途、日均需求、残余缺口、应急判断、判断说明、备注
 - 补货计划里的库存一律按清单生成那一刻的数据（CSV 的“当前可用”“在途”，截至文件修改日期），不和主数据的实时库存对齐；实时库存看“库存详情” Tab
+
+**发票获取**
+
+- 普通多行文本框，可填写发票获取状态或说明，失焦后自动保存
+- 按店铺和 ASIN 保存到产品主数据 `invoiceStatus` 字段，跨周保留，重新导入不会覆盖
 
 ### 批量操作
 
@@ -284,7 +289,7 @@ npm run build
 | 业务规则 | `tests/{dataPipeline,restockRules,productUpdates,importScan,weekSnapshot,trendMetrics,replenishmentPlan,tableView}.test.js` | `src/lib/` 的纯函数 |
 | composables | `tests/composables.test.js` | 补货计划加载 / 已发货标记、8 周快照按需加载，fetch 用模拟数据 |
 | 组件 | `tests/components.ui.test.js`、`tests/importDialog.ui.test.js` | 用真实 Element Plus 挂载单个组件 |
-| 页面 | `tests/app.ui.test.js`、`tests/app.actions.ui.test.js` | 挂载整页，接口用 `tests/helpers/appHarness.js` 里有状态的模拟 API（写操作会改内存数据并记录请求）。覆盖视图切换、搜索、展开行三个 Tab、内联编辑与失败回滚、批量改分类、复制包装表格、更多菜单（导出 PDF、列设置）、店铺 / ASIN 增删改、导入与归属确认、删除周次、图片预览、整批标记发货 |
+| 页面 | `tests/app.ui.test.js`、`tests/app.actions.ui.test.js` | 挂载整页，接口用 `tests/helpers/appHarness.js` 里有状态的模拟 API（写操作会改内存数据并记录请求）。覆盖视图切换、搜索、展开行四个 Tab、内联编辑与失败回滚、批量改分类、复制包装表格、更多菜单（导出 PDF、列设置）、店铺 / ASIN 增删改、导入与归属确认、删除周次、图片预览、整批标记发货 |
 | 本地 API | `tests/importApi.integration.test.js` | 起一个真实 Vite 中间件，在临时目录里读写 JSON / CSV；包括 PDF 导出（只抓公网 https 图片、超 5MB 拒绝、失败占位、多页）和删除 / 导入前的自动备份（只留最新 10 份） |
 
 覆盖率统计整个 `src/`（不含 `main.js` 和 `src/data/`），按目录设门槛，低于门槛会失败：
@@ -367,6 +372,7 @@ src/data/
 |------|------|
 | `name` | 品名 |
 | `category` | 产品分类 |
+| `invoiceStatus` | 发票获取状态或说明，普通文本，默认空白 |
 | `restockCycle` | 补货用时，默认 2 |
 | `localWarehouse` | 本地仓库数量 |
 | `orderedQty` | 已下单数量 |
